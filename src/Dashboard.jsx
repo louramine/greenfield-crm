@@ -124,7 +124,7 @@ function InteractionsSemaine({ interactions }) {
       <div style={{ padding: "8px 0" }}>
         {!items.length ? (
           <div style={{ color: "#aaa", fontSize: 13, textAlign: "center", padding: "24px 0" }}>Aucune interaction cette semaine</div>
-        ) : items.slice(0, 8).map((item, i) => {
+        ) : items.slice(0, 4).map((item, i) => {
           const typeStyle = TYPE_COLORS[item.type] ?? { bg: "#f5f5f5", color: "#666" };
           return (
             <div key={i} style={{
@@ -187,7 +187,7 @@ function ActivityLog({ logs }) {
       <div style={{ padding: "8px 0" }}>
         {!logs.length ? (
           <div style={{ color: "#aaa", fontSize: 13, textAlign: "center", padding: "24px 0" }}>Aucune activité enregistrée</div>
-        ) : logs.map((l, i) => (
+        ) : logs.slice(0, 4).map((l, i) => (
           <div key={l.id} style={{
             display: "flex", alignItems: "center", gap: 12,
             padding: "10px 22px",
@@ -259,10 +259,7 @@ export default function Dashboard() {
               <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800 }}>Dashboard</div>
               <div style={{ fontSize: 12.5, color: T.grayMid, marginTop: 3 }}>Vue d'ensemble — GREENFIELD CRM Foncier</div>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button style={ghostBtn}>⟳ Sync</button>
-              <button style={ghostBtn}>↓ Export</button>
-            </div>
+            <div />
           </div>
 
           {/* KPI Row : Top Def. Urba. */}

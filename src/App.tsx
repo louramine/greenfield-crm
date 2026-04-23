@@ -8,8 +8,6 @@ import AuthPage from "./AuthPage";
 import { useAuth } from "./useAuth";
 import { useSupabase } from "./useSupabase";
 
-// ─── Carte ────────────────────────────────────────────────────────────────────
-
 function CartePage() {
   const EMBED_URL  = "https://www.google.com/maps/d/embed?mid=1eKT0j_tY2XUBYBJu-r5d7BjKGpdXWCY&ehbc=2E312F";
   const VIEWER_URL = "https://www.google.com/maps/d/viewer?mid=1eKT0j_tY2XUBYBJu-r5d7BjKGpdXWCY";
@@ -33,8 +31,6 @@ function CartePage() {
   );
 }
 
-// ─── Loading / Error ──────────────────────────────────────────────────────────
-
 function LoadingScreen() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", gap: 16 }}>
@@ -55,8 +51,6 @@ function ErrorScreen({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
-
 type Page = "dashboard" | "pipeline" | "terrains" | "acheteurs" | "carte";
 
 export default function App() {
@@ -75,7 +69,6 @@ export default function App() {
 
   const { terrains, acheteurs, deals, loading, error, fetchAll, addTerrain, deleteTerrain, addAcheteur, deleteAcheteur, addDeal, deleteDeal } = useSupabase(user);
 
-  // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <>
@@ -88,45 +81,112 @@ export default function App() {
   if (loading) return <LoadingScreen />;
   if (error)   return <ErrorScreen message={error} onRetry={fetchAll} />;
 
-  // ── State adapter ──────────────────────────────────────────────────────────
   const stateForPages = {
-    terrains:  terrains.map(t => ({ id: t.id, localisation: t.localisation ?? "", urba: t.urba ?? "", superficie: t.superficie ?? 0, prix: t.prix ?? 0, usage: "", statut: "Disponible", tf: t.tf ?? "", notes: "" })),
-    acheteurs: acheteurs.map(a => ({ id: a.id, nom: a.nom ?? "", contact: a.contact ?? "", type: a.type ?? "", statut: "Froid", zones: a.zones ?? "", ticketMin: String(a.ticket_min ?? ""), ticketMax: String(a.ticket_max ?? ""), usage: a.usage ?? "", notes: "" })),
-    deals:     deals.map(d => ({ id: d.id, terrainId: d.terrain_id ?? 0, acheteurId: d.acheteur_id ?? 0, etape: d.etape ?? "teaser", montant: 0, notes: "", date: "" })),
+    terrains:  terrains.map(t => ({
+      id: t.id, localisation: t.localisation ?? "", urba: t.urba ?? "",
+      superficie: t.superficie ?? 0, prix: t.prix ?? 0,
+      usage: "", statut: "Disponible", tf: t.tf ?? "", notes: "",
+    })),
+    acheteurs: acheteurs.map(a => ({
+      id: a.id, nom: a.nom ?? "", contact: a.contact ?? "", type: a.type ?? "",
+      statut: "Froid", zones: a.zones ?? "",
+      ticketMin: String(a.ticket_min ?? ""), ticketMax: String(a.ticket_max ?? ""),
+      usage: a.usage ?? "", notes: "",
+    })),
+    deals: deals.map(d => ({
+      id:         d.id,
+      terrainId:  d.terrain_id ?? 0,
+      acheteurId: d.acheteur_id ?? 0,
+      etape:      d.etape ?? "teaser",
+      montant:    0,
+      notes:      "",
+      date:       "",
+      sourceurs:  d.sourceurs ?? [],
+    })),
     activities: [],
   };
 
   const dispatch = async (action: any) => {
     try {
       switch (action.type) {
+
         case "ADD_TERRAIN":
-          await addTerrain({ localisation: action.payload.localisation, urba: action.payload.urba, quartier: action.payload.localisation, superficie: action.payload.superficie, prix: action.payload.prix, forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000), tf: action.payload.tf });
+          await addTerrain({
+            localisation: action.payload.localisation, urba: action.payload.urba,
+            quartier: action.payload.localisation, superficie: action.payload.superficie,
+            prix: action.payload.prix,
+            forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000),
+            tf: action.payload.tf,
+          });
           break;
-        case "DELETE_TERRAIN":  await deleteTerrain(action.payload); break;
+
+        case "DELETE_TERRAIN":
+          await deleteTerrain(action.payload);
+          break;
+
         case "UPDATE_TERRAIN":
           await deleteTerrain(action.payload.id);
-          await addTerrain({ localisation: action.payload.localisation, urba: action.payload.urba, quartier: action.payload.localisation, superficie: action.payload.superficie, prix: action.payload.prix, forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000), tf: action.payload.tf });
+          await addTerrain({
+            localisation: action.payload.localisation, urba: action.payload.urba,
+            quartier: action.payload.localisation, superficie: action.payload.superficie,
+            prix: action.payload.prix,
+            forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000),
+            tf: action.payload.tf,
+          });
           break;
+
         case "ADD_ACHETEUR":
-          await addAcheteur({ nom: action.payload.nom, contact: action.payload.contact, type: action.payload.type, zones: action.payload.zones, ticket_min: parseFloat(action.payload.ticketMin) || null, ticket_max: parseFloat(action.payload.ticketMax) || null, usage: action.payload.usage });
+          await addAcheteur({
+            nom: action.payload.nom, contact: action.payload.contact,
+            type: action.payload.type, zones: action.payload.zones,
+            ticket_min: parseFloat(action.payload.ticketMin) || null,
+            ticket_max: parseFloat(action.payload.ticketMax) || null,
+            usage: action.payload.usage,
+          });
           break;
-        case "DELETE_ACHETEUR": await deleteAcheteur(action.payload); break;
+
+        case "DELETE_ACHETEUR":
+          await deleteAcheteur(action.payload);
+          break;
+
         case "ADD_DEAL": {
           const t = terrains.find(t => t.id === action.payload.terrainId);
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
-          await addDeal({ terrain_id: action.payload.terrainId, acheteur_id: action.payload.acheteurId, terrain_label: t?.localisation ?? "", acheteur_label: a?.nom ?? "", etape: action.payload.etape });
+          await addDeal({
+            terrain_id:     action.payload.terrainId,
+            acheteur_id:    action.payload.acheteurId,
+            terrain_label:  t?.localisation ?? "",
+            acheteur_label: a?.nom ?? "",
+            etape:          action.payload.etape,
+            montant:        action.payload.montant ?? 0,
+            sourceurs:      action.payload.sourceurs ?? [],
+          });
           break;
         }
-        case "DELETE_DEAL": await deleteDeal(action.payload); break;
+
+        case "DELETE_DEAL":
+          await deleteDeal(action.payload);
+          break;
+
         case "UPDATE_DEAL": {
           const t = terrains.find(t => t.id === action.payload.terrainId);
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
           await deleteDeal(action.payload.id);
-          await addDeal({ terrain_id: action.payload.terrainId, acheteur_id: action.payload.acheteurId, terrain_label: t?.localisation ?? "", acheteur_label: a?.nom ?? "", etape: action.payload.etape });
+          await addDeal({
+            terrain_id:     action.payload.terrainId,
+            acheteur_id:    action.payload.acheteurId,
+            terrain_label:  t?.localisation ?? "",
+            acheteur_label: a?.nom ?? "",
+            etape:          action.payload.etape,
+            montant:        action.payload.montant ?? 0,
+            sourceurs:      action.payload.sourceurs ?? [],
+          });
           break;
         }
       }
-    } catch (err: any) { alert("Erreur : " + (err.message ?? "inconnue")); }
+    } catch (err: any) {
+      alert("Erreur : " + (err.message ?? "inconnue"));
+    }
   };
 
   return (
@@ -151,19 +211,23 @@ export default function App() {
         background: "#0a2e1a",
       }}>
 
-        {/* User bar */}
-        <div style={{ position: "absolute", top: 12, right: 20, zIndex: 60, display: "flex", alignItems: "center", gap: 10 }}>
+        {/* User bar — intégrée dans un header fixe */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 60,
+          display: "flex", alignItems: "center", justifyContent: "flex-end",
+          gap: 10, padding: "8px 20px",
+          background: "rgba(7,26,15,0.85)", backdropFilter: "blur(8px)",
+          borderBottom: "1px solid rgba(45,158,95,0.1)",
+          minHeight: 40,
+        }}>
           <span style={{ fontSize: 12, color: "#8aab97" }}>{user.email}</span>
-          <button
-            onClick={logout}
-            style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(45,158,95,0.25)", background: "rgba(45,158,95,0.08)", color: "#8aab97", fontSize: 11, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
-          >
+          <button onClick={logout} style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(45,158,95,0.25)", background: "rgba(45,158,95,0.08)", color: "#8aab97", fontSize: 11, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}>
             Déconnexion
           </button>
         </div>
 
         {currentPage === "dashboard" && <Dashboard />}
-        {currentPage === "pipeline"  && <PipelinePage  state={stateForPages} dispatch={dispatch} />}
+        {currentPage === "pipeline"  && <PipelinePage state={stateForPages} dispatch={dispatch} currentUser={user} />}
         {currentPage === "terrains"  && <TerrainsPage  state={stateForPages} dispatch={dispatch} />}
         {currentPage === "acheteurs" && <AcheteursPage state={stateForPages} dispatch={dispatch} />}
         {currentPage === "carte"     && <CartePage />}

@@ -11,11 +11,23 @@ const STAGES = [
 const STAGE_MAP = Object.fromEntries(STAGES.map(s => [s.id, s]));
 
 const TAG_CLASS = {
-  Promoteur: { bg: "#e8f4fd", color: "#2980b9" },
-  Fonds:     { bg: "#fef9e7", color: "#c9a84c" },
-  HNWI:      { bg: "#fdf2f8", color: "#8e44ad" },
-  Entreprise:{ bg: "#e8f5e9", color: "#2e7d32" },
+  Promoteur:  { bg: "#e8f4fd", color: "#2980b9" },
+  Fonds:      { bg: "#fef9e7", color: "#c9a84c" },
+  HNWI:       { bg: "#fdf2f8", color: "#8e44ad" },
+  Entreprise: { bg: "#e8f5e9", color: "#2e7d32" },
 };
+
+const ASSOCIE_COLORS = {
+  Hachim:     "#c084fc",
+  Abderrahim: "#f97316",
+  Ayoub:      "#4eca82",
+  Amine:      "#60a5fa",
+  Said:       "#f43f5e",
+};
+
+function associeColor(nom) {
+  return ASSOCIE_COLORS[nom] || "#8aab97";
+}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -27,7 +39,7 @@ const inputStyle = {
   fontFamily: "DM Sans, sans-serif",
 };
 const labelStyle = {
-  fontSize: 12, color: "#8aab97", marginBottom: 4, display: "block", letterSpacing: "0.05em",
+  fontSize: 12, color: "#8aab97", marginBottom: 6, display: "block", letterSpacing: "0.05em",
 };
 const btnPrimary = {
   padding: "10px 22px", borderRadius: 8, border: "none",
@@ -48,15 +60,52 @@ const btnDanger = {
   fontFamily: "DM Sans, sans-serif",
 };
 
+// ─── Sourceurs selector ───────────────────────────────────────────────────────
+
+const ALL_SOURCEURS = ["Ayoub", "Hachim", "Amine", "Abderrahim", "Said"];
+
+function SourceursSelector({ selected, onChange }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+      {ALL_SOURCEURS.map(s => {
+        const isSelected = selected.includes(s);
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => {
+              if (isSelected) onChange(selected.filter(x => x !== s));
+              else onChange([...selected, s]);
+            }}
+            style={{
+              padding: "5px 12px", borderRadius: 20, fontSize: 12, cursor: "pointer",
+              fontWeight: isSelected ? 700 : 400,
+              background: isSelected ? associeColor(s) : "rgba(255,255,255,0.06)",
+              color: isSelected ? "#fff" : "#8aab97",
+              border: `1px solid ${isSelected ? associeColor(s) : "rgba(45,158,95,0.2)"}`,
+              transition: "all 0.15s",
+              fontFamily: "DM Sans, sans-serif",
+            }}
+          >
+            {s}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Modal Création ───────────────────────────────────────────────────────────
 
-function NewDealModal({ terrains, acheteurs, onSave, onClose }) {
+function NewDealModal({ terrains, acheteurs, currentUserEmail, onSave, onClose }) {
+  const currentUserName = currentUserEmail?.split("@")[0] ?? "";
   const [form, setForm] = useState({
     terrainId:  terrains[0]?.id ?? "",
     acheteurId: acheteurs[0]?.id ?? "",
     etape:      "teaser",
     montant:    "",
     notes:      "",
+    sourceurs:  currentUserName ? [currentUserName] : [],
   });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -74,7 +123,6 @@ function NewDealModal({ terrains, acheteurs, onSave, onClose }) {
           Nouveau Deal
         </div>
 
-        {/* Terrain — affiche TF + localisation */}
         <label style={labelStyle}>Terrain *</label>
         <select style={inputStyle} value={form.terrainId} onChange={set("terrainId")}>
           {terrains.length === 0
@@ -108,6 +156,12 @@ function NewDealModal({ terrains, acheteurs, onSave, onClose }) {
           </div>
         </div>
 
+        <label style={labelStyle}>Sourceurs</label>
+        <SourceursSelector
+          selected={form.sourceurs}
+          onChange={v => setForm(f => ({ ...f, sourceurs: v }))}
+        />
+
         <label style={labelStyle}>Notes</label>
         <textarea style={{ ...inputStyle, minHeight: 70, resize: "vertical" }} value={form.notes} onChange={set("notes")} placeholder="Contexte, conditions particulières..." />
 
@@ -122,40 +176,36 @@ function NewDealModal({ terrains, acheteurs, onSave, onClose }) {
 
 // ─── Modal Edition ────────────────────────────────────────────────────────────
 
-function EditDealModal({ deal, terrain, acheteur, terrains, acheteurs, onSave, onDelete, onClose }) {
+function EditDealModal({ deal, terrains, acheteurs, onSave, onDelete, onClose }) {
   const [form, setForm] = useState({
     terrainId:  deal.terrainId ?? "",
     acheteurId: deal.acheteurId ?? "",
     etape:      deal.etape ?? "teaser",
     montant:    deal.montant ? String(deal.montant) : "",
     notes:      deal.notes ?? "",
+    sourceurs:  deal.sourceurs ?? [],
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const stage = STAGE_MAP[form.etape];
 
   const handleSave = () => {
     onSave({ ...form, id: deal.id, terrainId: parseInt(form.terrainId), acheteurId: parseInt(form.acheteurId), montant: parseFloat(form.montant) || 0 });
   };
-
-  const stage = STAGE_MAP[form.etape];
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: "#0d3320", border: "1px solid rgba(45,158,95,0.25)", borderRadius: 18, padding: 32, width: "100%", maxWidth: 500, color: "#f8faf9", boxShadow: "0 12px 48px rgba(10,46,26,0.4)", maxHeight: "90vh", overflowY: "auto" }}>
 
-        {/* Header avec badge étape */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <div style={{ fontFamily: "Syne, sans-serif", fontSize: 18, fontWeight: 700, color: "#4eca82" }}>
-            Modifier le Deal
-          </div>
+          <div style={{ fontFamily: "Syne, sans-serif", fontSize: 18, fontWeight: 700, color: "#4eca82" }}>Modifier le Deal</div>
           <span style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${stage?.color}22`, color: stage?.color, border: `1px solid ${stage?.color}44` }}>
             {stage?.label}
           </span>
         </div>
 
-        {/* Terrain — TF + localisation */}
         <label style={labelStyle}>Terrain</label>
         <select style={inputStyle} value={form.terrainId} onChange={set("terrainId")}>
           {terrains.map(t => (
@@ -170,7 +220,6 @@ function EditDealModal({ deal, terrain, acheteur, terrains, acheteurs, onSave, o
           {acheteurs.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
         </select>
 
-        {/* Etape — boutons visuels */}
         <label style={labelStyle}>Etape</label>
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {STAGES.map(s => (
@@ -180,8 +229,7 @@ function EditDealModal({ deal, terrain, acheteur, terrains, acheteurs, onSave, o
                 padding: "6px 12px", borderRadius: 20, border: `1px solid ${s.color}`,
                 background: form.etape === s.id ? s.color : "transparent",
                 color: form.etape === s.id ? "#fff" : s.color,
-                fontSize: 11, fontWeight: 600, cursor: "pointer",
-                transition: "all 0.15s",
+                fontSize: 11, fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
               }}
             >
               {s.label}
@@ -196,13 +244,18 @@ function EditDealModal({ deal, terrain, acheteur, terrains, acheteurs, onSave, o
           </div>
         </div>
 
+        <label style={labelStyle}>Sourceurs</label>
+        <SourceursSelector
+          selected={form.sourceurs}
+          onChange={v => setForm(f => ({ ...f, sourceurs: v }))}
+        />
+
         <label style={labelStyle}>Notes</label>
         <textarea style={{ ...inputStyle, minHeight: 70, resize: "vertical" }} value={form.notes} onChange={set("notes")} placeholder="Contexte, conditions..." />
 
-        {/* Confirmation suppression */}
         {confirmDelete && (
           <div style={{ background: "rgba(231,76,60,0.1)", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 10, padding: "14px 16px", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: "#e74c3c", marginBottom: 10 }}>Confirmer la suppression de ce deal ?</div>
+            <div style={{ fontSize: 13, color: "#e74c3c", marginBottom: 10 }}>Confirmer la suppression ?</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={btnDanger} onClick={onDelete}>Oui, supprimer</button>
               <button style={btnGhost} onClick={() => setConfirmDelete(false)}>Annuler</button>
@@ -225,11 +278,79 @@ function EditDealModal({ deal, terrain, acheteur, terrains, acheteurs, onSave, o
   );
 }
 
+// ─── Deal Card ────────────────────────────────────────────────────────────────
+
+function DealCard({ deal, terrain, acheteur, stageColor, onClick }) {
+  const tag = TAG_CLASS[acheteur?.type] ?? TAG_CLASS.Promoteur;
+  const sourceurs = deal.sourceurs ?? [];
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: "rgba(255,255,255,0.96)", borderRadius: 10, padding: 13, marginBottom: 10,
+        color: "#071a0f", boxShadow: "0 2px 8px rgba(10,46,26,0.08)",
+        cursor: "pointer", transition: "all 0.2s",
+        borderLeft: `3px solid ${stageColor}`,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(10,46,26,0.14)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(10,46,26,0.08)"; }}
+    >
+      {/* Localisation */}
+      <div style={{ fontWeight: 700, fontSize: 13, color: "#0a2e1a", marginBottom: 2 }}>
+        {terrain?.localisation ?? "Terrain inconnu"}
+      </div>
+
+      {/* TF */}
+      {terrain?.tf && (
+        <div style={{ fontSize: 10, color: "#888", marginBottom: 4 }}>TF {terrain.tf}</div>
+      )}
+
+      {/* Acheteur */}
+      <div style={{ fontSize: 11.5, color: "#555", marginBottom: 6 }}>
+        {acheteur?.nom ?? "Acheteur inconnu"}
+      </div>
+
+      {/* Montant */}
+      <div style={{ fontFamily: "Syne, sans-serif", fontSize: 13, fontWeight: 700, color: "#1a5c35", marginBottom: 6 }}>
+        {deal.montant ? `${deal.montant} M MAD` : "—"}
+      </div>
+
+      {/* Footer : type acheteur + sourceurs */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+        {acheteur && (
+          <span style={{ padding: "2px 7px", borderRadius: 4, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", background: tag.bg, color: tag.color }}>
+            {acheteur.type}
+          </span>
+        )}
+
+        {/* Avatars sourceurs */}
+        {sourceurs.length > 0 && (
+          <div style={{ display: "flex", gap: 3 }}>
+            {sourceurs.map(s => (
+              <div key={s} title={s} style={{
+                width: 22, height: 22, borderRadius: 6,
+                background: associeColor(s),
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 8, fontWeight: 800, color: "#fff",
+              }}>
+                {s.slice(0, 2).toUpperCase()}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 6, fontSize: 10, color: "#bbb", textAlign: "right" }}>✎ modifier</div>
+    </div>
+  );
+}
+
 // ─── Pipeline Page ────────────────────────────────────────────────────────────
 
-export default function PipelinePage({ state, dispatch }) {
-  const [showNew, setShowNew]       = useState(false);
-  const [editDeal, setEditDeal]     = useState(null);
+export default function PipelinePage({ state, dispatch, currentUser }) {
+  const [showNew,  setShowNew]  = useState(false);
+  const [editDeal, setEditDeal] = useState(null);
   const { deals, terrains, acheteurs } = state;
 
   const handleCreate = form => {
@@ -249,7 +370,6 @@ export default function PipelinePage({ state, dispatch }) {
 
   return (
     <>
-      {/* Topbar */}
       <div style={{
         padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between",
         borderBottom: "1px solid rgba(45,158,95,0.12)",
@@ -258,12 +378,11 @@ export default function PipelinePage({ state, dispatch }) {
       }}>
         <div>
           <span style={{ fontFamily: "Syne, sans-serif", fontSize: 20, fontWeight: 700, color: "#f8faf9" }}>Pipeline Deals</span>
-          <span style={{ marginLeft: 12, fontSize: 12, color: "#8aab97" }}>{deals.length} deal{deals.length > 1 ? "s" : ""} actif{deals.length > 1 ? "s" : ""}</span>
+          <span style={{ marginLeft: 12, fontSize: 12, color: "#8aab97" }}>{deals.length} deal{deals.length > 1 ? "s" : ""}</span>
         </div>
         <button style={btnPrimary} onClick={() => setShowNew(true)}>+ Nouveau Deal</button>
       </div>
 
-      {/* Board */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, padding: "20px 28px", overflowX: "auto" }}>
         {STAGES.map(stage => {
           const stageDeals = deals.filter(d => d.etape === stage.id);
@@ -273,7 +392,6 @@ export default function PipelinePage({ state, dispatch }) {
               border: "1px solid rgba(45,158,95,0.14)",
               borderRadius: 14, padding: "14px 12px", minHeight: 420,
             }}>
-              {/* Colonne header */}
               <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", color: stage.color }}>
                 {stage.label}
                 <span style={{ background: "rgba(45,158,95,0.2)", color: "#4eca82", borderRadius: 20, padding: "2px 8px", fontSize: 11 }}>
@@ -286,80 +404,34 @@ export default function PipelinePage({ state, dispatch }) {
                   <div style={{ fontSize: 22, marginBottom: 6 }}>○</div>
                   Aucun deal
                 </div>
-              ) : stageDeals.map(deal => {
-                const terrain  = terrains.find(t => t.id === deal.terrainId);
-                const acheteur = acheteurs.find(a => a.id === deal.acheteurId);
-                const tag      = TAG_CLASS[acheteur?.type] ?? TAG_CLASS.Promoteur;
-
-                return (
-                  <div key={deal.id}
-                    onClick={() => setEditDeal(deal)}
-                    style={{
-                      background: "rgba(255,255,255,0.96)", borderRadius: 10, padding: 13, marginBottom: 10,
-                      color: "#071a0f", boxShadow: "0 2px 8px rgba(10,46,26,0.08)",
-                      cursor: "pointer", transition: "all 0.2s",
-                      borderLeft: `3px solid ${stage.color}`,
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(10,46,26,0.14)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(10,46,26,0.08)"; }}
-                  >
-                    {/* Localisation */}
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0a2e1a", marginBottom: 2 }}>
-                      {terrain?.localisation ?? "Terrain inconnu"}
-                    </div>
-
-                    {/* TF */}
-                    {terrain?.tf && (
-                      <div style={{ fontSize: 10, color: "#888", marginBottom: 4 }}>
-                        TF {terrain.tf}
-                      </div>
-                    )}
-
-                    {/* Acheteur */}
-                    <div style={{ fontSize: 11.5, color: "#555", marginBottom: 6 }}>
-                      {acheteur?.nom ?? "Acheteur inconnu"}
-                    </div>
-
-                    {/* Montant */}
-                    <div style={{ fontFamily: "Syne, sans-serif", fontSize: 13, fontWeight: 700, color: "#1a5c35" }}>
-                      {deal.montant ? `${deal.montant} M MAD` : "—"}
-                    </div>
-
-                    {/* Tag type acheteur */}
-                    {acheteur && (
-                      <span style={{ display: "inline-block", marginTop: 6, padding: "2px 7px", borderRadius: 4, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", background: tag.bg, color: tag.color }}>
-                        {acheteur.type}
-                      </span>
-                    )}
-
-                    {/* Hint modifier */}
-                    <div style={{ marginTop: 8, fontSize: 10, color: "#aaa", textAlign: "right" }}>
-                      ✎ cliquer pour modifier
-                    </div>
-                  </div>
-                );
-              })}
+              ) : stageDeals.map(deal => (
+                <DealCard
+                  key={deal.id}
+                  deal={deal}
+                  terrain={terrains.find(t => t.id === deal.terrainId)}
+                  acheteur={acheteurs.find(a => a.id === deal.acheteurId)}
+                  stageColor={stage.color}
+                  onClick={() => setEditDeal(deal)}
+                />
+              ))}
             </div>
           );
         })}
       </div>
 
-      {/* Modal nouveau deal */}
       {showNew && (
         <NewDealModal
           terrains={terrains}
           acheteurs={acheteurs}
+          currentUserEmail={currentUser?.email}
           onSave={handleCreate}
           onClose={() => setShowNew(false)}
         />
       )}
 
-      {/* Modal édition deal */}
       {editDeal && (
         <EditDealModal
           deal={editDeal}
-          terrain={terrains.find(t => t.id === editDeal.terrainId)}
-          acheteur={acheteurs.find(a => a.id === editDeal.acheteurId)}
           terrains={terrains}
           acheteurs={acheteurs}
           onSave={handleUpdate}

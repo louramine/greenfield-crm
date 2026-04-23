@@ -1,7 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  build: {
+    // esbuild transpile seulement, pas de vérification de types
+    // les erreurs TypeScript ne bloquent pas le build Netlify
+  },
+});

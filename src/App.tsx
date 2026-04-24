@@ -4,6 +4,7 @@ import Dashboard from "./Dashboard";
 import PipelinePage from "./PipelinePage";
 import TerrainsPage from "./TerrainsPage";
 import AcheteursPage from "./AcheteursPage";
+import MatchingPage from "./MatchingPage";
 import AuthPage from "./AuthPage";
 import { useAuth } from "./useAuth";
 import { useSupabase } from "./useSupabase";
@@ -51,7 +52,7 @@ function ErrorScreen({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-type Page = "dashboard" | "pipeline" | "terrains" | "acheteurs" | "carte";
+type Page = "dashboard" | "pipeline" | "terrains" | "acheteurs" | "carte" | "matching";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
@@ -92,16 +93,20 @@ export default function App() {
       statut: "Froid", zones: a.zones ?? "",
       ticketMin: String(a.ticket_min ?? ""), ticketMax: String(a.ticket_max ?? ""),
       usage: a.usage ?? "", notes: "",
+      urbas_cibles: a.urbas_cibles ?? [],
     })),
     deals: deals.map(d => ({
-      id:         d.id,
-      terrainId:  d.terrain_id ?? 0,
-      acheteurId: d.acheteur_id ?? 0,
-      etape:      d.etape ?? "teaser",
-      montant:    0,
-      notes:      "",
-      date:       "",
-      sourceurs:  d.sourceurs ?? [],
+      id:               d.id,
+      terrainId:        d.terrain_id ?? 0,
+      acheteurId:       d.acheteur_id ?? 0,
+      etape:            d.etape ?? "teaser",
+      montant:          d.montant ?? 0,
+      notes:            d.notes ?? "",
+      date:             "",
+      sourceurs:        d.sourceurs ?? [],
+      date_contact:     d.date_contact ?? "",
+      prochaine_action: d.prochaine_action ?? "",
+      date_action:      d.date_action ?? "",
     })),
     activities: [],
   };
@@ -142,6 +147,7 @@ export default function App() {
             ticket_min: parseFloat(action.payload.ticketMin) || null,
             ticket_max: parseFloat(action.payload.ticketMax) || null,
             usage: action.payload.usage,
+            urbas_cibles: action.payload.urbas_cibles ?? [],
           });
           break;
 
@@ -149,17 +155,32 @@ export default function App() {
           await deleteAcheteur(action.payload);
           break;
 
+        case "UPDATE_ACHETEUR":
+          await deleteAcheteur(action.payload.id);
+          await addAcheteur({
+            nom: action.payload.nom, contact: action.payload.contact,
+            type: action.payload.type, zones: action.payload.zones,
+            ticket_min: parseFloat(action.payload.ticketMin) || null,
+            ticket_max: parseFloat(action.payload.ticketMax) || null,
+            usage: action.payload.usage,
+            urbas_cibles: action.payload.urbas_cibles ?? [],
+          });
+          break;
+
         case "ADD_DEAL": {
           const t = terrains.find(t => t.id === action.payload.terrainId);
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
           await addDeal({
-            terrain_id:     action.payload.terrainId,
-            acheteur_id:    action.payload.acheteurId,
-            terrain_label:  t?.localisation ?? "",
-            acheteur_label: a?.nom ?? "",
-            etape:          action.payload.etape,
-            montant:        action.payload.montant ?? 0,
-            sourceurs:      action.payload.sourceurs ?? [],
+            terrain_id:       action.payload.terrainId,
+            acheteur_id:      action.payload.acheteurId,
+            terrain_label:    t?.localisation ?? "",
+            acheteur_label:   a?.nom ?? "",
+            etape:            action.payload.etape,
+            montant:          action.payload.montant ?? 0,
+            sourceurs:        action.payload.sourceurs ?? [],
+            date_contact:     action.payload.date_contact || null,
+            prochaine_action: action.payload.prochaine_action || null,
+            date_action:      action.payload.date_action || null,
           });
           break;
         }
@@ -173,13 +194,16 @@ export default function App() {
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
           await deleteDeal(action.payload.id);
           await addDeal({
-            terrain_id:     action.payload.terrainId,
-            acheteur_id:    action.payload.acheteurId,
-            terrain_label:  t?.localisation ?? "",
-            acheteur_label: a?.nom ?? "",
-            etape:          action.payload.etape,
-            montant:        action.payload.montant ?? 0,
-            sourceurs:      action.payload.sourceurs ?? [],
+            terrain_id:       action.payload.terrainId,
+            acheteur_id:      action.payload.acheteurId,
+            terrain_label:    t?.localisation ?? "",
+            acheteur_label:   a?.nom ?? "",
+            etape:            action.payload.etape,
+            montant:          action.payload.montant ?? 0,
+            sourceurs:        action.payload.sourceurs ?? [],
+            date_contact:     action.payload.date_contact || null,
+            prochaine_action: action.payload.prochaine_action || null,
+            date_action:      action.payload.date_action || null,
           });
           break;
         }
@@ -228,6 +252,7 @@ export default function App() {
 
         {currentPage === "dashboard" && <Dashboard />}
         {currentPage === "pipeline"  && <PipelinePage state={stateForPages} dispatch={dispatch} currentUser={user} />}
+        {currentPage === "matching"  && <MatchingPage  state={stateForPages} dispatch={dispatch} />}
         {currentPage === "terrains"  && <TerrainsPage  state={stateForPages} dispatch={dispatch} />}
         {currentPage === "acheteurs" && <AcheteursPage state={stateForPages} dispatch={dispatch} />}
         {currentPage === "carte"     && <CartePage />}

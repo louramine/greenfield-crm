@@ -5,9 +5,10 @@ const LOGO = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJ
 const navItems = [
   { id: "dashboard", icon: "◈", label: "Dashboard",      section: "Navigation" },
   { id: "pipeline",  icon: "⇄", label: "Pipeline Deals", section: null },
+  { id: "matching",  icon: "◎", label: "Matching",       section: null },
   { id: "carte",     icon: "🗺", label: "Carte Terrains", section: null },
   { id: "terrains",  icon: "▣", label: "Terrains",       section: "Données" },
-  { id: "acheteurs", icon: "◎", label: "Acheteurs",      section: null },
+  { id: "acheteurs", icon: "◉", label: "Acheteurs",      section: null },
 ];
 
 export const SIDEBAR_FULL      = 220;
@@ -36,7 +37,7 @@ export default function Sidebar({ currentPage, onPageChange, collapsed, onToggle
       }}>
         {!collapsed && (
           <img src={LOGO} alt="GREENFIELD"
-            style={{ height: 34, width: "auto", display: "block", objectFit: "contain", mixBlendMode: "screen" }}
+            style={{ height: 34, width: "auto", display: "block", objectFit: "contain" }}
           />
         )}
         {collapsed && (

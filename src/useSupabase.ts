@@ -13,8 +13,8 @@ function headers(token?: string) {
   };
 }
 
-async function get(table: string, token?: string) {
-  const r = await fetch(`${URL_BASE}/${table}?order=id`, { headers: headers(token) });
+async function get(table: string, token?: string, extra = "") {
+  const r = await fetch(`${URL_BASE}/${table}?order=id${extra}`, { headers: headers(token) });
   if (!r.ok) throw new Error(`${table}: ${r.status} ${r.statusText}`);
   return r.json();
 }
@@ -34,11 +34,12 @@ async function del(table: string, id: number, token?: string) {
 }
 
 export function useSupabase(user: AuthUser | null) {
-  const [terrains,  setTerrains]  = useState<any[]>([]);
-  const [acheteurs, setAcheteurs] = useState<any[]>([]);
-  const [deals,     setDeals]     = useState<any[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState<string | null>(null);
+  const [terrains,    setTerrains]    = useState<any[]>([]);
+  const [acheteurs,   setAcheteurs]   = useState<any[]>([]);
+  const [deals,       setDeals]       = useState<any[]>([]);
+  const [activityLog, setActivityLog] = useState<any[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
 
   const token = user?.access_token;
 
@@ -47,14 +48,16 @@ export function useSupabase(user: AuthUser | null) {
     setLoading(true);
     setError(null);
     try {
-      const [t, a, d] = await Promise.all([
-        get("terrains",  token),   // partagé — anon key suffit
-        get("acheteurs", token),   // partagé
-        get("deals",     token),   // isolé — RLS filtre par user_id
+      const [t, a, d, logs] = await Promise.all([
+        get("terrains",    token),
+        get("acheteurs",   token),
+        get("deals",       token),
+        get("activity_log", token, "&order=created_at.desc&limit=50"),
       ]);
       setTerrains(t);
       setAcheteurs(a);
       setDeals(d);
+      setActivityLog(logs);
     } catch (e: any) {
       setError(e.message ?? "Erreur inconnue");
     } finally {
@@ -64,24 +67,51 @@ export function useSupabase(user: AuthUser | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Terrains (partagés)
+  // ── Activity log ───────────────────────────────────────────────────────────
+  const logActivity = async (
+    action: string,
+    entity_type: string,
+    entity_label: string,
+    entity_id?: number,
+    details?: string,
+  ) => {
+    if (!user) return;
+    const associe = user.email.split("@")[0];
+    try {
+      await post("activity_log", {
+        associe,
+        action,
+        entity_type,
+        entity_label,
+        entity_id:   entity_id ?? null,
+        details:     details ?? "",
+        user_id:     user.id,
+        created_at:  new Date().toISOString(),
+      }, token);
+    } catch (e) {
+      console.error("logActivity error:", e);
+    }
+  };
+
+  // ── Terrains ───────────────────────────────────────────────────────────────
   const addTerrain    = async (t: object)  => { await post("terrains",  t,  token); await fetchAll(); };
   const deleteTerrain = async (id: number) => { await del("terrains",   id, token); await fetchAll(); };
 
-  // Acheteurs (partagés)
+  // ── Acheteurs ──────────────────────────────────────────────────────────────
   const addAcheteur    = async (a: object)  => { await post("acheteurs", a,  token); await fetchAll(); };
   const deleteAcheteur = async (id: number) => { await del("acheteurs",  id, token); await fetchAll(); };
 
-  // Deals (isolés — on injecte user_id)
-  const addDeal    = async (d: object)  => {
+  // ── Deals ──────────────────────────────────────────────────────────────────
+  const addDeal = async (d: object) => {
     await post("deals", { ...d, user_id: user?.id }, token);
     await fetchAll();
   };
   const deleteDeal = async (id: number) => { await del("deals", id, token); await fetchAll(); };
 
   return {
-    terrains, acheteurs, deals,
+    terrains, acheteurs, deals, activityLog,
     loading, error, fetchAll,
+    logActivity,
     addTerrain,    deleteTerrain,
     addAcheteur,   deleteAcheteur,
     addDeal,       deleteDeal,

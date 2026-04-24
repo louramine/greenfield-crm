@@ -236,8 +236,9 @@ const BG_STYLE = {
 };
 
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
-export default function Dashboard() {
+export default function Dashboard({ activityLog = [] }: { activityLog?: any[] }) {
   const [state] = useState(MOCK_STATE);
+  const logs = activityLog.length > 0 ? activityLog : state.activityLog;
 
   return (
     <>
@@ -276,7 +277,7 @@ export default function Dashboard() {
           {/* Interactions + Journal */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <InteractionsSemaine interactions={state.interactions} />
-            <ActivityLog logs={state.activityLog} />
+            <ActivityLog logs={logs} />
           </div>
 
         </div>

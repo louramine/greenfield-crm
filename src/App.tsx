@@ -68,7 +68,14 @@ export default function App() {
 
   const sidebarW = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_FULL;
 
-  const { terrains, acheteurs, deals, loading, error, fetchAll, addTerrain, deleteTerrain, addAcheteur, deleteAcheteur, addDeal, deleteDeal } = useSupabase(user);
+  const {
+    terrains, acheteurs, deals, activityLog,
+    loading, error, fetchAll,
+    logActivity,
+    addTerrain,    deleteTerrain,
+    addAcheteur,   deleteAcheteur,
+    addDeal,       deleteDeal,
+  } = useSupabase(user);
 
   if (!user) {
     return (
@@ -83,7 +90,7 @@ export default function App() {
   if (error)   return <ErrorScreen message={error} onRetry={fetchAll} />;
 
   const stateForPages = {
-    terrains:  terrains.map(t => ({
+    terrains: terrains.map(t => ({
       id: t.id, localisation: t.localisation ?? "", urba: t.urba ?? "",
       superficie: t.superficie ?? 0, prix: t.prix ?? 0,
       usage: "", statut: "Disponible", tf: t.tf ?? "", notes: "",
@@ -108,14 +115,15 @@ export default function App() {
       prochaine_action: d.prochaine_action ?? "",
       date_action:      d.date_action ?? "",
     })),
-    activities: [],
+    activityLog: activityLog,
+    activities:  [],
   };
 
   const dispatch = async (action: any) => {
     try {
       switch (action.type) {
 
-        case "ADD_TERRAIN":
+        case "ADD_TERRAIN": {
           await addTerrain({
             localisation: action.payload.localisation, urba: action.payload.urba,
             quartier: action.payload.localisation, superficie: action.payload.superficie,
@@ -123,13 +131,18 @@ export default function App() {
             forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000),
             tf: action.payload.tf,
           });
+          await logActivity("Terrain ajouté", "terrain", action.payload.localisation);
           break;
+        }
 
-        case "DELETE_TERRAIN":
+        case "DELETE_TERRAIN": {
+          const t = terrains.find(t => t.id === action.payload);
           await deleteTerrain(action.payload);
+          await logActivity("Terrain supprimé", "terrain", t?.localisation ?? String(action.payload), action.payload);
           break;
+        }
 
-        case "UPDATE_TERRAIN":
+        case "UPDATE_TERRAIN": {
           await deleteTerrain(action.payload.id);
           await addTerrain({
             localisation: action.payload.localisation, urba: action.payload.urba,
@@ -138,9 +151,11 @@ export default function App() {
             forfait: Math.round(action.payload.superficie * action.payload.prix / 1_000_000),
             tf: action.payload.tf,
           });
+          await logActivity("Terrain modifié", "terrain", action.payload.localisation, action.payload.id);
           break;
+        }
 
-        case "ADD_ACHETEUR":
+        case "ADD_ACHETEUR": {
           await addAcheteur({
             nom: action.payload.nom, contact: action.payload.contact,
             type: action.payload.type, zones: action.payload.zones,
@@ -149,13 +164,18 @@ export default function App() {
             usage: action.payload.usage,
             urbas_cibles: action.payload.urbas_cibles ?? [],
           });
+          await logActivity("Acheteur ajouté", "acheteur", action.payload.nom);
           break;
+        }
 
-        case "DELETE_ACHETEUR":
+        case "DELETE_ACHETEUR": {
+          const a = acheteurs.find(a => a.id === action.payload);
           await deleteAcheteur(action.payload);
+          await logActivity("Acheteur supprimé", "acheteur", a?.nom ?? String(action.payload), action.payload);
           break;
+        }
 
-        case "UPDATE_ACHETEUR":
+        case "UPDATE_ACHETEUR": {
           await deleteAcheteur(action.payload.id);
           await addAcheteur({
             nom: action.payload.nom, contact: action.payload.contact,
@@ -165,11 +185,14 @@ export default function App() {
             usage: action.payload.usage,
             urbas_cibles: action.payload.urbas_cibles ?? [],
           });
+          await logActivity("Acheteur modifié", "acheteur", action.payload.nom, action.payload.id);
           break;
+        }
 
         case "ADD_DEAL": {
           const t = terrains.find(t => t.id === action.payload.terrainId);
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
+          const label = `${t?.localisation ?? "?"} × ${a?.nom ?? "?"}`;
           await addDeal({
             terrain_id:       action.payload.terrainId,
             acheteur_id:      action.payload.acheteurId,
@@ -182,16 +205,23 @@ export default function App() {
             prochaine_action: action.payload.prochaine_action || null,
             date_action:      action.payload.date_action || null,
           });
+          await logActivity("Deal créé", "deal", label);
           break;
         }
 
-        case "DELETE_DEAL":
+        case "DELETE_DEAL": {
+          const d = deals.find(d => d.id === action.payload);
+          const t = terrains.find(t => t.id === d?.terrain_id);
+          const a = acheteurs.find(a => a.id === d?.acheteur_id);
           await deleteDeal(action.payload);
+          await logActivity("Deal supprimé", "deal", `${t?.localisation ?? "?"} × ${a?.nom ?? "?"}`, action.payload);
           break;
+        }
 
         case "UPDATE_DEAL": {
           const t = terrains.find(t => t.id === action.payload.terrainId);
           const a = acheteurs.find(a => a.id === action.payload.acheteurId);
+          const label = `${t?.localisation ?? "?"} × ${a?.nom ?? "?"}`;
           await deleteDeal(action.payload.id);
           await addDeal({
             terrain_id:       action.payload.terrainId,
@@ -205,6 +235,7 @@ export default function App() {
             prochaine_action: action.payload.prochaine_action || null,
             date_action:      action.payload.date_action || null,
           });
+          await logActivity("Deal modifié", "deal", label, action.payload.id, `Etape: ${action.payload.etape}`);
           break;
         }
       }
@@ -235,7 +266,6 @@ export default function App() {
         background: "#0a2e1a",
       }}>
 
-        {/* User bar — intégrée dans un header fixe */}
         <div style={{
           position: "sticky", top: 0, zIndex: 60,
           display: "flex", alignItems: "center", justifyContent: "flex-end",
@@ -250,7 +280,7 @@ export default function App() {
           </button>
         </div>
 
-        {currentPage === "dashboard" && <Dashboard />}
+        {currentPage === "dashboard" && <Dashboard activityLog={stateForPages.activityLog} />}
         {currentPage === "pipeline"  && <PipelinePage state={stateForPages} dispatch={dispatch} currentUser={user} />}
         {currentPage === "matching"  && <MatchingPage  state={stateForPages} dispatch={dispatch} />}
         {currentPage === "terrains"  && <TerrainsPage  state={stateForPages} dispatch={dispatch} />}

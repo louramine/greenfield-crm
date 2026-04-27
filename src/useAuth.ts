@@ -25,7 +25,7 @@ function clear() {
   try { localStorage.removeItem("gf_session"); } catch {}
 }
 
-async function refreshToken(refresh_token: string): Promise<AuthUser | null> {
+async function doRefresh(refresh_token: string): Promise<AuthUser | null> {
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
       method: "POST",
@@ -34,6 +34,7 @@ async function refreshToken(refresh_token: string): Promise<AuthUser | null> {
     });
     if (!r.ok) return null;
     const data = await r.json();
+    if (!data.access_token) return null;
     return {
       id:            data.user.id,
       email:         data.user.email,
@@ -44,20 +45,35 @@ async function refreshToken(refresh_token: string): Promise<AuthUser | null> {
 }
 
 export function useAuth() {
-  const [user,    setUser]    = useState<AuthUser | null>(load);
+  const [user,    setUser]    = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
-  // Auto-refresh token toutes les 45 minutes
+  // Au démarrage — refresh immédiat si session existante
   useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(async () => {
-      const refreshed = await refreshToken(user.refresh_token);
+    const stored = load();
+    if (!stored) return;
+    // Tente de rafraîchir le token immédiatement
+    doRefresh(stored.refresh_token).then(refreshed => {
       if (refreshed) {
         save(refreshed);
         setUser(refreshed);
       } else {
-        // Token invalide — déconnecter
+        // Token complètement expiré — effacer la session
+        clear();
+      }
+    });
+  }, []);
+
+  // Auto-refresh toutes les 45 minutes
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      const refreshed = await doRefresh(user.refresh_token);
+      if (refreshed) {
+        save(refreshed);
+        setUser(refreshed);
+      } else {
         clear();
         setUser(null);
       }

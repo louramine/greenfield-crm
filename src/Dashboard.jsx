@@ -236,7 +236,7 @@ const BG_STYLE = {
 };
 
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
-export default function Dashboard({ activityLog = [] }: { activityLog?: any[] }) {
+export default function Dashboard({ activityLog = [] }) {
   const [state] = useState(MOCK_STATE);
   const logs = activityLog.length > 0 ? activityLog : state.activityLog;
 

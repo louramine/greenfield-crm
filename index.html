@@ -638,6 +638,57 @@
     .pipeline-board { grid-auto-columns: 86%; }
   }
 
+
+  /* ═══════════ MARKETING ═══════════ */
+  .mkt-tabs { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+  .mkt-tab {
+    padding: 9px 18px; border-radius: 10px; cursor: pointer; font-size: 13px;
+    color: var(--gray-mid); background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(45,158,95,0.18); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+  }
+  .mkt-tab:hover { color: var(--white); }
+  .mkt-tab.active { background: linear-gradient(135deg, rgba(45,158,95,0.25), rgba(78,202,130,0.12)); color: var(--green-light); font-weight: 500; }
+  .mkt-sec { display: none; }
+  .mkt-sec.active { display: block; animation: fadeIn 0.3s ease; }
+  .mkt-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .mkt-plat-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .mkt-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .mkt-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .mkt-mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-mid); font-weight: 600; }
+  .mkt-mini-value { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--green-deep); }
+  .mkt-chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 600; color: #fff; margin: 0 4px 4px 0; }
+  .mkt-compose { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; align-items: start; }
+  .mkt-stack > .card { margin-bottom: 20px; }
+  .mkt-stack > .card:last-child { margin-bottom: 0; }
+  .terrain-pick { max-height: 300px; overflow-y: auto; border: 1.5px solid var(--gray-light); border-radius: 10px; }
+  .terrain-pick label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-bottom: 1px solid var(--gray-light); cursor: pointer; font-size: 13px; }
+  .terrain-pick label:last-child { border-bottom: none; }
+  .terrain-pick label:hover { background: var(--green-pale); }
+  .terrain-pick input { margin-top: 3px; accent-color: var(--green-bright); }
+  .terrain-pick small { color: #777; font-size: 11.5px; }
+  .mkt-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin-bottom: 8px; cursor: pointer; }
+  .mkt-check input { accent-color: var(--green-bright); }
+  .mkt-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .mkt-counter { font-size: 11.5px; color: #888; }
+  .mkt-counter.over { color: #c0392b; font-weight: 600; }
+  .mkt-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-light { background: #fff; color: var(--green-mid); border: 1.5px solid var(--gray-light); }
+  .btn-light:hover { border-color: var(--green-bright); }
+  .mkt-note { font-size: 12px; color: #777; line-height: 1.55; }
+  .mkt-note code { background: var(--green-pale); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+  .metric-row { display: grid; grid-template-columns: 110px repeat(4, 1fr); gap: 10px; align-items: end; margin-bottom: 12px; padding: 12px; border: 1.5px solid var(--gray-light); border-radius: 10px; }
+  .metric-row .form-input { padding: 8px 10px; }
+  .metric-row.off .form-input { opacity: 0.4; }
+  @media (max-width: 1100px) {
+    .mkt-compose { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 820px) {
+    .mkt-grid3 { grid-template-columns: 1fr; }
+    .metric-row { grid-template-columns: 1fr 1fr; }
+    .metric-row > label { grid-column: 1 / -1; }
+    .mkt-tab { flex: 1; text-align: center; padding: 10px 8px; }
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -669,6 +720,10 @@
   </div>
   <div class="nav-item" onclick="showPage('acheteurs', this)">
     <span class="nav-icon">◎</span> Acheteurs
+  </div>
+  <div class="nav-section">Communication</div>
+  <div class="nav-item" onclick="showPage('marketing', this)">
+    <span class="nav-icon">✦</span> Marketing
   </div>
   <div class="sidebar-footer">© 2026 GREENFIELD — Confidentiel</div>
 </aside>
@@ -871,6 +926,163 @@
       </div>
     </div>
 
+    <!-- ═══════════ MARKETING ═══════════ -->
+    <div class="page" id="page-marketing">
+      <div class="mkt-tabs">
+        <button class="mkt-tab active" data-tab="suivi" onclick="setMktTab('suivi')">Suivi des campagnes</button>
+        <button class="mkt-tab" data-tab="publier" onclick="setMktTab('publier')">Publier</button>
+        <button class="mkt-tab" data-tab="historique" onclick="setMktTab('historique')">Historique</button>
+        <button class="mkt-tab" data-tab="connexions" onclick="setMktTab('connexions')">Connexions</button>
+      </div>
+
+      <!-- Suivi -->
+      <div class="mkt-sec active" id="mkt-sec-suivi">
+        <div class="kpi-grid" id="mkt-kpis"></div>
+        <div class="mkt-grid3" id="mkt-plats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campagne</th>
+                <th>Plateformes</th>
+                <th>Terrains</th>
+                <th>Période</th>
+                <th>Statut</th>
+                <th>Dépensé</th>
+                <th>Impressions</th>
+                <th>Clics</th>
+                <th>Leads</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="mkt-camp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Publier -->
+      <div class="mkt-sec" id="mkt-sec-publier">
+        <div class="mkt-compose">
+          <div class="mkt-stack">
+            <div class="card">
+              <div class="card-title">1. Choisir les terrains</div>
+              <div class="form-group">
+                <select class="form-select" id="mk-filter" onchange="renderMktTerrainPick()">
+                  <option value="dispo">Terrains disponibles</option>
+                  <option value="all">Tous les terrains</option>
+                </select>
+              </div>
+              <div class="terrain-pick" id="mk-terrain-pick"></div>
+              <div class="mkt-btn-row" style="margin-top:10px">
+                <button class="btn btn-light btn-sm" onclick="mktSelectAll(true)">Tout sélectionner</button>
+                <button class="btn btn-light btn-sm" onclick="mktSelectAll(false)">Aucun</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">2. Ajuster la proposition</div>
+              <div class="form-group">
+                <label class="form-label">Angle</label>
+                <select class="form-select" id="mk-angle" onchange="mktAuto()">
+                  <option value="invest">Investisseurs (valeur, rareté)</option>
+                  <option value="promoteur">Promoteurs (faisabilité, zonage)</option>
+                  <option value="flash">Offre du moment (urgence)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Appel à l'action</label>
+                <input class="form-input" id="mk-cta" oninput="mktSettingsChanged()" placeholder="Ex: Écrivez-nous pour recevoir le teaser complet.">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lien (site, formulaire, WhatsApp)</label>
+                <input class="form-input" id="mk-link" oninput="mktSettingsChanged()" placeholder="https://...">
+              </div>
+              <label class="mkt-check"><input type="checkbox" id="mk-price" checked onchange="mktAuto()"> Afficher les prix</label>
+              <label class="mkt-check"><input type="checkbox" id="mk-notes" onchange="mktAuto()"> Reprendre les notes du terrain</label>
+              <div class="mkt-btn-row" style="margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="mktGenerate(false)">Générer</button>
+                <button class="btn btn-light btn-sm" onclick="mktGenerate(true)">Autre variante</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">3. Publier</div>
+              <div class="form-group">
+                <label class="form-label">Plateformes</label>
+                <label class="mkt-check"><input type="checkbox" id="mk-plat-instagram" checked> Instagram</label>
+                <label class="mkt-check"><input type="checkbox" id="mk-plat-facebook" checked> Facebook</label>
+                <label class="mkt-check"><input type="checkbox" id="mk-plat-linkedin" checked> LinkedIn</label>
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL de l'image (publique, https)</label>
+                <input class="form-input" id="mk-image" placeholder="https://.../photo.jpg">
+                <div class="mkt-note" style="margin-top:6px">Obligatoire pour Instagram (JPEG). Facultative pour Facebook et LinkedIn.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Campagne</label>
+                <select class="form-select" id="mk-campagne"></select>
+              </div>
+              <div class="mkt-btn-row">
+                <button class="btn btn-primary" id="mk-publish-btn" onclick="mktPublish()">Publier maintenant</button>
+                <button class="btn btn-light" onclick="mktSaveDraft()">Enregistrer en brouillon</button>
+                <button class="btn btn-light" onclick="mktVisual()">Télécharger le visuel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mkt-stack" id="mk-previews"></div>
+        </div>
+      </div>
+
+      <!-- Historique -->
+      <div class="mkt-sec" id="mkt-sec-historique">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Terrains</th>
+                <th>Campagne</th>
+                <th>Plateformes</th>
+                <th>Aperçu</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="mkt-post-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Connexions -->
+      <div class="mkt-sec" id="mkt-sec-connexions">
+        <div class="mkt-grid3" style="grid-template-columns:1fr 1fr">
+          <div class="card">
+            <div class="card-title">Accès à la publication</div>
+            <div class="form-group">
+              <label class="form-label">Code de publication</label>
+              <input class="form-input" id="mk-secret" type="password" autocomplete="off" placeholder="Valeur de CRM_PUBLISH_SECRET">
+              <div class="mkt-note" style="margin-top:6px">Gardé uniquement dans ce navigateur. Il protège votre point d'entrée de publication.</div>
+            </div>
+            <div class="mkt-btn-row">
+              <button class="btn btn-primary btn-sm" onclick="mktSaveSecret()">Enregistrer et tester</button>
+            </div>
+            <div id="mk-conn-status" style="margin-top:16px"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Configuration Vercel</div>
+            <div class="mkt-note">
+              Ajoutez ces variables d'environnement au projet Vercel, puis redéployez.<br><br>
+              <code>CRM_PUBLISH_SECRET</code> code choisi par vous<br>
+              <code>META_PAGE_ID</code> et <code>META_PAGE_TOKEN</code> pour Facebook<br>
+              <code>META_IG_USER_ID</code> pour Instagram (compte professionnel lié à la Page)<br>
+              <code>LINKEDIN_ACCESS_TOKEN</code> et <code>LINKEDIN_AUTHOR_URN</code> pour LinkedIn<br><br>
+              Sans configuration, les boutons Copier et Ouvrir de chaque aperçu permettent de publier à la main en un clic.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </main>
 
@@ -1047,6 +1259,69 @@
   </div>
 </div>
 
+
+<!-- Modal Campagne -->
+<div class="modal-overlay" id="modal-campagne">
+  <div class="modal" style="width:680px">
+    <div class="modal-title" id="modal-campagne-title">Nouvelle Campagne</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input class="form-input" id="c-nom" placeholder="Ex: Lancement Bouskoura T4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Statut</label>
+        <select class="form-select" id="c-statut">
+          <option value="Brouillon">Brouillon</option>
+          <option value="Active">Active</option>
+          <option value="Pause">En pause</option>
+          <option value="Terminée">Terminée</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Début</label>
+        <input class="form-input" id="c-debut" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fin</label>
+        <input class="form-input" id="c-fin" type="date">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Objectif</label>
+        <select class="form-select" id="c-objectif">
+          <option value="Notoriété">Notoriété</option>
+          <option value="Leads">Génération de leads</option>
+          <option value="Vente">Vente d'un terrain</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget prévu (MAD)</label>
+        <input class="form-input" id="c-budget" type="number" placeholder="10000">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Terrains ciblés</label>
+      <div class="terrain-pick" id="c-terrains"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Performances par plateforme</label>
+      <div id="c-metrics"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="c-notes" placeholder="Audience, créa, enseignements..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-campagne')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCampagne()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="notif" id="notif"></div>
 
 <script>
@@ -1064,6 +1339,11 @@ let state = {
   acheteurs: [],
   deals: [],
   activities: [],
+  campagnes: [],
+  posts: [],
+  mkt: { cta: '', link: '' },
+  nextCampagneId: 1,
+  nextPostId: 1,
   nextTerrainId: 6,
   nextAcheteurId: 1,
   nextDealId: 1,
@@ -1099,10 +1379,10 @@ function showPage(page, el) {
   el.classList.add('active');
   currentPage = page;
 
-  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs' };
+  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs', marketing: 'Marketing' };
   document.getElementById('pageTitle').textContent = titles[page];
 
-  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouvel Acheteur' };
+  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouvel Acheteur', marketing: '+ Nouvelle campagne' };
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
@@ -1114,6 +1394,7 @@ function handleAdd() {
   if (currentPage === 'terrains') openTerrainModal();
   else if (currentPage === 'acheteurs') openModal('modal-acheteur');
   else if (currentPage === 'pipeline') openDealModal();
+  else if (currentPage === 'marketing') openCampagneModal();
 }
 
 // ═══════════ RENDER ═══════════
@@ -1123,6 +1404,7 @@ function renderPage(page) {
   else if (page === 'terrains') renderTerrains();
   else if (page === 'acheteurs') renderAcheteurs();
   else if (page === 'matching') renderMatchingSelect();
+  else if (page === 'marketing') renderMarketing();
 }
 
 function renderDashboard() {
@@ -1463,6 +1745,627 @@ function deleteDealPrompt(id) {
   renderPipeline();
   renderDashboard();
   showNotif('Deal supprimé.');
+}
+
+// ═══════════ MARKETING ═══════════
+const PLATS = {
+  instagram: { label: 'Instagram', color: '#c13584', max: 2200, tags: 10 },
+  facebook:  { label: 'Facebook',  color: '#1877f2', max: 5000, tags: 4 },
+  linkedin:  { label: 'LinkedIn',  color: '#0a66c2', max: 3000, tags: 5 }
+};
+const PLAT_KEYS = Object.keys(PLATS);
+const USAGE_DESC = {
+  'Mixte': 'projet mixte associant résidentiel, bureaux et commerces',
+  'Balnéaire': 'programme balnéaire, résidences et hôtellerie de bord de mer',
+  'Industriel': 'zone industrielle et logistique',
+  'Résidentiel': 'programme résidentiel haut de gamme',
+  'Hôtellerie': 'projet hôtelier et touristique',
+  'Tertiaire': 'pôle tertiaire et bureaux',
+  'Logistique': 'plateforme logistique'
+};
+const HOOKS = {
+  invest: [
+    'Le foncier reste la valeur refuge la plus solide.',
+    'Un actif foncier rare, pensé pour la valorisation à long terme.',
+    "Investir dans la terre, c'est investir dans l'avenir."
+  ],
+  promoteur: [
+    'Un terrain prêt à accueillir votre prochain programme.',
+    'Zonage clair, emplacement stratégique, projet à construire.',
+    'Votre prochain projet commence ici.'
+  ],
+  flash: [
+    'Nouvelle opportunité disponible.',
+    'Disponible dès maintenant, à saisir avant les autres.',
+    "Un terrain, une fenêtre d'opportunité."
+  ]
+};
+const ANGLE_LINE = {
+  invest: "Un foncier de cette taille et de ce positionnement se raréfie. Une opportunité pour les investisseurs institutionnels et privés en quête d'actifs tangibles.",
+  promoteur: 'Un potentiel constructible lisible, pour les promoteurs qui cherchent du foncier exploitable rapidement.',
+  flash: 'Le dossier est disponible. Les premiers contacts qualifiés recevront le teaser en priorité.'
+};
+const DEFAULT_CTA = 'Écrivez-nous en message privé pour recevoir le teaser complet.';
+
+let mktTab = 'suivi';
+let mktVariant = 0;
+let mktDirty = false;
+let mktSelected = new Set();
+let mktLoaded = false;
+
+const fmt = n => Number(n || 0).toLocaleString('fr-FR');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const terrainById = id => state.terrains.find(t => t.id === id);
+const forfaitOf = t => Math.round(t.superficie * t.prix / 1000000);
+const mktSecret = () => { try { return localStorage.getItem('greenfield-mkt-secret') || ''; } catch (e) { return ''; } };
+// Les textes publiés ne doivent contenir ni tiret cadratin, ni point-virgule, ni barre verticale
+const cleanText = s => s.replace(/—/g, '-').replace(/;/g, ',').replace(/\|/g, '/').replace(/⚠/g, '');
+
+function platChips(keys) {
+  return keys.map(p => `<span class="mkt-chip" style="background:${PLATS[p].color}">${PLATS[p].label}</span>`).join('');
+}
+
+function setMktTab(tab) {
+  mktTab = tab;
+  document.querySelectorAll('.mkt-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.mkt-sec').forEach(s => s.classList.toggle('active', s.id === 'mkt-sec-' + tab));
+  renderMarketing();
+}
+
+function renderMarketing() {
+  if (!mktLoaded) { buildPreviews(); mktLoaded = true; }
+  if (mktTab === 'suivi') renderMktSuivi();
+  else if (mktTab === 'publier') renderMktPublier();
+  else if (mktTab === 'historique') renderMktHistorique();
+  else if (mktTab === 'connexions') renderMktConnexions();
+}
+
+// ─── Suivi des campagnes ───
+function renderMktSuivi() {
+  const per = {};
+  PLAT_KEYS.forEach(p => per[p] = { n: 0, dep: 0, imp: 0, clics: 0, leads: 0 });
+  state.campagnes.forEach(c => PLAT_KEYS.forEach(p => {
+    const m = c.metrics && c.metrics[p];
+    if (!m || !m.on) return;
+    per[p].n++; per[p].dep += m.depense || 0; per[p].imp += m.impressions || 0;
+    per[p].clics += m.clics || 0; per[p].leads += m.leads || 0;
+  }));
+  const tot = { dep: 0, imp: 0, clics: 0, leads: 0 };
+  PLAT_KEYS.forEach(p => { tot.dep += per[p].dep; tot.imp += per[p].imp; tot.clics += per[p].clics; tot.leads += per[p].leads; });
+  const actives = state.campagnes.filter(c => c.statut === 'Active').length;
+  const cpl = tot.leads > 0 ? fmt(Math.round(tot.dep / tot.leads)) + ' MAD par lead' : 'Pas encore de lead';
+
+  document.getElementById('mkt-kpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-icon">✦</div><div class="kpi-label">Campagnes actives</div><div class="kpi-value">${actives}</div><div class="kpi-sub">${state.campagnes.length} au total</div></div>
+    <div class="kpi-card"><div class="kpi-icon">◈</div><div class="kpi-label">Dépensé</div><div class="kpi-value">${fmt(tot.dep)}</div><div class="kpi-sub">MAD, toutes plateformes</div></div>
+    <div class="kpi-card"><div class="kpi-icon">◎</div><div class="kpi-label">Impressions</div><div class="kpi-value">${fmt(tot.imp)}</div><div class="kpi-sub">${fmt(tot.clics)} clics</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⇄</div><div class="kpi-label">Leads</div><div class="kpi-value">${fmt(tot.leads)}</div><div class="kpi-sub">${cpl}</div></div>`;
+
+  document.getElementById('mkt-plats').innerHTML = PLAT_KEYS.map(p => {
+    const d = per[p];
+    const ctr = d.imp > 0 ? (d.clics / d.imp * 100).toFixed(2).replace('.', ',') + ' %' : '0 %';
+    const cpl = d.leads > 0 ? fmt(Math.round(d.dep / d.leads)) + ' MAD' : '0';
+    return `<div class="card">
+      <div class="mkt-plat-name"><span class="mkt-dot" style="background:${PLATS[p].color}"></span>${PLATS[p].label}<span style="margin-left:auto;font-size:11px;color:var(--gray-mid);font-weight:400">${d.n} campagne${d.n > 1 ? 's' : ''}</span></div>
+      <div class="mkt-mini-grid">
+        <div><div class="mkt-mini-label">Impressions</div><div class="mkt-mini-value">${fmt(d.imp)}</div></div>
+        <div><div class="mkt-mini-label">Clics (CTR)</div><div class="mkt-mini-value">${fmt(d.clics)} <span style="font-size:11px;color:var(--gray-mid);font-weight:400">${ctr}</span></div></div>
+        <div><div class="mkt-mini-label">Leads</div><div class="mkt-mini-value">${fmt(d.leads)}</div></div>
+        <div><div class="mkt-mini-label">Coût par lead</div><div class="mkt-mini-value">${cpl}</div></div>
+      </div></div>`;
+  }).join('');
+
+  const tbody = document.getElementById('mkt-camp-tbody');
+  if (state.campagnes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucune campagne. Cliquez sur "+ Nouvelle campagne" pour commencer le suivi.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.campagnes.map(c => {
+    const on = PLAT_KEYS.filter(p => c.metrics && c.metrics[p] && c.metrics[p].on);
+    const sum = k => on.reduce((s, p) => s + (c.metrics[p][k] || 0), 0);
+    const terrains = (c.terrainIds || []).map(id => terrainById(id)).filter(Boolean).map(t => esc(t.localisation)).join(', ') || 'Tous';
+    const periode = (c.debut || c.fin) ? `${esc(c.debut || '?')} au ${esc(c.fin || '?')}` : 'Non définie';
+    const sClass = c.statut === 'Active' ? 'badge-green' : c.statut === 'Pause' ? 'badge-orange' : c.statut === 'Terminée' ? 'badge-blue' : 'badge-gray';
+    const posts = state.posts.filter(p => p.campagneId === c.id).length;
+    return `<tr>
+      <td data-label="Campagne"><strong>${esc(c.nom)}</strong><br><span style="font-size:11px;color:#888">${esc(c.objectif || '')} · ${posts} publication${posts > 1 ? 's' : ''}</span></td>
+      <td data-label="Plateformes">${platChips(on) || '-'}</td>
+      <td data-label="Terrains" style="font-size:12px">${terrains}</td>
+      <td data-label="Période" style="font-size:12px">${periode}</td>
+      <td data-label="Statut"><span class="badge ${sClass}">${esc(c.statut)}</span></td>
+      <td data-label="Dépensé">${fmt(sum('depense'))} MAD${c.budget ? `<br><span style="font-size:11px;color:#888">sur ${fmt(c.budget)}</span>` : ''}</td>
+      <td data-label="Impressions">${fmt(sum('impressions'))}</td>
+      <td data-label="Clics">${fmt(sum('clics'))}</td>
+      <td data-label="Leads"><strong>${fmt(sum('leads'))}</strong></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openCampagneModal(${c.id})" style="font-size:11px;padding:4px 10px">Modifier</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteCampagne(${c.id})" style="font-size:11px;padding:4px 10px;color:#c0392b;border-color:#fad7d0">Suppr.</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Modal campagne ───
+function terrainPickHtml(name, selected, onchange) {
+  if (state.terrains.length === 0) return '<div style="padding:14px;color:#aaa;font-size:13px">Aucun terrain dans la base.</div>';
+  return state.terrains.map(t => `<label><input type="checkbox" name="${name}" value="${t.id}" ${selected.has(t.id) ? 'checked' : ''} ${onchange ? `onchange="${onchange}"` : ''}>
+    <span><strong>${esc(t.localisation)}</strong><br><small>${fmt(t.superficie)} m² · ${esc(t.usage)} · ${fmt(forfaitOf(t))} M MAD · ${esc(t.statut)}</small></span></label>`).join('');
+}
+
+function openCampagneModal(id) {
+  const c = id ? state.campagnes.find(x => x.id === id) : null;
+  document.getElementById('modal-campagne-title').textContent = c ? 'Modifier la Campagne' : 'Nouvelle Campagne';
+  document.getElementById('modal-campagne').dataset.editId = c ? c.id : '';
+  document.getElementById('c-nom').value = c ? c.nom : '';
+  document.getElementById('c-statut').value = c ? c.statut : 'Active';
+  document.getElementById('c-debut').value = c ? c.debut || '' : new Date().toISOString().slice(0, 10);
+  document.getElementById('c-fin').value = c ? c.fin || '' : '';
+  document.getElementById('c-objectif').value = c ? c.objectif || 'Notoriété' : 'Leads';
+  document.getElementById('c-budget').value = c && c.budget ? c.budget : '';
+  document.getElementById('c-notes').value = c ? c.notes || '' : '';
+  document.getElementById('c-terrains').innerHTML = terrainPickHtml('c-terrain', new Set(c ? c.terrainIds || [] : []));
+  document.getElementById('c-metrics').innerHTML = PLAT_KEYS.map(p => {
+    const m = (c && c.metrics && c.metrics[p]) || { on: false };
+    const field = (k, label) => `<div><span class="mkt-mini-label">${label}</span><input class="form-input" id="c-${k}-${p}" type="number" min="0" value="${m[k] || ''}"></div>`;
+    return `<div class="metric-row ${m.on ? '' : 'off'}" id="c-row-${p}">
+      <label class="mkt-check" style="margin:0"><input type="checkbox" id="c-on-${p}" ${m.on ? 'checked' : ''} onchange="document.getElementById('c-row-${p}').classList.toggle('off', !this.checked)"> <strong style="color:${PLATS[p].color}">${PLATS[p].label}</strong></label>
+      ${field('depense', 'Dépensé (MAD)')}${field('impressions', 'Impressions')}${field('clics', 'Clics')}${field('leads', 'Leads')}
+    </div>`;
+  }).join('');
+  openModal('modal-campagne');
+}
+
+function saveCampagne() {
+  const nom = document.getElementById('c-nom').value.trim();
+  if (!nom) { showNotif('Le nom de la campagne est obligatoire', true); return; }
+  const num = id => parseFloat(document.getElementById(id).value) || 0;
+  const metrics = {};
+  PLAT_KEYS.forEach(p => {
+    metrics[p] = { on: document.getElementById('c-on-' + p).checked, depense: num('c-depense-' + p), impressions: num('c-impressions-' + p), clics: num('c-clics-' + p), leads: num('c-leads-' + p) };
+  });
+  const editId = parseInt(document.getElementById('modal-campagne').dataset.editId);
+  const data = {
+    nom, metrics,
+    statut: document.getElementById('c-statut').value,
+    debut: document.getElementById('c-debut').value,
+    fin: document.getElementById('c-fin').value,
+    objectif: document.getElementById('c-objectif').value,
+    budget: num('c-budget'),
+    notes: document.getElementById('c-notes').value,
+    terrainIds: [...document.querySelectorAll('input[name="c-terrain"]:checked')].map(i => parseInt(i.value))
+  };
+  if (editId) {
+    Object.assign(state.campagnes.find(c => c.id === editId), data);
+    addActivity(`Campagne mise à jour : ${nom}`);
+  } else {
+    state.campagnes.push({ id: state.nextCampagneId++, ...data });
+    addActivity(`Nouvelle campagne : ${nom}`);
+  }
+  saveState();
+  closeModal('modal-campagne');
+  renderMarketing();
+  showNotif('✓ Campagne enregistrée !');
+}
+
+function deleteCampagne(id) {
+  if (!confirm('Supprimer cette campagne ?')) return;
+  const c = state.campagnes.find(x => x.id === id);
+  state.campagnes = state.campagnes.filter(x => x.id !== id);
+  state.posts.forEach(p => { if (p.campagneId === id) p.campagneId = null; });
+  addActivity(`Campagne supprimée : ${c ? c.nom : ''}`);
+  saveState();
+  renderMarketing();
+  showNotif('Campagne supprimée.');
+}
+
+// ─── Composer : sélection des terrains ───
+function buildPreviews() {
+  document.getElementById('mk-previews').innerHTML = PLAT_KEYS.map(p => `
+    <div class="card">
+      <div class="mkt-preview-head">
+        <div class="mkt-plat-name" style="margin:0"><span class="mkt-dot" style="background:${PLATS[p].color}"></span>${PLATS[p].label}</div>
+        <span class="mkt-counter" id="mk-count-${p}">0 / ${fmt(PLATS[p].max)}</span>
+      </div>
+      <textarea class="form-textarea" id="mk-text-${p}" rows="11" oninput="mktTextEdited('${p}')" placeholder="Sélectionnez un ou plusieurs terrains pour obtenir une proposition."></textarea>
+      <div class="mkt-btn-row" style="margin-top:10px">
+        <button class="btn btn-light btn-sm" onclick="mktCopy('${p}')">Copier</button>
+        <button class="btn btn-light btn-sm" onclick="mktOpen('${p}')">Copier et ouvrir ${PLATS[p].label}</button>
+      </div>
+    </div>`).join('');
+  const s = state.mkt || {};
+  document.getElementById('mk-cta').value = s.cta || DEFAULT_CTA;
+  document.getElementById('mk-link').value = s.link || '';
+}
+
+function renderMktTerrainPick() {
+  const dispoOnly = document.getElementById('mk-filter').value === 'dispo';
+  const list = state.terrains.filter(t => !dispoOnly || t.statut === 'Disponible');
+  mktSelected = new Set([...mktSelected].filter(id => list.some(t => t.id === id)));
+  const box = document.getElementById('mk-terrain-pick');
+  box.innerHTML = list.length === 0
+    ? '<div style="padding:14px;color:#aaa;font-size:13px">Aucun terrain à afficher.</div>'
+    : list.map(t => `<label><input type="checkbox" value="${t.id}" ${mktSelected.has(t.id) ? 'checked' : ''} onchange="mktToggleTerrain(${t.id}, this.checked)">
+        <span><strong>${esc(t.localisation)}</strong><br><small>${fmt(t.superficie)} m² · ${esc(t.usage)} · ${fmt(forfaitOf(t))} M MAD · ${esc(t.statut)}</small></span></label>`).join('');
+  mktAuto();
+}
+
+function mktToggleTerrain(id, on) {
+  if (on) mktSelected.add(id); else mktSelected.delete(id);
+  mktAuto();
+}
+
+function mktSelectAll(on) {
+  document.querySelectorAll('#mk-terrain-pick input').forEach(i => { i.checked = on; });
+  mktSelected = on ? new Set([...document.querySelectorAll('#mk-terrain-pick input')].map(i => parseInt(i.value))) : new Set();
+  mktAuto();
+}
+
+function renderMktPublier() {
+  const sel = document.getElementById('mk-campagne');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Aucune campagne</option>' + state.campagnes.map(c => `<option value="${c.id}">${esc(c.nom)}</option>`).join('');
+  sel.value = prev;
+  renderMktTerrainPick();
+}
+
+function mktSettingsChanged() {
+  state.mkt = { cta: document.getElementById('mk-cta').value, link: document.getElementById('mk-link').value };
+  saveState();
+  mktAuto();
+}
+
+// ─── Génération de contenu ───
+function slugTag(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, ' ').trim()
+    .split(' ').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join('');
+}
+function villeOf(t) {
+  const m = /\(([^)]+)\)/.exec(t.localisation);
+  return m ? m[1] : t.localisation;
+}
+function firstSentence(s) {
+  const m = /^[^.!?]+[.!?]?/.exec((s || '').trim());
+  return m ? m[0].trim() : '';
+}
+function hashtagsFor(ts, p) {
+  const uniq = a => [...new Set(a.filter(Boolean))];
+  const villes = uniq(ts.map(t => slugTag(villeOf(t)))).slice(0, 3).map(x => '#' + x);
+  const usages = uniq(ts.map(t => slugTag(t.usage))).slice(0, 2).map(x => '#' + x);
+  const base = ['#ImmobilierMaroc', '#FoncierMaroc', '#Investissement', '#Greenfield'];
+  return uniq([...villes, ...usages, ...base]).slice(0, PLATS[p].tags).join(' ');
+}
+
+function mktOptions() {
+  return {
+    angle: document.getElementById('mk-angle').value,
+    showPrice: document.getElementById('mk-price').checked,
+    showNotes: document.getElementById('mk-notes').checked,
+    cta: document.getElementById('mk-cta').value.trim() || DEFAULT_CTA,
+    link: document.getElementById('mk-link').value.trim()
+  };
+}
+
+function buildPost(p, ts, o, v) {
+  const hook = HOOKS[o.angle][v % 3];
+  const tags = hashtagsFor(ts, p);
+  const tail = [o.cta, p !== 'instagram' && o.link ? o.link : ''].filter(Boolean).join('\n');
+  let body;
+
+  if (ts.length === 1) {
+    const t = ts[0];
+    const desc = USAGE_DESC[t.usage] || 'projet immobilier';
+    const note = o.showNotes ? firstSentence(t.notes) : '';
+    const prix = `${fmt(t.prix)} MAD/m², soit ${fmt(forfaitOf(t))} M MAD`;
+    const urba = t.urba ? `zonage ${t.urba}` : '';
+    const keep = l => l !== null;
+    if (p === 'instagram') {
+      body = [hook, '',
+        `📍 ${t.localisation}`,
+        `📐 ${fmt(t.superficie)} m²${urba ? ' · ' + urba : ''}`,
+        `🏗️ ${desc}`,
+        o.showPrice ? `💰 ${prix}` : null,
+        note ? '' : null, note || null].filter(keep).join('\n');
+    } else if (p === 'facebook') {
+      body = [hook, '',
+        `Nous proposons un terrain de ${fmt(t.superficie)} m² à ${t.localisation}${urba ? ', ' + urba : ''}, idéal pour un ${desc}.`,
+        o.showPrice ? `Prix : ${prix}.` : null,
+        note || null].filter(keep).join('\n');
+    } else {
+      body = [hook, '',
+        `Greenfield présente un actif foncier à ${villeOf(t)}.`, '',
+        `• Localisation : ${t.localisation}`,
+        `• Surface : ${fmt(t.superficie)} m²`,
+        t.urba ? `• Zonage : ${t.urba}` : null,
+        `• Usage cible : ${t.usage}`,
+        o.showPrice ? `• Valorisation : ${prix}` : null, '',
+        ANGLE_LINE[o.angle],
+        note || null].filter(keep).join('\n');
+    }
+  } else {
+    const lines = ts.map(t => `• ${villeOf(t)} · ${fmt(t.superficie)} m² · ${t.usage}${o.showPrice ? ' · ' + fmt(forfaitOf(t)) + ' M MAD' : ''}`);
+    const title = `Sélection Greenfield : ${ts.length} terrains à saisir`;
+    const intro = p === 'instagram' ? '' : ANGLE_LINE[o.angle];
+    body = [title, '', hook, '', ...lines, intro ? '\n' + intro : ''].join('\n');
+  }
+  return cleanText(`${body}\n\n${tail}\n\n${tags}`.replace(/\n{3,}/g, '\n\n').trim());
+}
+
+function mktAuto() { if (!mktDirty) mktGenerate(false, true); }
+
+function mktGenerate(nextVariant, silent) {
+  const ts = [...mktSelected].map(terrainById).filter(Boolean);
+  if (nextVariant) mktVariant++;
+  if (ts.length === 0) {
+    PLAT_KEYS.forEach(p => { document.getElementById('mk-text-' + p).value = ''; updateCounter(p); });
+    if (!silent) showNotif('Sélectionnez au moins un terrain', true);
+    return;
+  }
+  const o = mktOptions();
+  PLAT_KEYS.forEach(p => { document.getElementById('mk-text-' + p).value = buildPost(p, ts, o, mktVariant); updateCounter(p); });
+  mktDirty = false;
+}
+
+function mktTextEdited(p) { mktDirty = true; updateCounter(p); }
+
+function updateCounter(p) {
+  const n = document.getElementById('mk-text-' + p).value.length;
+  const el = document.getElementById('mk-count-' + p);
+  el.textContent = `${fmt(n)} / ${fmt(PLATS[p].max)}`;
+  el.classList.toggle('over', n > PLATS[p].max);
+}
+
+// ─── Copier / ouvrir à la main ───
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
+    return ok;
+  }
+}
+
+async function mktCopy(p) {
+  const text = document.getElementById('mk-text-' + p).value;
+  if (!text) { showNotif('Rien à copier', true); return false; }
+  const ok = await copyToClipboard(text);
+  showNotif(ok ? `✓ Texte ${PLATS[p].label} copié` : 'Copie impossible, sélectionnez le texte à la main', !ok);
+  return ok;
+}
+
+async function mktOpen(p) {
+  if (!(await mktCopy(p))) return;
+  const text = document.getElementById('mk-text-' + p).value;
+  const link = document.getElementById('mk-link').value.trim();
+  const urls = {
+    instagram: 'https://www.instagram.com/',
+    facebook: /^https?:\/\//.test(link) ? 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link) : 'https://www.facebook.com/',
+    linkedin: 'https://www.linkedin.com/feed/?shareActive=true&text=' + encodeURIComponent(text)
+  };
+  window.open(urls[p], '_blank', 'noopener');
+}
+
+// ─── Visuel ───
+async function mktVisual() {
+  const ts = [...mktSelected].map(terrainById).filter(Boolean);
+  if (ts.length === 0) { showNotif('Sélectionnez au moins un terrain', true); return; }
+  try { await document.fonts.load('800 80px Syne'); await document.fonts.load('400 30px "DM Sans"'); } catch (e) {}
+  const S = 1080;
+  const cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+  const g = cv.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, '#0a2e1a'); bg.addColorStop(1, '#1a5c35');
+  g.fillStyle = bg; g.fillRect(0, 0, S, S);
+  g.strokeStyle = 'rgba(78,202,130,0.08)'; g.lineWidth = 1;
+  for (let i = 0; i <= S; i += 60) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, S); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(S, i); g.stroke(); }
+  const logo = document.querySelector('.logo-area img');
+  if (logo && logo.naturalWidth) g.drawImage(logo, 70, 60, 300, 300 * logo.naturalHeight / logo.naturalWidth);
+  g.fillStyle = '#c9a84c'; g.font = '600 30px "DM Sans", sans-serif';
+  g.fillText(ts.length === 1 ? 'TERRAIN À SAISIR' : `${ts.length} TERRAINS À SAISIR`, 70, 470);
+  g.fillStyle = '#f8faf9';
+  const wrap = (txt, x, y, maxW, lh) => {
+    let line = '';
+    txt.split(' ').forEach(w => { const test = line ? line + ' ' + w : w; if (g.measureText(test).width > maxW && line) { g.fillText(line, x, y); line = w; y += lh; } else line = test; });
+    g.fillText(line, x, y); return y + lh;
+  };
+  const showPrice = document.getElementById('mk-price').checked;
+  if (ts.length === 1) {
+    const t = ts[0];
+    g.font = '800 88px Syne, sans-serif';
+    let y = wrap(t.localisation, 70, 570, 940, 100);
+    g.font = '400 40px "DM Sans", sans-serif'; g.fillStyle = '#7ffbb5';
+    y = wrap(`${fmt(t.superficie)} m²${t.urba ? ' · ' + t.urba : ''} · ${t.usage}`, 70, y + 20, 940, 56);
+    if (showPrice) {
+      g.fillStyle = '#c9a84c'; g.font = '800 72px Syne, sans-serif';
+      g.fillText(`${fmt(forfaitOf(t))} M MAD`, 70, Math.max(y + 60, 900));
+    }
+  } else {
+    g.font = '500 40px "DM Sans", sans-serif'; g.fillStyle = '#f8faf9';
+    ts.slice(0, 6).forEach((t, i) => {
+      g.fillText(`${villeOf(t)} · ${fmt(t.superficie)} m²${showPrice ? ' · ' + fmt(forfaitOf(t)) + ' M' : ''}`, 70, 550 + i * 72);
+    });
+    if (ts.length > 6) { g.fillStyle = '#7ffbb5'; g.fillText(`et ${ts.length - 6} autres`, 70, 550 + 6 * 72); }
+  }
+  g.fillStyle = 'rgba(248,250,249,0.6)'; g.font = '400 26px "DM Sans", sans-serif';
+  g.fillText('GREENFIELD · Foncier au Maroc', 70, S - 60);
+  cv.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = 'greenfield-visuel.png'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    showNotif('✓ Visuel téléchargé (à héberger pour Instagram)');
+  }, 'image/png');
+}
+
+// ─── Publication ───
+function mktCollect() {
+  const platforms = PLAT_KEYS.filter(p => document.getElementById('mk-plat-' + p).checked);
+  const texts = {};
+  PLAT_KEYS.forEach(p => { texts[p] = document.getElementById('mk-text-' + p).value.trim(); });
+  return {
+    platforms, texts,
+    imageUrl: document.getElementById('mk-image').value.trim(),
+    link: document.getElementById('mk-link').value.trim(),
+    campagneId: parseInt(document.getElementById('mk-campagne').value) || null,
+    terrainIds: [...mktSelected]
+  };
+}
+
+function mktRecord(d, results) {
+  state.posts.push({
+    id: state.nextPostId++, date: new Date().toLocaleString('fr-FR'),
+    terrainIds: d.terrainIds, campagneId: d.campagneId, platforms: d.platforms,
+    texts: d.texts, imageUrl: d.imageUrl, link: d.link, results
+  });
+  saveState();
+}
+
+function mktSaveDraft() {
+  const d = mktCollect();
+  if (d.terrainIds.length === 0 || !d.platforms.some(p => d.texts[p])) { showNotif('Rien à enregistrer', true); return; }
+  const results = {};
+  d.platforms.forEach(p => { results[p] = { status: 'brouillon' }; });
+  mktRecord(d, results);
+  addActivity(`Brouillon marketing enregistré (${d.platforms.map(p => PLATS[p].label).join(', ')})`);
+  saveState();
+  showNotif('✓ Brouillon enregistré dans l\'historique');
+}
+
+async function mktPublish() {
+  const d = mktCollect();
+  if (d.terrainIds.length === 0) { showNotif('Sélectionnez au moins un terrain', true); return; }
+  if (d.platforms.length === 0) { showNotif('Choisissez au moins une plateforme', true); return; }
+  for (const p of d.platforms) {
+    if (!d.texts[p]) { showNotif(`Le texte ${PLATS[p].label} est vide`, true); return; }
+    if (d.texts[p].length > PLATS[p].max) { showNotif(`Le texte ${PLATS[p].label} est trop long`, true); return; }
+  }
+  if (d.platforms.includes('instagram') && !d.imageUrl) { showNotif('Instagram exige une URL d\'image', true); return; }
+  if (!mktSecret()) { showNotif('Renseignez le code de publication dans Connexions', true); setMktTab('connexions'); return; }
+  if (!confirm('Publier maintenant sur ' + d.platforms.map(p => PLATS[p].label).join(', ') + ' ?')) return;
+
+  const btn = document.getElementById('mk-publish-btn');
+  btn.disabled = true; btn.textContent = 'Publication en cours...';
+  let results = {};
+  try {
+    const r = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-crm-secret': mktSecret() },
+      body: JSON.stringify({ platforms: d.platforms, texts: d.texts, imageUrl: d.imageUrl, link: d.link })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || (r.status === 404 ? 'Fonction /api/publish introuvable, redéployez sur Vercel' : 'Erreur HTTP ' + r.status));
+    Object.entries(j.results || {}).forEach(([p, x]) => {
+      results[p] = x.ok ? { status: 'publié', id: x.id, url: x.url } : { status: 'erreur', error: x.error };
+    });
+  } catch (e) {
+    d.platforms.forEach(p => { results[p] = { status: 'erreur', error: e.message }; });
+  } finally {
+    btn.disabled = false; btn.textContent = 'Publier maintenant';
+  }
+  mktRecord(d, results);
+  const ok = Object.entries(results).filter(([, x]) => x.status === 'publié').map(([p]) => PLATS[p].label);
+  const ko = Object.entries(results).filter(([, x]) => x.status === 'erreur');
+  if (ok.length) addActivity(`Publication marketing : ${ok.join(', ')}`);
+  saveState();
+  if (ko.length === 0) showNotif('✓ Publié sur ' + ok.join(', '));
+  else showNotif(`${ko.map(([p, x]) => PLATS[p].label + ' : ' + x.error).join(' / ')}`, true);
+  setMktTab('historique');
+}
+
+// ─── Historique ───
+function renderMktHistorique() {
+  const tbody = document.getElementById('mkt-post-tbody');
+  if (state.posts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:30px">Aucune publication. Composez-en une dans l\'onglet Publier.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...state.posts].reverse().map(post => {
+    const terrains = post.terrainIds.map(terrainById).filter(Boolean).map(t => esc(t.localisation)).join(', ') || 'Terrain supprimé';
+    const camp = state.campagnes.find(c => c.id === post.campagneId);
+    const badges = post.platforms.map(p => {
+      const r = post.results[p] || { status: 'brouillon' };
+      const cls = r.status === 'publié' || r.status === 'manuel' ? 'badge-green' : r.status === 'erreur' ? 'badge-orange' : 'badge-gray';
+      const label = `${PLATS[p].label} : ${r.status}`;
+      const inner = r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${label}</a>` : label;
+      return `<span class="badge ${cls}" style="margin:0 4px 4px 0" ${r.error ? `title="${esc(r.error)}"` : ''}>${inner}</span>${r.error ? `<div style="font-size:11px;color:#c0392b;margin-bottom:4px">${esc(r.error)}</div>` : ''}`;
+    }).join('');
+    const firstText = post.texts[post.platforms[0]] || '';
+    const pending = post.platforms.some(p => (post.results[p] || {}).status === 'brouillon');
+    return `<tr>
+      <td data-label="Date" style="font-size:12px">${esc(post.date)}</td>
+      <td data-label="Terrains" style="font-size:12px">${terrains}</td>
+      <td data-label="Campagne" style="font-size:12px">${camp ? esc(camp.nom) : '-'}</td>
+      <td data-label="Plateformes">${badges}</td>
+      <td data-label="Aperçu" style="font-size:12px;color:#666;max-width:260px">${esc(firstText.slice(0, 110))}${firstText.length > 110 ? '...' : ''}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="mktReopen(${post.id})" style="font-size:11px;padding:4px 10px">Rouvrir</button>
+        ${pending ? `<button class="btn btn-ghost btn-sm" onclick="mktMarkManual(${post.id})" style="font-size:11px;padding:4px 10px">Marquer publié</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="mktDeletePost(${post.id})" style="font-size:11px;padding:4px 10px;color:#c0392b;border-color:#fad7d0">Suppr.</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function mktReopen(id) {
+  const post = state.posts.find(p => p.id === id);
+  if (!post) return;
+  mktSelected = new Set(post.terrainIds.filter(t => terrainById(t)));
+  setMktTab('publier');
+  document.getElementById('mk-filter').value = 'all';
+  renderMktTerrainPick();
+  PLAT_KEYS.forEach(p => {
+    document.getElementById('mk-text-' + p).value = post.texts[p] || '';
+    document.getElementById('mk-plat-' + p).checked = post.platforms.includes(p);
+    updateCounter(p);
+  });
+  mktDirty = true;
+  document.getElementById('mk-image').value = post.imageUrl || '';
+  document.getElementById('mk-campagne').value = post.campagneId || '';
+}
+
+function mktMarkManual(id) {
+  const post = state.posts.find(p => p.id === id);
+  post.platforms.forEach(p => { if ((post.results[p] || {}).status === 'brouillon') post.results[p] = { status: 'manuel' }; });
+  addActivity('Publication marquée comme publiée à la main');
+  saveState();
+  renderMktHistorique();
+}
+
+function mktDeletePost(id) {
+  if (!confirm('Supprimer cette entrée de l\'historique ?')) return;
+  state.posts = state.posts.filter(p => p.id !== id);
+  saveState();
+  renderMktHistorique();
+}
+
+// ─── Connexions ───
+function renderMktConnexions() {
+  document.getElementById('mk-secret').value = mktSecret();
+  if (mktSecret()) mktTestConnection(); else document.getElementById('mk-conn-status').innerHTML = '';
+}
+
+function mktSaveSecret() {
+  try { localStorage.setItem('greenfield-mkt-secret', document.getElementById('mk-secret').value.trim()); } catch (e) {}
+  mktTestConnection();
+}
+
+async function mktTestConnection() {
+  const el = document.getElementById('mk-conn-status');
+  el.innerHTML = '<div class="mkt-note">Test en cours...</div>';
+  try {
+    const r = await fetch('/api/publish', { headers: { 'x-crm-secret': mktSecret() } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || (r.status === 404 ? 'Fonction /api/publish introuvable, redéployez sur Vercel' : 'Erreur HTTP ' + r.status));
+    el.innerHTML = PLAT_KEYS.map(p => {
+      const on = j.configured && j.configured[p];
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-light);font-size:13px;color:#333">
+        <span class="mkt-dot" style="background:${on ? '#2d9e5f' : '#ccc'}"></span>
+        <strong style="color:${PLATS[p].color}">${PLATS[p].label}</strong>
+        <span style="margin-left:auto;color:${on ? '#1a5c35' : '#888'}">${on ? 'Prêt à publier' : 'Non configuré'}</span></div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="mkt-note" style="color:#c0392b">${esc(e.message)}</div>`;
+  }
 }
 
 // ═══════════ UTILS ═══════════

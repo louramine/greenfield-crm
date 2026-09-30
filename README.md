@@ -71,3 +71,18 @@ export default defineConfig([
   },
 ])
 ```
+
+## Onglet Marketing
+
+L'onglet Marketing du CRM (`index.html`) permet de suivre les campagnes Instagram, Facebook et LinkedIn et de publier des contenus générés à partir des terrains de la base.
+
+Pour la publication automatique, ajoutez ces variables d'environnement au projet Vercel puis redéployez :
+
+| Variable | Rôle |
+| --- | --- |
+| `CRM_PUBLISH_SECRET` | Code choisi par vous, à saisir dans Marketing > Connexions |
+| `META_PAGE_ID`, `META_PAGE_TOKEN` | Page Facebook et jeton de Page longue durée |
+| `META_IG_USER_ID` | Compte Instagram professionnel lié à la Page |
+| `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` | Jeton OAuth et auteur (`urn:li:organization:...` ou `urn:li:person:...`) |
+
+Sans configuration, les boutons Copier et Ouvrir de chaque aperçu restent utilisables pour publier à la main.

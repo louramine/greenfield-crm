@@ -2238,7 +2238,7 @@ async function loadFromSupabase() {
 
 // ─── Override CRUD to sync Supabase ───────────────────────────
 const _origSaveTerrain = saveTerrain;
-async function saveTerrain() {
+saveTerrain = async function() {
   const loc = document.getElementById('t-localisation').value.trim();
   const sup = parseFloat(document.getElementById('t-superficie').value);
   const prix = parseFloat(document.getElementById('t-prix').value);
@@ -2269,7 +2269,7 @@ async function saveTerrain() {
 }
 
 const _origSaveTerrainDetail = saveTerrainDetail;
-async function saveTerrainDetail() {
+saveTerrainDetail = async function() {
   const t = state.terrains.find(t => t.id === currentDetailId);
   if (!t) return;
   t.tf = document.getElementById('d-tf').value.trim();
@@ -2291,7 +2291,7 @@ async function saveTerrainDetail() {
 }
 
 const _origSaveAcheteur = saveAcheteur;
-async function saveAcheteur() {
+saveAcheteur = async function() {
   const nom = document.getElementById('a-nom').value.trim();
   if (!nom) { showNotif('⚠ Le nom est obligatoire', true); return; }
   const acheteur = {
@@ -2318,7 +2318,7 @@ async function saveAcheteur() {
 }
 
 const _origSaveDeal = saveDeal;
-async function saveDeal() {
+saveDeal = async function() {
   const terrainId = parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
   if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
@@ -2558,7 +2558,7 @@ function associeColor(nom) {
 // PATCH renderDashboard → ajoute rapport hebdo + journal
 // ═══════════════════════════════════════════════════════════════
 const _origRenderDashboard = renderDashboard;
-function renderDashboard() {
+renderDashboard = function() {
   _origRenderDashboard();
   renderRapportHebdo();
   renderActivityLog();
@@ -2568,7 +2568,7 @@ function renderDashboard() {
 // PATCH renderAcheteurs → ajoute score
 // ═══════════════════════════════════════════════════════════════
 const _origRenderAcheteurs = renderAcheteurs;
-function renderAcheteurs() {
+renderAcheteurs = function() {
   _origRenderAcheteurs();
   // Inject score stars into each row
   state.acheteurs.forEach(a => {

@@ -524,6 +524,11 @@
 #gf-login button{width:100%;padding:11px;border:0;border-radius:8px;background:#1e6b4a;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
+<style id="gf-kanban-css">
+.pipeline-col.drag-over{outline:2px dashed #2d9e5f;outline-offset:-4px;background:rgba(45,158,95,.08)}
+.deal-card.dragging{opacity:.4}
+.deal-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.18)}
+</style>
 </head>
 <body>
 <div id="gf-login"><div style="display:flex;flex-direction:column;align-items:center;width:100%"><img id="gf-login-logo" class="brand" alt="GREENFIELD"><form id="gf-login-form" autocomplete="on">
@@ -1026,6 +1031,38 @@
   </div>
 </div>
 
+<!-- Modal Edition Deal -->
+<div class="modal-overlay" id="modal-deal-edit">
+  <div class="modal">
+    <div class="modal-title" id="de-title">Deal</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Étape</label>
+        <select class="form-select" id="de-etape">
+          <option value="teaser">Teaser Envoyé</option>
+          <option value="nda">NDA Signé</option>
+          <option value="visite">Visite Terrain</option>
+          <option value="offre">Offre Reçue</option>
+          <option value="closing">Closing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Montant offre (M MAD)</label>
+        <input class="form-input" id="de-montant" type="number">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="de-notes"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-right:auto;color:#c0392b" onclick="deleteDealEdit()">Supprimer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-deal-edit')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveDealEdit()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Terrain Détail -->
 <div class="modal-overlay" id="modal-terrain-detail">
   <div class="modal" style="width:600px;">
@@ -1323,189 +1360,106 @@ function renderDashboard() {
   }
 }
 
+const PIPE_STAGES = ['teaser','nda','visite','offre','closing'];
+const PIPE_LABELS = { teaser:'Teaser envoyé', nda:'NDA signé', visite:'Visite terrain', offre:'Offre reçue', closing:'Closing' };
+
 function renderPipeline() {
-  const stages = ['teaser','nda','visite','offre','closing'];
-  const fixedCounts = { teaser: 9, nda: 21, visite: 84, offre: 14, closing: 14 };
-  const fixedLabels = {
-    teaser: [
-      {terrain:'Bouskoura Ville', acheteur:'Groupe CDG', montant:'45'},
-      {terrain:'Aïn Harrouda', acheteur:'Résidences Dar Saada', montant:'82'},
-      {terrain:'Rabat El Menzeh', acheteur:'CFG Finance', montant:'140'},
-      {terrain:'Kech (Marrakech)', acheteur:'Fonds Al Mada', montant:'381'},
-      {terrain:'Mansouria (Bouznika)', acheteur:'Alliances Dev.', montant:'223'},
-      {terrain:'Benguérir Zone A', acheteur:'Family Office Casablanca', montant:'67'},
-      {terrain:'Tanger Zone Franche', acheteur:'Fonds Golfe Invest', montant:'195'},
-      {terrain:'Agadir Balnéaire', acheteur:'Promoteur Sud', montant:'110'},
-      {terrain:'Kenitra Logistique', acheteur:'Upline Group', montant:'55'},
-    ],
-    nda: [
-      {terrain:'Casablanca Anfa', acheteur:'Addoha', montant:'320'},
-      {terrain:'Rabat Hay Riad', acheteur:'Fonds Immobilier MA', montant:'175'},
-      {terrain:'Marrakech Palmeraie', acheteur:'Resort Dev. Gulf', montant:'410'},
-      {terrain:'Mohammedia Port', acheteur:'Logistique Nord', montant:'98'},
-      {terrain:'Salé Agdal', acheteur:'Groupe Chaâbi', montant:'134'},
-      {terrain:'Fès Saïss', acheteur:'Promoteur FES', montant:'76'},
-      {terrain:'Tanger Med Zone', acheteur:'Tanger Invest', montant:'220'},
-      {terrain:'Oujda Centre', acheteur:'Est Développement', montant:'62'},
-      {terrain:'Agadir Tilila', acheteur:'Souss Immobilier', montant:'88'},
-      {terrain:'Settat Zone Ind.', acheteur:'CDG Invest', montant:'145'},
-      {terrain:'El Jadida Balnéaire', acheteur:'Atlantic Coast Dev.', montant:'190'},
-      {terrain:'Dakhla Zone Eco.', acheteur:'Fonds Saharawi', montant:'310'},
-      {terrain:'Kénitra Aéropôle', acheteur:'Aviatech Immo', montant:'167'},
-      {terrain:'Berrechid Logistique', acheteur:'Log Maroc SA', montant:'115'},
-      {terrain:'Nador Zone Ind.', acheteur:'Rif Développement', montant:'93'},
-      {terrain:'Laâyoune Centre', acheteur:'Sud Invest', montant:'210'},
-      {terrain:'Guelmim Tourisme', acheteur:'Caravane Immo', montant:'78'},
-      {terrain:'Meknès Agropole', acheteur:'Agri Invest MA', montant:'130'},
-      {terrain:'Témara Résidentiel', acheteur:'Résidences Atlas', montant:'155'},
-      {terrain:'Safi Industriel', acheteur:'Maroc Chimie Dev.', montant:'102'},
-      {terrain:'Chefchaouen Eco', acheteur:'Green Tourism MA', montant:'85'},
-    ],
-    visite: [
-      {terrain:'Casablanca CFC', acheteur:'BMCE Capital', montant:'500'},
-      {terrain:'Rabat Technopolis', acheteur:'Tech Invest MA', montant:'245'},
-      {terrain:'Marrakech Guéliz', acheteur:'Savola Group', montant:'380'},
-      {terrain:'Tanger Zone Ind.', acheteur:'Renault Immo', montant:'290'},
-      {terrain:'Agadir Complexe', acheteur:'RIU Hotels', montant:'440'},
-      {terrain:'Casablanca Ain Sebaa', acheteur:'Sopromer', montant:'185'},
-      {terrain:'Fès Médina Ext.', acheteur:'Patrimoine MA', montant:'120'},
-      {terrain:'Meknès Industriel', acheteur:'OCP Real Estate', montant:'310'},
-      {terrain:'Oujda Frontalier', acheteur:'Est Trade Immo', montant:'95'},
-      {terrain:'Dakhla Touristique', acheteur:'Club Med Dev.', montant:'520'},
-      {terrain:'Nador Port', acheteur:'Nador West Med', montant:'340'},
-      {terrain:'Kenitra Atlantique', acheteur:'PSA Immo', montant:'175'},
-      {terrain:'Bouskoura Golf', acheteur:'Golf Estates MA', montant:'230'},
-      {terrain:'Ain Harrouda Z2', acheteur:'Logicim', montant:'88'},
-      {terrain:'Témara Océan', acheteur:'Ocean View Dev.', montant:'195'},
-      {terrain:'Skhirat Balnéaire', acheteur:'Royal Club Immo', montant:'415'},
-      {terrain:'Mohammedia Côte', acheteur:'Petrom Immo', montant:'160'},
-      {terrain:'Benslimane Forêt', acheteur:'Eco Resort MA', montant:'275'},
-      {terrain:'Settat Résidentiel', acheteur:'Chaabi Immo', montant:'140'},
-      {terrain:'Ksar El Kébir', acheteur:'Larache Dev.', montant:'72'},
-      {terrain:'Tétouan Marina', acheteur:'Marina Bay Dev.', montant:'385'},
-      {terrain:'Al Hoceima Côte', acheteur:'Rif Coast Invest', montant:'215'},
-      {terrain:'Ifrane Montagne', acheteur:'Atlas Premium', montant:'180'},
-      {terrain:'Azrou Eco-Tourisme', acheteur:'Nature Invest', montant:'95'},
-      {terrain:'Khémisset Zone', acheteur:'Centre Immo MA', montant:'110'},
-      {terrain:'Berrechid Ind. 2', acheteur:'Log2 Maroc', montant:'135'},
-      {terrain:'El Jadida Centre', acheteur:'Doukala Dev.', montant:'165'},
-      {terrain:'Essaouira Mogador', acheteur:'Mogador Estates', montant:'290'},
-      {terrain:'Taroudant Premium', acheteur:'Souss Valley', montant:'145'},
-      {terrain:'Ouarzazate Cin.', acheteur:'Atlas Film Dev.', montant:'200'},
-      {terrain:'Errachidia Zone', acheteur:'Tafilalet Invest', montant:'88'},
-      {terrain:'Tan-Tan Littoral', acheteur:'Côte Sud MA', montant:'125'},
-      {terrain:'Tiznit Argane', acheteur:'Green Land MA', montant:'98'},
-      {terrain:'Beni Mellal Centre', acheteur:'Tadla Immo', montant:'115'},
-      {terrain:'Khouribga Phosphate', acheteur:'OCP Résidentiel', montant:'175'},
-      {terrain:'Youssoufia Zone', acheteur:'Rehamna Dev.', montant:'90'},
-      {terrain:'Safi Corniche', acheteur:'Côte Atlantique', montant:'210'},
-      {terrain:'Kénitra Nord', acheteur:'Gharb Invest', montant:'145'},
-      {terrain:'Rabat Hay Nahda', acheteur:'Capital Immo', montant:'260'},
-      {terrain:'Casablanca Hay Hassani', acheteur:'Wessal Capital', montant:'335'},
-      {terrain:'Marrakech Route Fès', acheteur:'Atlas Holding', montant:'450'},
-      {terrain:'Tanger Malabata', acheteur:'Bay View Invest', montant:'395'},
-      {terrain:'Tetouan Route Ceuta', acheteur:'North Gate Immo', montant:'185'},
-      {terrain:'Chefchaouen Rif', acheteur:'Blue City Dev.', montant:'155'},
-      {terrain:'Larache Balnéaire', acheteur:'Lixus Invest', montant:'170'},
-      {terrain:'Asilah Côte', acheteur:'Heritage Estates', montant:'230'},
-      {terrain:'Moulay Bousselham', acheteur:'Lagune Dev.', montant:'195'},
-      {terrain:'Mehdia Plage', acheteur:'Atlantica Immo', montant:'140'},
-      {terrain:'Sidi Rahal Côte', acheteur:'Sud Casa Invest', montant:'160'},
-      {terrain:'Oualidia Lagune', acheteur:'Lagoon Estates', montant:'285'},
-      {terrain:'Casablanca Zone Ind.', acheteur:'CFCIM Immo', montant:'220'},
-      {terrain:'Rabat OLM', acheteur:'OLM Dev.', montant:'195'},
-      {terrain:'Marrakech Route Ourika', acheteur:'Ourika Valley', montant:'175'},
-      {terrain:'Agadir Timitar', acheteur:'Souss Premium', montant:'310'},
-      {terrain:'Tanger Med 2', acheteur:'Port Invest MA', montant:'445'},
-      {terrain:'Fès Ain Chkef', acheteur:'Royal Fès Immo', montant:'130'},
-      {terrain:'Meknès Palais', acheteur:'Ismaïlia Dev.', montant:'185'},
-      {terrain:'Oujda Aéroport', acheteur:'Eastern Gateway', montant:'145'},
-      {terrain:'Beni Mellal Tadla', acheteur:'Oum Rbia Invest', montant:'100'},
-      {terrain:'Khouribga Centre', acheteur:'Phosphate City', montant:'115'},
-      {terrain:'Settat Chaouia', acheteur:'Plaine Invest', montant:'95'},
-      {terrain:'Berrechid Centre', acheteur:'Berrechid Dev.', montant:'88'},
-      {terrain:'Ain Harrouda Z3', acheteur:'East Casa Immo', montant:'105'},
-      {terrain:'Mohammedia Z2', acheteur:'Petrôle Immo', montant:'130'},
-      {terrain:'Benguérir Vert', acheteur:'Mohammed VI Poly.', montant:'195'},
-      {terrain:'Rehamna Zone', acheteur:'Sud Invest MA', montant:'78'},
-      {terrain:'Youssoufia Côte', acheteur:'Phosphate Coast', montant:'92'},
-      {terrain:'Safi Z2 Industriel', acheteur:'Chimie Invest', montant:'140'},
-      {terrain:'El Jadida Port', acheteur:'Jorf Invest', montant:'280'},
-      {terrain:'Azemmour Balnéaire', acheteur:'Côte d\'Azur MA', montant:'195'},
-      {terrain:'Oualidia Z2', acheteur:'Premium Coast', montant:'245'},
-      {terrain:'Sidi Bouzid Beach', acheteur:'El Jadida Beach', montant:'165'},
-      {terrain:'Casablanca Sidi Maarouf', acheteur:'Silicon Casablanca', montant:'390'},
-      {terrain:'Casablanca Anfa 2', acheteur:'Altitude Immo', montant:'420'},
-      {terrain:'Rabat Centre', acheteur:'Capital Invest', montant:'350'},
-      {terrain:'Marrakech Amelkis', acheteur:'Golf & Sea Dev.', montant:'510'},
-      {terrain:'Agadir Centre', acheteur:'Agadir Plus Immo', montant:'275'},
-      {terrain:'Tanger Centre', acheteur:'Detroit Invest', montant:'320'},
-      {terrain:'Fès Ain Kadous', acheteur:'Heritage Fès', montant:'165'},
-      {terrain:'Meknès Z2', acheteur:'Meknes Invest', montant:'140'},
-    ],
-    offre: [
-      {terrain:'Casablanca Corniche', acheteur:'Wessal Casablanca', montant:'650'},
-      {terrain:'Marrakech Hivernage', acheteur:'Four Seasons Dev.', montant:'820'},
-      {terrain:'Rabat Agdal Premium', acheteur:'Fonds Souverain MA', montant:'480'},
-      {terrain:'Tanger Bay View', acheteur:'Emaar Maroc', montant:'590'},
-      {terrain:'Agadir Beach Front', acheteur:'Iberostar Dev.', montant:'370'},
-      {terrain:'Casablanca Tour CFC', acheteur:'Zurich Immo MA', montant:'750'},
-      {terrain:'Rabat Kasbah', acheteur:'Patrimoine Royal', montant:'430'},
-      {terrain:'Marrakech Palais', acheteur:'Sofitel Dev.', montant:'695'},
-      {terrain:'Tanger Marina', acheteur:'Port Tangis', montant:'510'},
-      {terrain:'Casablanca Maarif', acheteur:'Cosumar Immo', montant:'385'},
-      {terrain:'Agadir Souss', acheteur:'Kenzi Hotels', montant:'445'},
-      {terrain:'Fès Bab Guissa', acheteur:'Fès Heritage', montant:'280'},
-      {terrain:'Marrakech Route Amizmiz', acheteur:'Atlas Kasbah', montant:'360'},
-      {terrain:'Rabat Souissi', acheteur:'Souissi Premium', montant:'520'},
-    ],
-    closing: [
-      {terrain:'Casablanca Ain Diab', acheteur:'Beach Resort Dev.', montant:'540'},
-      {terrain:'Marrakech Guéliz Premium', acheteur:'Accor Hotels MA', montant:'720'},
-      {terrain:'Rabat Hassan', acheteur:'Royale Invest', montant:'390'},
-      {terrain:'Tanger Cap Malabata', acheteur:'Cap View Estates', montant:'610'},
-      {terrain:'Agadir Bay', acheteur:'Akhdar Group', montant:'465'},
-      {terrain:'Casablanca Derb Sultan', acheteur:'Rénovation Urbaine', montant:'280'},
-      {terrain:'Marrakech Route Ourika 2', acheteur:'Ecolodge MA', montant:'195'},
-      {terrain:'Kenitra Centre', acheteur:'Gharb Premium', montant:'310'},
-      {terrain:'Bouskoura Premium', acheteur:'Elite Estates', montant:'425'},
-      {terrain:'Mohammedia Front Mer', acheteur:'Petro Coast Dev.', montant:'350'},
-      {terrain:'Temara Résidentiel', acheteur:'Atlantic Homes', montant:'230'},
-      {terrain:'Skhirat Royal', acheteur:'Prestige Côte', montant:'680'},
-      {terrain:'Benguérir Smart City', acheteur:'Green City Dev.', montant:'520'},
-      {terrain:'Ain Harrouda Premium', acheteur:'East Casa Premium', montant:'175'},
-    ],
-  };
-
-  stages.forEach(s => {
-    const dynamicDeals = state.deals.filter(d => d.etape === s);
-    const fixedDeals = fixedLabels[s] || [];
-    const total = fixedDeals.length + dynamicDeals.length;
-    document.getElementById('cnt-' + s).textContent = total;
-    const col = document.getElementById('col-' + s);
-
-    let html = fixedDeals.map(d => `
-      <div class="deal-card status-${s}">
-        <div class="deal-terrain">${d.terrain}</div>
-        <div class="deal-acheteur">${d.acheteur}</div>
-        <div class="deal-amount">${d.montant} M MAD</div>
-        <span class="deal-tag tag-promoteur">Promoteur</span>
-      </div>`).join('');
-
-    html += dynamicDeals.map(d => {
+  PIPE_STAGES.forEach(st => {
+    const deals = state.deals.filter(d => d.etape === st);
+    const cnt = document.getElementById('cnt-' + st);
+    if (cnt) cnt.textContent = deals.length;
+    const col = document.getElementById('col-' + st);
+    if (!col) return;
+    const colWrap = col.closest('.pipeline-col');
+    if (colWrap && !colWrap.dataset.stage) {
+      colWrap.dataset.stage = st;
+      colWrap.addEventListener('dragover', ev => { ev.preventDefault(); colWrap.classList.add('drag-over'); });
+      colWrap.addEventListener('dragleave', ev => { if (!colWrap.contains(ev.relatedTarget)) colWrap.classList.remove('drag-over'); });
+      colWrap.addEventListener('drop', ev => {
+        ev.preventDefault(); colWrap.classList.remove('drag-over');
+        const id = ev.dataTransfer.getData('text/plain');
+        if (id) moveDeal(id, st);
+      });
+    }
+    col.style.minHeight = '120px';
+    col.innerHTML = deals.map(d => {
       const terrain = state.terrains.find(t => t.id == d.terrainId);
       const acheteur = state.acheteurs.find(a => a.id == d.acheteurId);
       const tagClass = acheteur ? (acheteur.type === 'Promoteur' ? 'tag-promoteur' : acheteur.type === 'Fonds' ? 'tag-fonds' : 'tag-hnwi') : 'tag-promoteur';
-      return `<div class="deal-card status-${s}" onclick="deleteDealPrompt(${d.id})">
-        <div class="deal-terrain">${terrain ? terrain.localisation : 'Terrain inconnu'}</div>
-        <div class="deal-acheteur">${acheteur ? acheteur.nom : 'Acheteur inconnu'}</div>
-        <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '—'}</div>
+      const tName = terrain ? terrain.localisation : (d.terrainLabel || 'Terrain inconnu');
+      const aName = acheteur ? acheteur.nom : (d.acheteurLabel || 'Acheteur inconnu');
+      return `<div class="deal-card status-${st}" draggable="true" data-id="${d.id}" ondragstart="dealDragStart(event, ${d.id})" ondragend="this.classList.remove('dragging')" onclick="openDealEdit(${d.id})" style="cursor:grab">
+        <div class="deal-terrain">${tName}</div>
+        <div class="deal-acheteur">${aName}</div>
+        <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '-'}</div>
         ${acheteur ? `<span class="deal-tag ${tagClass}">${acheteur.type}</span>` : ''}
       </div>`;
-    }).join('');
-
-    col.innerHTML = html || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
+    }).join('') || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
   });
+}
+
+function dealDragStart(ev, id) {
+  ev.dataTransfer.setData('text/plain', String(id));
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.currentTarget.classList.add('dragging');
+}
+
+async function moveDeal(id, etape) {
+  const d = state.deals.find(x => String(x.id) === String(id));
+  if (!d || d.etape === etape) return;
+  const old = d.etape;
+  d.etape = etape;
+  renderPipeline(); renderDashboard();
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await supaPatch('deals', d.id, { etape });
+    if (!res) {
+      d.etape = old; renderPipeline(); renderDashboard();
+      showNotif('Échec de la mise à jour, deal remis à son étape.', true);
+      return;
+    }
+    const t = state.terrains.find(t => t.id == d.terrainId);
+    logActivity('Deal déplacé', 'deal', d.id, `${t ? t.localisation : d.terrainLabel || ''} : ${PIPE_LABELS[old]} vers ${PIPE_LABELS[etape]}`);
+  } else { saveState(); }
+  showNotif('Deal déplacé vers ' + PIPE_LABELS[etape]);
+}
+
+let editingDealId = null;
+function openDealEdit(id) {
+  const d = state.deals.find(x => String(x.id) === String(id));
+  if (!d) return;
+  editingDealId = d.id;
+  const t = state.terrains.find(t => t.id == d.terrainId);
+  const a = state.acheteurs.find(a => a.id == d.acheteurId);
+  document.getElementById('de-title').textContent = (t ? t.localisation : d.terrainLabel || 'Terrain') + ' / ' + (a ? a.nom : d.acheteurLabel || 'Acheteur');
+  document.getElementById('de-etape').value = d.etape;
+  document.getElementById('de-montant').value = d.montant || '';
+  document.getElementById('de-notes').value = d.notes || '';
+  openModal('modal-deal-edit');
+}
+async function saveDealEdit() {
+  const d = state.deals.find(x => x.id === editingDealId);
+  if (!d) return;
+  const patch = { etape: document.getElementById('de-etape').value, montant: parseFloat(document.getElementById('de-montant').value) || 0, notes: document.getElementById('de-notes').value };
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const res = await supaPatch('deals', d.id, patch);
+    if (!res) { showNotif('Échec de l\'enregistrement.', true); return; }
+    logActivity('Deal modifié', 'deal', d.id, document.getElementById('de-title').textContent);
+  }
+  Object.assign(d, patch);
+  saveState(); closeModal('modal-deal-edit'); renderPipeline(); renderDashboard();
+  showNotif('✓ Deal enregistré');
+}
+async function deleteDealEdit() {
+  const d = state.deals.find(x => x.id === editingDealId);
+  if (!d || !confirm('Supprimer ce deal définitivement ?')) return;
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const ok = await supaDelete('deals', d.id);
+    if (!ok) { showNotif('Échec de la suppression.', true); return; }
+    logActivity('Deal supprimé', 'deal', d.id, document.getElementById('de-title').textContent);
+  }
+  state.deals = state.deals.filter(x => x.id !== d.id);
+  saveState(); closeModal('modal-deal-edit'); renderPipeline(); renderDashboard();
+  showNotif('Deal supprimé.');
 }
 
 function renderTerrains() {

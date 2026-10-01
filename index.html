@@ -525,7 +525,6 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
-.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'pipeline'"]):not([onclick*="'acheteurs'"]){display:none !important}
 .role-sourceur #a-delete-btn{display:none !important}
 .role-sourceur #gf-export, .role-sourceur #associe-wrap, .role-sourceur button[onclick="confirmDeleteTerrain()"]{display:none !important}
 body:not(.role-admin) .admin-only{display:none !important}
@@ -2053,10 +2052,7 @@ function applyRole() {
   if (me && me.nom) { currentAssocie = me.nom; try { localStorage.setItem('gf-associe', me.nom); } catch(e) {} }
   document.body.classList.toggle('role-sourceur', myRole === 'sourceur');
   document.body.classList.toggle('role-admin', myRole === 'admin');
-  if (myRole === 'sourceur') {
-    const el = document.querySelector('.nav-item[onclick*="showPage(\'terrains\'"]');
-    if (el) showPage('terrains', el);
-  } else if (currentPage === 'equipe') renderEquipe();
+  if (currentPage === 'equipe') renderEquipe();
 }
 
 function openMembreModal() {
@@ -2372,7 +2368,8 @@ saveTerrainDetail = async function() {
     if (parts.length === 3) t.daysOld = Math.floor((new Date() - new Date(parts[2], parts[1]-1, parts[0])) / 86400000);
   }
   if (supabaseReady) {
-    await supaPatch('terrains', t.id, { tf: t.tf, date_sourcing: t.dateSourcing, sourceur: t.sourceur, statut: t.statut, statut_juridique: t.statut_juridique, google_map: t.googleMap, commentaire: t.commentaire, days_old: t.daysOld });
+    const resT = await supaPatch('terrains', t.id, { tf: t.tf, date_sourcing: t.dateSourcing, sourceur: t.sourceur, statut: t.statut, statut_juridique: t.statut_juridique, google_map: t.googleMap, commentaire: t.commentaire, days_old: t.daysOld });
+    if (!resT || !resT.length) { showNotif('Modification refusée : vous ne pouvez modifier que vos propres terrains.', true); loadFromSupabase(); return; }
     await logActivity('Modif terrain', 'terrain', t.id, t.localisation);
   }
   saveState(); closeModal('modal-terrain-detail'); filterTerrains(); showNotif('✓ Terrain mis à jour !');
@@ -2434,7 +2431,7 @@ function contactOptions(selected) {
 }
 function lockContactForSourceur() {
   const sel = document.getElementById('a-associe');
-  if (myRole === 'sourceur') { sel.value = currentAssocie; sel.disabled = true; } else sel.disabled = false;
+  sel.disabled = false;
 }
 function resetAcheteurForm() {
   ['a-nom','a-contact','a-ticket-min','a-ticket-max','a-notes'].forEach(id => document.getElementById(id).value = '');
@@ -2476,7 +2473,7 @@ function openAcheteurEdit(id) {
 saveAcheteur = async function() {
   const nom = document.getElementById('a-nom').value.trim();
   if (!nom) { showNotif('⚠ Le nom est obligatoire', true); return; }
-  const contactInterne = myRole === 'sourceur' ? currentAssocie : document.getElementById('a-associe').value;
+  const contactInterne = document.getElementById('a-associe').value;
   if (!contactInterne) { showNotif('⚠ Choisissez le contact interne (sourceur)', true); return; }
   const villes = [...villesSel];
   const acheteur = {

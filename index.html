@@ -525,7 +525,8 @@
 </head>
 <body>
 <div id="gf-login"><form id="gf-login-form" autocomplete="on">
-  <h1>GREENFIELD</h1><p>Accès réservé. Entrez le mot de passe de l'équipe.</p>
+  <h1>GREENFIELD</h1><p>Accès réservé à l'équipe. Connectez-vous avec votre compte.</p>
+  <input type="email" id="gf-email" placeholder="Email" autocomplete="username" required>
   <input type="password" id="gf-pass" placeholder="Mot de passe" autocomplete="current-password" required>
   <div class="err" id="gf-err"></div>
   <button type="submit">Se connecter</button>
@@ -2639,7 +2640,6 @@ function showAssocieSelector() {
 // INIT
 // ═══════════════════════════════════════════════════════════════
 // ─── Authentification (compte Supabase partagé) ───────────────
-const GF_EMAIL = 'equipe@greenfield.plus';
 function gfSetToken(tok) { SUPA_HEADERS['Authorization'] = 'Bearer ' + tok; }
 function gfSaveSession(d) {
   const sess = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + (d.expires_in || 3600) * 1000 };
@@ -2658,7 +2658,7 @@ async function gfRefresh() {
   if (!sess || !sess.refresh_token) return false;
   try { await gfAuthCall('refresh_token', { refresh_token: sess.refresh_token }); return true; } catch(e) { return false; }
 }
-function gfShowLogin() { document.getElementById('gf-login').style.display = 'flex'; setTimeout(() => document.getElementById('gf-pass').focus(), 50); }
+function gfShowLogin() { document.getElementById('gf-login').style.display = 'flex'; setTimeout(() => document.getElementById('gf-email').focus(), 50); }
 let gfStarted = false;
 function gfStart() {
   document.getElementById('gf-login').style.display = 'none';
@@ -2672,10 +2672,10 @@ document.getElementById('gf-login-form').addEventListener('submit', async (ev) =
   ev.preventDefault();
   const err = document.getElementById('gf-err'); err.textContent = '';
   try {
-    await gfAuthCall('password', { email: GF_EMAIL, password: document.getElementById('gf-pass').value });
+    await gfAuthCall('password', { email: document.getElementById('gf-email').value.trim(), password: document.getElementById('gf-pass').value });
     document.getElementById('gf-pass').value = '';
     gfStart();
-  } catch(e) { err.textContent = 'Mot de passe incorrect.'; }
+  } catch(e) { err.textContent = 'Email ou mot de passe incorrect.'; }
 });
 (async () => { (await gfRefresh()) ? gfStart() : gfShowLogin(); })();
 </script>

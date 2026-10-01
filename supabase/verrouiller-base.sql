@@ -1,4 +1,4 @@
--- A executer dans Supabase > SQL Editor APRES avoir cree l'utilisateur equipe@greenfield.plus
+-- A executer dans Supabase > SQL Editor (les comptes existants dans Authentication > Users pourront se connecter)
 -- Verrouille les tables : seuls les utilisateurs connectes peuvent lire et ecrire.
 do $$
 declare t text; pol record;

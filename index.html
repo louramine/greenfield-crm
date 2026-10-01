@@ -685,14 +685,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Rapport hebdomadaire (Feature D) -->
-      <div class="card" style="margin-top:0;">
-        <div class="card-title">Rapport Hebdomadaire</div>
-        <div id="rapport-hebdo">
-          <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Chargement...</div>
-        </div>
-      </div>
     </div>
 
     <!-- ═══════════ PIPELINE ═══════════ -->
@@ -2552,7 +2544,6 @@ function associeColor(nom) {
 const _origRenderDashboard = renderDashboard;
 renderDashboard = function() {
   _origRenderDashboard();
-  renderRapportHebdo();
   renderActivityLog();
 }
 

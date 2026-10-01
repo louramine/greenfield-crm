@@ -18,7 +18,7 @@ alter table public.acheteurs add column if not exists villes text[] not null def
 -- Membres actuels (modifiez les roles ensuite depuis la page Equipe)
 insert into public.equipe (nom, email, role, specialite) values
   ('Amine',  'louramine@gmail.com',      'admin',  null),
-  ('Hachim', 'hachimkherraz@gmail.com',  'admin',  null),
+  ('Hachim', 'hachimkherraz@gmail.com',  'associe', null),
   ('Ayoub',  'ayoublyaf@gmail.com',      'admin',  null)
 on conflict (email) do nothing;
 

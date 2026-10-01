@@ -525,7 +525,9 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
-.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'carte'"]){display:none !important}
+.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'pipeline'"]){display:none !important}
+.role-sourceur #gf-export, .role-sourceur #associe-wrap, .role-sourceur button[onclick="confirmDeleteTerrain()"]{display:none !important}
+body:not(.role-admin) .admin-only{display:none !important}
 .on-dashboard #addBtn, .on-dashboard #gf-export, .on-dashboard #associe-wrap { display:none !important }
 .pipeline-col.drag-over{outline:2px dashed #2d9e5f;outline-offset:-4px;background:rgba(45,158,95,.08)}
 .deal-card.dragging{opacity:.4}
@@ -691,6 +693,7 @@
 
     <!-- ═══════════ PIPELINE ═══════════ -->
     <div class="page" id="page-pipeline">
+      <div class="admin-only" style="margin-bottom:12px;display:flex;align-items:center;gap:10px"><label class="form-label" style="margin:0">Associé</label><select class="form-select" id="pipe-filter" style="max-width:220px" onchange="renderPipeline()"></select></div>
       <div class="pipeline-board">
         <div class="pipeline-col">
           <div class="col-header" style="color:#95a5a6">
@@ -1012,6 +1015,10 @@
       <label class="form-label">Acheteur *</label>
       <select class="form-select" id="d-acheteur"></select>
     </div>
+    <div class="form-group admin-only">
+      <label class="form-label">Associé responsable du deal</label>
+      <select class="form-select" id="d-associe"></select>
+    </div>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Étape</label>
@@ -1065,6 +1072,10 @@
 <div class="modal-overlay" id="modal-deal-edit">
   <div class="modal">
     <div class="modal-title" id="de-title">Deal</div>
+    <div class="form-group admin-only">
+      <label class="form-label">Associé responsable du deal</label>
+      <select class="form-select" id="de-associe"></select>
+    </div>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Étape</label>
@@ -1287,6 +1298,7 @@ function showPage(page, el) {
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
+  if (myRole === 'sourceur' && page === 'pipeline') addBtn.style.display = 'none';
 
   renderPage(page);
 }
@@ -1395,8 +1407,17 @@ const PIPE_STAGES = ['teaser','nda','visite','offre','closing'];
 const PIPE_LABELS = { teaser:'Teaser envoyé', nda:'NDA signé', visite:'Visite terrain', offre:'Offre reçue', closing:'Closing' };
 
 function renderPipeline() {
+  const pfs = document.getElementById('pipe-filter');
+  if (pfs) {
+    const names = [...new Set([...(state.equipe || []).map(m => m.nom), ...state.deals.map(d => d.associe).filter(Boolean)])];
+    const cur = pfs.value;
+    pfs.innerHTML = '<option value="">Tous les associés</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+    pfs.value = names.includes(cur) ? cur : '';
+  }
   PIPE_STAGES.forEach(st => {
-    const deals = state.deals.filter(d => d.etape === st);
+    const pf = document.getElementById('pipe-filter');
+    const fv = isAdmin() ? (pf ? pf.value : '') : (currentAssocie || '');
+    const deals = state.deals.filter(d => d.etape === st && (!fv || d.associe === fv));
     const cnt = document.getElementById('cnt-' + st);
     if (cnt) cnt.textContent = deals.length;
     const col = document.getElementById('col-' + st);
@@ -1424,6 +1445,7 @@ function renderPipeline() {
         <div class="deal-acheteur">${aName}</div>
         <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '-'}</div>
         ${acheteur ? `<span class="deal-tag ${tagClass}">${acheteur.type}</span>` : ''}
+        ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#8aab97;margin-top:6px">👤 ${d.associe}</div>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
   });
@@ -1465,12 +1487,14 @@ function openDealEdit(id) {
   document.getElementById('de-etape').value = d.etape;
   document.getElementById('de-montant').value = d.montant || '';
   document.getElementById('de-notes').value = d.notes || '';
+  document.getElementById('de-associe').innerHTML = associeOptions(d.associe || '');
   openModal('modal-deal-edit');
 }
 async function saveDealEdit() {
   const d = state.deals.find(x => x.id === editingDealId);
   if (!d) return;
   const patch = { etape: document.getElementById('de-etape').value, montant: parseFloat(document.getElementById('de-montant').value) || 0, notes: document.getElementById('de-notes').value };
+  if (isAdmin() && document.getElementById('de-associe').value) patch.associe = document.getElementById('de-associe').value;
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const res = await supaPatch('deals', d.id, patch);
     if (!res) { showNotif('Échec de l\'enregistrement.', true); return; }
@@ -1811,6 +1835,7 @@ function openDealModal() {
     : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
   document.getElementById('d-montant').value = '';
   document.getElementById('d-notes').value = '';
+  document.getElementById('d-associe').innerHTML = associeOptions(currentAssocie || '');
   openModal('modal-deal');
 }
 
@@ -2086,7 +2111,7 @@ function openTerrainDetail(id) {
 
   document.getElementById('d-tf').value = t.tf && t.tf !== 'nan' ? t.tf : '';
   document.getElementById('d-date').value = t.dateSourcing || '';
-  document.getElementById('d-sourceur').value = t.sourceur || 'Abderrahim';
+  { const ds = document.getElementById('d-sourceur'); if (t.sourceur && ![...ds.options].some(o => o.value === t.sourceur)) ds.add(new Option(t.sourceur, t.sourceur)); ds.value = t.sourceur || 'Abderrahim'; ds.disabled = myRole === 'sourceur'; }
   document.getElementById('d-statut').value = t.statut || 'À qualifier';
   document.getElementById('d-gmap').value = t.googleMap || '';
   document.getElementById('d-commentaire').value = t.commentaire || '';
@@ -2476,12 +2501,12 @@ saveDeal = async function() {
     etape: document.getElementById('d-etape').value,
     montant: parseFloat(document.getElementById('d-montant').value) || 0,
     notes: document.getElementById('d-notes').value,
-    layer: 1, associe: currentAssocie || 'Équipe',
+    layer: 1, associe: (isAdmin() && document.getElementById('d-associe').value) || currentAssocie || 'Équipe',
   };
   if (supabaseReady) {
     const res = await supaPost('deals', deal);
     if (res && res[0]) {
-      state.deals.push({ id: res[0].id, terrainId, acheteurId, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1 });
+      state.deals.push({ id: res[0].id, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1, associe: deal.associe });
       await logActivity('Nouveau deal', 'deal', res[0].id, `${terrain?.localisation} ↔ ${acheteur?.nom}`);
       showNotif('✓ Deal créé dans Supabase !');
     }

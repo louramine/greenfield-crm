@@ -794,7 +794,7 @@
       </div>
       <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(10,46,26,0.25);border:1px solid rgba(45,158,95,0.15);position:relative;">
         <iframe
-          src="https://www.google.com/maps/d/embed?mid=1ezG_VEhXTLGrUeRAY5epdo1ggJ1pk9A&ehbc=2E312F"
+          src="https://www.google.com/maps/d/embed?mid=1ezG_VEhXTLGrUeRAY5epdo1ggJ1pk9A&ehbc=2E312F&ll=33.5700,-7.6300&z=11"
           style="width:100%;height:calc(100vh - 220px);min-height:520px;display:block;border:none;"
           allowfullscreen
           loading="lazy"
@@ -1220,9 +1220,9 @@ function renderPage(page) {
 }
 
 function renderDashboard() {
-  document.getElementById('kpi-terrains').textContent = state.terrains.length;
+  if (document.getElementById('kpi-terrains')) document.getElementById('kpi-terrains').textContent = state.terrains.length;
   const totalM2 = state.terrains.reduce((s, t) => s + (t.superficie || 0), 0);
-  document.getElementById('kpi-terrains-sub').textContent = totalM2.toLocaleString('fr-FR') + ' m² total';
+  if (document.getElementById('kpi-terrains-sub')) document.getElementById('kpi-terrains-sub').textContent = totalM2.toLocaleString('fr-FR') + ' m² total';
   // Top 4 Def Urba KPIs — computed dynamically
   const urbaCount = {};
   state.terrains.forEach(t => {
@@ -1239,11 +1239,11 @@ function renderDashboard() {
   if (document.getElementById('kpi-e3')) document.getElementById('kpi-e3').textContent = e3 || 26;
   if (document.getElementById('kpi-b4')) document.getElementById('kpi-b4').textContent = b4 || 25;
 
-  document.getElementById('kpi-acheteurs').textContent = state.acheteurs.length || 11;
-  document.getElementById('kpi-deals').textContent = state.deals.length;
+  if (document.getElementById('kpi-acheteurs')) document.getElementById('kpi-acheteurs').textContent = state.acheteurs.length || 11;
+  if (document.getElementById('kpi-deals')) document.getElementById('kpi-deals').textContent = state.deals.length;
 
   const totalPipeline = state.deals.reduce((s, d) => s + (d.montant || 0), 0);
-  document.getElementById('kpi-deals-sub').textContent = totalPipeline > 0 ? totalPipeline.toLocaleString('fr-FR') + ' M MAD pipeline' : '0 MAD pipeline';
+  if (document.getElementById('kpi-deals-sub')) document.getElementById('kpi-deals-sub').textContent = totalPipeline > 0 ? totalPipeline.toLocaleString('fr-FR') + ' M MAD pipeline' : '0 MAD pipeline';
 
   // Pipeline summary
   const steps = ['teaser','nda','visite','offre','closing'];
@@ -1277,6 +1277,7 @@ function renderDashboard() {
 
   // Activity
   const actEl = document.getElementById('activity-feed');
+  if (!actEl) return;
   if (state.activities.length === 0) {
     actEl.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Aucune activité récente.</div>';
   } else {
@@ -1858,7 +1859,8 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 const sectorsData = [{"name": "Darbouazza", "count": 99, "lat": 33.519, "lng": -7.8}, {"name": "Bouskoura", "count": 40, "lat": 33.46, "lng": -7.653}, {"name": "Mediouna", "count": 32, "lat": 33.453, "lng": -7.517}, {"name": "Ain Sebaa", "count": 28, "lat": 33.606, "lng": -7.527}, {"name": "Ain Diab", "count": 27, "lat": 33.594, "lng": -7.695}, {"name": "Oasis", "count": 16, "lat": 33.56, "lng": -7.617}, {"name": "Merchich", "count": 16, "lat": 33.61, "lng": -7.49}, {"name": "Maarif", "count": 15, "lat": 33.578, "lng": -7.632}, {"name": "Oulad Azzouz", "count": 14, "lat": 33.49, "lng": -7.557}, {"name": "Ville Verte", "count": 14, "lat": 33.535, "lng": -7.64}, {"name": "Mkansa", "count": 13, "lat": 33.527, "lng": -7.599}, {"name": "Sidi Maarouf", "count": 13, "lat": 33.534, "lng": -7.667}, {"name": "Tit Mellil", "count": 12, "lat": 33.54, "lng": -7.507}, {"name": "Bourgogne", "count": 11, "lat": 33.589, "lng": -7.638}, {"name": "Lissasfa", "count": 11, "lat": 33.527, "lng": -7.686}, {"name": "Mansouria", "count": 8, "lat": 33.775, "lng": -7.268}, {"name": "Californie", "count": 8, "lat": 33.598, "lng": -7.649}, {"name": "Bernoussi", "count": 8, "lat": 33.608, "lng": -7.548}, {"name": "Ain Harrouda", "count": 8, "lat": 33.625, "lng": -7.472}, {"name": "Tachfine", "count": 7, "lat": 33.568, "lng": -7.625}, {"name": "Lahraouiyine", "count": 7, "lat": 33.492, "lng": -7.593}, {"name": "Racine", "count": 6, "lat": 33.589, "lng": -7.635}, {"name": "Had Soualem", "count": 6, "lat": 33.403, "lng": -7.73}, {"name": "Palmier", "count": 6, "lat": 33.571, "lng": -7.621}, {"name": "Deroua", "count": 6, "lat": 33.435, "lng": -7.596}, {"name": "Ain Chok", "count": 6, "lat": 33.552, "lng": -7.606}, {"name": "Gauthier", "count": 6, "lat": 33.589, "lng": -7.626}, {"name": "Bouskoura ville", "count": 5, "lat": 33.46, "lng": -7.653}, {"name": "Oulfa", "count": 5, "lat": 33.546, "lng": -7.671}, {"name": "Rahma", "count": 5, "lat": 33.493, "lng": -7.712}, {"name": "Mohammedia", "count": 5, "lat": 33.686, "lng": -7.383}, {"name": "Laya", "count": 4, "lat": 33.48, "lng": -7.62}, {"name": "Chellalates", "count": 4, "lat": 33.56, "lng": -7.576}, {"name": "Berrechid", "count": 4, "lat": 33.264, "lng": -7.588}, {"name": "Tamaris", "count": 4, "lat": 33.516, "lng": -7.75}, {"name": "Ghandi", "count": 4, "lat": 33.574, "lng": -7.625}, {"name": "Roches noirs", "count": 4, "lat": 33.604, "lng": -7.565}, {"name": "Sidi Rahal", "count": 3, "lat": 33.409, "lng": -7.542}, {"name": "Hay Moulay Rachid", "count": 3, "lat": 33.536, "lng": -7.659}, {"name": "Anoual", "count": 3, "lat": 33.592, "lng": -7.601}, {"name": "Almaz", "count": 3, "lat": 33.572, "lng": -7.64}, {"name": "Abdelmoumen", "count": 3, "lat": 33.582, "lng": -7.636}];
 
 function initMap() {
-  if (document.getElementById('map-container').innerHTML !== '') return;
+  const mapEl = document.getElementById('map-container');
+  if (!mapEl || mapEl.innerHTML !== '') return;
 
   const script = document.createElement('script');
   script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';

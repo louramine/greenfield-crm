@@ -1466,7 +1466,7 @@ async function moveDeal(id, etape) {
   renderPipeline(); renderDashboard();
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const res = await supaPatch('deals', d.id, { etape });
-    if (!res) {
+    if (!res || !res.length) {
       d.etape = old; renderPipeline(); renderDashboard();
       showNotif('Échec de la mise à jour, deal remis à son étape.', true);
       return;
@@ -1498,7 +1498,7 @@ async function saveDealEdit() {
   if (isAdmin() && document.getElementById('de-associe').value) patch.associe = document.getElementById('de-associe').value;
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const res = await supaPatch('deals', d.id, patch);
-    if (!res) { showNotif('Échec de l\'enregistrement.', true); return; }
+    if (!res || !res.length) { showNotif('Échec de l\'enregistrement.', true); return; }
     logActivity('Deal modifié', 'deal', d.id, document.getElementById('de-title').textContent);
   }
   Object.assign(d, patch);
@@ -2079,7 +2079,7 @@ async function changeMembreRole(id, role) {
   if (!m) return;
   if ((m.email || '').toLowerCase() === myEmail && role !== 'admin' && !confirm('Vous allez perdre vos droits admin. Continuer ?')) { renderEquipe(); return; }
   const res = await supaPatch('equipe', id, { role });
-  if (!res) { showNotif('Échec de la mise à jour.', true); renderEquipe(); return; }
+  if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); renderEquipe(); return; }
   m.role = role;
   if ((m.email || '').toLowerCase() === myEmail) applyRole();
   renderEquipe(); showNotif('✓ Rôle mis à jour');
@@ -2493,7 +2493,7 @@ saveAcheteur = async function() {
     const idx = state.acheteurs.findIndex(x => x.id === editingAcheteurId);
     if (supabaseReady) {
       const res = await supaPatch('acheteurs', editingAcheteurId, acheteur);
-      if (!res) { showNotif('Échec de l\'enregistrement.', true); return; }
+      if (!res || !res.length) { showNotif('Échec de l\'enregistrement.', true); return; }
       logActivity('Modif acheteur', 'acheteur', editingAcheteurId, nom);
     }
     if (idx >= 0) state.acheteurs[idx] = local(editingAcheteurId, state.acheteurs[idx].score || 0);

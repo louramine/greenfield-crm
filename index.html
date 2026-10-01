@@ -525,7 +525,8 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
-.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'pipeline'"]){display:none !important}
+.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'pipeline'"]):not([onclick*="'acheteurs'"]){display:none !important}
+.role-sourceur #a-delete-btn{display:none !important}
 .role-sourceur #gf-export, .role-sourceur #associe-wrap, .role-sourceur button[onclick="confirmDeleteTerrain()"]{display:none !important}
 body:not(.role-admin) .admin-only{display:none !important}
 .on-dashboard #addBtn, .on-dashboard #gf-export, .on-dashboard #associe-wrap { display:none !important }
@@ -955,7 +956,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Associé / contact interne</label>
+      <label class="form-label">Contact interne (sourceur) *</label>
       <select class="form-select" id="a-associe"></select>
     </div>
     <div class="form-group" style="position:relative">
@@ -997,6 +998,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       <textarea class="form-textarea" id="a-notes" placeholder="Stratégie, historique, remarques..."></textarea>
     </div>
     <div class="modal-actions">
+      <button class="btn btn-ghost" id="a-delete-btn" style="margin-right:auto;color:#c0392b;display:none" onclick="deleteAcheteur(editingAcheteurId)">Supprimer</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-acheteur')">Annuler</button>
       <button class="btn btn-primary" onclick="saveAcheteur()">Enregistrer</button>
     </div>
@@ -1298,7 +1300,6 @@ function showPage(page, el) {
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
-  if (myRole === 'sourceur' && page === 'pipeline') addBtn.style.display = 'none';
 
   renderPage(page);
 }
@@ -1644,7 +1645,7 @@ function renderAcheteurs() {
         ${scoreBar}
         <div id="score-${a.id}" style="margin-top:5px;">${renderScoreStars(a.id, score)}</div>
       </td>
-      <td><button class="btn btn-ghost btn-sm" onclick="deleteAcheteur(${a.id})" style="font-size:11px;padding:4px 10px;color:#c0392b;border-color:#fad7d0">Suppr.</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openAcheteurEdit(${a.id})" style="font-size:11px;padding:4px 10px">Modif.</button></td>
     </tr>`;
   }).join('');
 }
@@ -1815,14 +1816,16 @@ function saveAcheteur() {
   showNotif('✓ Acheteur ajouté !');
 }
 
-function deleteAcheteur(id) {
-  if (!confirm('Supprimer cet acheteur ?')) return;
+async function deleteAcheteur(id) {
   const a = state.acheteurs.find(a => a.id === id);
-  state.acheteurs = state.acheteurs.filter(a => a.id !== id);
-  addActivity(`Acheteur supprimé : ${a?.nom}`);
-  saveState();
-  renderAcheteurs();
-  renderDashboard();
+  if (!a || !confirm('Supprimer cet acheteur définitivement ?')) return;
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    const ok = await supaDelete('acheteurs', id);
+    if (!ok) { showNotif('Échec de la suppression.', true); return; }
+    logActivity('Suppression acheteur', 'acheteur', id, a.nom);
+  }
+  state.acheteurs = state.acheteurs.filter(x => x.id !== id);
+  saveState(); closeModal('modal-acheteur'); renderAcheteurs(); renderDashboard();
   showNotif('Acheteur supprimé.');
 }
 
@@ -2417,6 +2420,21 @@ function associeOptions(selected) {
   if (selected && !list.includes(selected)) list.push(selected);
   return '<option value="">Non défini</option>' + list.map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
 }
+function contactOptions(selected) {
+  const mem = (state.equipe || []).filter(m => m.actif !== false);
+  const opt = m => `<option value="${m.nom}" ${m.nom === selected ? 'selected' : ''}>${m.nom}</option>`;
+  const src = mem.filter(m => m.role === 'sourceur'), oth = mem.filter(m => m.role !== 'sourceur');
+  let h = `<option value="" ${selected ? '' : 'selected'} disabled>Choisir un contact</option>`;
+  if (src.length) h += '<optgroup label="Sourceurs">' + src.map(opt).join('') + '</optgroup>';
+  if (oth.length) h += '<optgroup label="Associés et admins">' + oth.map(opt).join('') + '</optgroup>';
+  if (!mem.length) h += ['Ayoub','Hachim','Amine'].map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
+  if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${selected}" selected>${selected}</option>`;
+  return h;
+}
+function lockContactForSourceur() {
+  const sel = document.getElementById('a-associe');
+  if (myRole === 'sourceur') { sel.value = currentAssocie; sel.disabled = true; } else sel.disabled = false;
+}
 function resetAcheteurForm() {
   ['a-nom','a-contact','a-ticket-min','a-ticket-max','a-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('a-type').selectedIndex = 0;
@@ -2427,7 +2445,9 @@ function resetAcheteurForm() {
 function openAcheteurNew() {
   editingAcheteurId = null; resetAcheteurForm();
   document.getElementById('a-modal-title').textContent = 'Nouvel Acheteur';
-  document.getElementById('a-associe').innerHTML = associeOptions(currentAssocie || '');
+  document.getElementById('a-associe').innerHTML = contactOptions(myRole === 'sourceur' ? currentAssocie : '');
+  lockContactForSourceur();
+  document.getElementById('a-delete-btn').style.display = 'none';
   villesSel = new Set(); renderVilles();
   openModal('modal-acheteur');
 }
@@ -2444,7 +2464,9 @@ function openAcheteurEdit(id) {
   document.getElementById('a-ticket-min').value = a.ticketMin || '';
   document.getElementById('a-ticket-max').value = a.ticketMax || '';
   document.getElementById('a-notes').value = a.notes || '';
-  document.getElementById('a-associe').innerHTML = associeOptions(a.associe || '');
+  document.getElementById('a-associe').innerHTML = contactOptions(a.associe || '');
+  lockContactForSourceur();
+  document.getElementById('a-delete-btn').style.display = myRole === 'sourceur' ? 'none' : '';
   villesSel = new Set((a.villes && a.villes.length) ? a.villes : (a.zones || '').split(',').map(x => x.trim()).filter(Boolean));
   renderVilles();
   openModal('modal-acheteur');
@@ -2453,12 +2475,14 @@ function openAcheteurEdit(id) {
 saveAcheteur = async function() {
   const nom = document.getElementById('a-nom').value.trim();
   if (!nom) { showNotif('⚠ Le nom est obligatoire', true); return; }
+  const contactInterne = myRole === 'sourceur' ? currentAssocie : document.getElementById('a-associe').value;
+  if (!contactInterne) { showNotif('⚠ Choisissez le contact interne (sourceur)', true); return; }
   const villes = [...villesSel];
   const acheteur = {
     nom, contact: document.getElementById('a-contact').value,
     type: document.getElementById('a-type').value, statut: document.getElementById('a-statut').value,
     zones: villes.join(', '), villes,
-    associe: document.getElementById('a-associe').value || null,
+    associe: contactInterne,
     ticket_min: parseFloat(document.getElementById('a-ticket-min').value) || null,
     ticket_max: parseFloat(document.getElementById('a-ticket-max').value) || null,
     usage: document.getElementById('a-usage').value,

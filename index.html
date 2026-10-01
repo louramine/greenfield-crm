@@ -1018,7 +1018,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       <select class="form-select" id="d-acheteur"></select>
     </div>
     <div class="form-group admin-only">
-      <label class="form-label">Associé responsable du deal</label>
+      <label class="form-label">Responsable du deal *</label>
       <select class="form-select" id="d-associe"></select>
     </div>
     <div class="form-grid">
@@ -1075,7 +1075,7 @@ body:not(.role-admin) .admin-only{display:none !important}
   <div class="modal">
     <div class="modal-title" id="de-title">Deal</div>
     <div class="form-group admin-only">
-      <label class="form-label">Associé responsable du deal</label>
+      <label class="form-label">Responsable du deal *</label>
       <select class="form-select" id="de-associe"></select>
     </div>
     <div class="form-grid">
@@ -1488,12 +1488,13 @@ function openDealEdit(id) {
   document.getElementById('de-etape').value = d.etape;
   document.getElementById('de-montant').value = d.montant || '';
   document.getElementById('de-notes').value = d.notes || '';
-  document.getElementById('de-associe').innerHTML = associeOptions(d.associe || '');
+  document.getElementById('de-associe').innerHTML = contactOptions(d.associe || '');
   openModal('modal-deal-edit');
 }
 async function saveDealEdit() {
   const d = state.deals.find(x => x.id === editingDealId);
   if (!d) return;
+  if (isAdmin() && !document.getElementById('de-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
   const patch = { etape: document.getElementById('de-etape').value, montant: parseFloat(document.getElementById('de-montant').value) || 0, notes: document.getElementById('de-notes').value };
   if (isAdmin() && document.getElementById('de-associe').value) patch.associe = document.getElementById('de-associe').value;
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
@@ -1838,7 +1839,7 @@ function openDealModal() {
     : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
   document.getElementById('d-montant').value = '';
   document.getElementById('d-notes').value = '';
-  document.getElementById('d-associe').innerHTML = associeOptions(currentAssocie || '');
+  document.getElementById('d-associe').innerHTML = contactOptions('');
   openModal('modal-deal');
 }
 
@@ -2517,6 +2518,7 @@ saveDeal = async function() {
   const terrainId = parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
   if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
+  if (isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
   const terrain = state.terrains.find(t => t.id === terrainId);
   const acheteur = state.acheteurs.find(a => a.id === acheteurId);
   const deal = {

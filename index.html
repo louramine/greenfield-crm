@@ -525,6 +525,7 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
+.role-sourceur .nav-item:not([onclick*="'terrains'"]):not([onclick*="'carte'"]){display:none !important}
 .on-dashboard #addBtn, .on-dashboard #gf-export, .on-dashboard #associe-wrap { display:none !important }
 .pipeline-col.drag-over{outline:2px dashed #2d9e5f;outline-offset:-4px;background:rgba(45,158,95,.08)}
 .deal-card.dragging{opacity:.4}
@@ -829,7 +830,8 @@
             <tr>
               <th>Nom / Société</th>
               <th>Type</th>
-              <th>Zones d'intérêt</th>
+              <th>Associé</th>
+              <th>Villes d'intérêt</th>
               <th>Ticket (MAD)</th>
               <th>Usage recherché</th>
               <th>Statut</th>
@@ -845,6 +847,7 @@
 
     <!-- ═══════════ ÉQUIPE ═══════════ -->
     <div class="page" id="page-equipe">
+      <div id="equipe-bar" style="margin-bottom:16px"></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;" id="equipe-grid"></div>
     </div>
 
@@ -917,7 +920,7 @@
 <!-- Modal Acheteur -->
 <div class="modal-overlay" id="modal-acheteur">
   <div class="modal">
-    <div class="modal-title">Nouvel Acheteur</div>
+    <div class="modal-title" id="a-modal-title">Nouvel Acheteur</div>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Nom / Société *</label>
@@ -949,8 +952,20 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Zones d'intérêt</label>
-      <input class="form-input" id="a-zones" placeholder="Ex: Casablanca, Rabat, Marrakech">
+      <label class="form-label">Associé / contact interne</label>
+      <select class="form-select" id="a-associe"></select>
+    </div>
+    <div class="form-group" style="position:relative">
+      <label class="form-label">Villes d'intérêt</label>
+      <button type="button" class="form-select" id="a-villes-btn" onclick="toggleVilles(event)" style="text-align:left;cursor:pointer">Sélectionner des villes</button>
+      <div id="a-villes-panel" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:#fff;border:1px solid #cfd8d3;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;max-height:260px;overflow:auto" onclick="event.stopPropagation()">
+        <div id="a-villes-list" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;border-top:1px solid #eee;padding-top:8px">
+          <input class="form-input" id="a-ville-new" placeholder="Autre ville" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addVilleCustom();}">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addVilleCustom()">Ajouter</button>
+        </div>
+      </div>
+      <div id="a-villes-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
     <div class="form-grid">
       <div class="form-group">
@@ -1020,6 +1035,28 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-deal')">Annuler</button>
       <button class="btn btn-primary" onclick="saveDeal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Membre -->
+<div class="modal-overlay" id="modal-membre">
+  <div class="modal">
+    <div class="modal-title">Ajouter un membre</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nom *</label><input class="form-input" id="m-nom" placeholder="Prénom"></div>
+      <div class="form-group"><label class="form-label">Email de connexion *</label><input class="form-input" id="m-email" type="email" placeholder="nom@exemple.com"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Rôle</label>
+        <select class="form-select" id="m-role"><option value="sourceur">Sourceur (vue basique)</option><option value="associe">Associé (accès complet)</option><option value="admin">Admin (gère l'équipe)</option></select></div>
+      <div class="form-group"><label class="form-label">Spécialité</label><input class="form-input" id="m-specialite" placeholder="Sourcing foncier"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Zones</label><input class="form-input" id="m-zones" placeholder="Casablanca Sud, Bouskoura"></div>
+    <div style="font-size:12px;color:#8aab97;margin-bottom:8px">Le compte de connexion doit aussi être créé dans Supabase (Authentication, Users) avec le même email.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-membre')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMembre()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -1256,7 +1293,7 @@ function showPage(page, el) {
 
 function handleAdd() {
   if (currentPage === 'terrains') openTerrainModal();
-  else if (currentPage === 'acheteurs') openModal('modal-acheteur');
+  else if (currentPage === 'acheteurs') openAcheteurNew();
   else if (currentPage === 'pipeline') openDealModal();
 }
 
@@ -1555,7 +1592,7 @@ function resetFilters() {
 function renderAcheteurs() {
   const tbody = document.getElementById('acheteurs-tbody');
   if (state.acheteurs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px">Aucun acheteur. Cliquez sur "+ Nouvel Acheteur" pour commencer.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:30px">Aucun acheteur. Cliquez sur "+ Nouvel Acheteur" pour commencer.</td></tr>';
     return;
   }
   // Sort by score desc
@@ -1572,9 +1609,10 @@ function renderAcheteurs() {
       <span style="font-size:11px;font-weight:700;color:${scoreColor};min-width:24px;">${score}/10</span>
     </div>`;
     return `<tr>
-      <td><strong>${a.nom}</strong>${a.contact ? `<br><span style="font-size:11px;color:#888">${a.contact}</span>` : ''}</td>
+      <td onclick="openAcheteurEdit(${a.id})" style="cursor:pointer" title="Modifier"><strong>${a.nom}</strong>${a.contact ? `<br><span style="font-size:11px;color:#888">${a.contact}</span>` : ''}</td>
       <td><span class="badge ${typeClass}">${a.type}</span></td>
-      <td style="font-size:12px">${a.zones || '—'}</td>
+      <td style="font-size:12px;font-weight:600">${a.associe || '-'}</td>
+      <td style="font-size:12px">${(a.villes && a.villes.length) ? a.villes.join(', ') : (a.zones || '-')}</td>
       <td style="font-size:12px">${a.ticketMin || '?'} – ${a.ticketMax || '?'} M MAD</td>
       <td>${a.usage || '—'}</td>
       <td><span class="badge ${statutClass}">${a.statut}</span></td>
@@ -1920,80 +1958,115 @@ function buildMap() {
 
 
 // ═══════════ ÉQUIPE ═══════════
-const equipeData = [
-  { nom:'Ayoub',      avatar:'AY', leads:24, deals:8,  nego:5, closing:3, specialite:'Sourcing Foncier', zones:'Casablanca Sud, Bouskoura', color:'#4eca82' },
-  { nom:'Amine',      avatar:'AM', leads:31, deals:11, nego:7, closing:4, specialite:'Négociation & Deals', zones:'Casablanca Centre, Maarif', color:'#60a5fa' },
-  { nom:'Abderrahim', avatar:'AB', leads:19, deals:6,  nego:4, closing:2, specialite:'Due Diligence Juridique', zones:'Rabat, Salé, Témara', color:'#f97316' },
-  { nom:'Hachim',     avatar:'HA', leads:27, deals:9,  nego:6, closing:3, specialite:'Relations Investisseurs', zones:'Ain Sebaa, Bernoussi, Merchich', color:'#c084fc' },
-  { nom:'Said',       avatar:'SA', leads:15, deals:5,  nego:3, closing:2, specialite:'Sourcing & Terrain', zones:'Darbouazza, Tamaris, Rahma', color:'#f43f5e' },
-];
+let equipeAvailable = false;
+let myRole = 'admin';
+let myEmail = '';
+const ROLE_LABELS = { admin: 'Admin', associe: 'Associé', sourceur: 'Sourceur' };
+const MEMBER_COLORS = ['#4eca82','#60a5fa','#f97316','#c084fc','#f43f5e','#eab308','#14b8a6'];
+const isAdmin = () => myRole === 'admin';
 
 function renderEquipe() {
   const grid = document.getElementById('equipe-grid');
-  const totalLeads = equipeData.reduce((s,m) => s + m.leads, 0);
-  const totalDeals = equipeData.reduce((s,m) => s + m.deals, 0);
-  const totalNego  = equipeData.reduce((s,m) => s + m.nego, 0);
-
-  grid.innerHTML = equipeData.map(m => `
-    <div style="background:rgba(255,255,255,0.97);border-radius:18px;padding:26px 24px;box-shadow:0 4px 24px rgba(10,46,26,0.10);position:relative;overflow:hidden;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${m.color};"></div>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
-        <div style="width:52px;height:52px;border-radius:14px;background:${m.color}22;border:2px solid ${m.color};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:${m.color}">${m.avatar}</div>
-        <div>
-          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#0a2e1a">${m.nom}</div>
-          <div style="font-size:11.5px;color:#8aab97;font-weight:500;margin-top:2px">${m.specialite}</div>
+  const membres = state.equipe || [];
+  const bar = document.getElementById('equipe-bar');
+  if (bar) bar.innerHTML = isAdmin() && equipeAvailable ? '<button class="btn btn-primary" onclick="openMembreModal()">+ Ajouter un membre</button>' : '';
+  if (!equipeAvailable) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#8aab97;padding:30px;text-align:center">La table équipe n\'est pas encore créée dans Supabase.</div>';
+    return;
+  }
+  if (!membres.length) { grid.innerHTML = '<div style="grid-column:1/-1;color:#8aab97;padding:30px;text-align:center">Aucun membre.</div>'; return; }
+  grid.innerHTML = membres.map((m, i) => {
+    const color = MEMBER_COLORS[i % MEMBER_COLORS.length];
+    const init = (m.nom || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
+    const nAch = state.acheteurs.filter(a => a.associe === m.nom).length;
+    const nDeals = state.deals.filter(d => d.associe === m.nom).length;
+    const nTer = state.terrains.filter(t => t.sourceur === m.nom).length;
+    const stat = (v, l, c) => `<div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:${c}">${v}</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8aab97;font-weight:600;margin-top:2px">${l}</div></div>`;
+    const admin = isAdmin() ? `<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #e2ece7">
+        <select class="form-select" style="flex:1;padding:6px 8px;font-size:12px" onchange="changeMembreRole(${m.id}, this.value)">
+          ${['admin','associe','sourceur'].map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`).join('')}
+        </select>
+        <button class="btn btn-ghost btn-sm" style="color:#c0392b;border-color:#fad7d0" onclick="deleteMembre(${m.id})">Retirer</button></div>` : '';
+    return `<div style="background:rgba(255,255,255,0.97);border-radius:18px;padding:24px;box-shadow:0 4px 24px rgba(10,46,26,0.10);position:relative;overflow:hidden;${m.actif === false ? 'opacity:.55' : ''}">
+      <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${color}"></div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <div style="width:52px;height:52px;border-radius:14px;background:${color}22;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-weight:800;color:${color}">${init}</div>
+        <div style="min-width:0">
+          <div style="font-size:18px;font-weight:800;color:#0a2e1a">${m.nom} <span style="font-size:10px;font-weight:700;background:${color}22;color:${color};border-radius:20px;padding:2px 8px;vertical-align:middle">${ROLE_LABELS[m.role] || m.role}</span></div>
+          <div style="font-size:11.5px;color:#8aab97;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${m.email}</div>
+          ${m.specialite ? `<div style="font-size:11.5px;color:#8aab97">${m.specialite}</div>` : ''}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-        <div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center;">
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#1a5c35">${m.leads}</div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-top:2px">Leads</div>
-        </div>
-        <div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center;">
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${m.color}">${m.deals}</div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-top:2px">Deals</div>
-        </div>
-        <div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center;">
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#f97316">${m.nego}</div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-top:2px">Négos</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #e2ece7;">
-        <div style="font-size:11.5px;color:#8aab97;">📍 ${m.zones}</div>
-        <div style="background:${m.color}22;color:${m.color};padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;">Closing: ${m.closing}</div>
-      </div>
-    </div>
-  `).join('') + `
-    <div style="background:linear-gradient(135deg,#0a2e1a,#1a5c35);border-radius:18px;padding:26px 24px;box-shadow:0 4px 24px rgba(10,46,26,0.2);color:#fff;display:flex;flex-direction:column;justify-content:space-between;">
-      <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#4eca82;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px">Performance Équipe</div>
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:#8aab97;margin-bottom:5px"><span>Total Leads</span><span style="color:#4eca82;font-weight:700">${totalLeads}</span></div>
-          <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:6px;background:#4eca82;border-radius:3px;width:100%"></div></div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:#8aab97;margin-bottom:5px"><span>Total Deals actifs</span><span style="color:#60a5fa;font-weight:700">${totalDeals}</span></div>
-          <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:6px;background:#60a5fa;border-radius:3px;width:${Math.round(totalDeals/totalLeads*100)}%"></div></div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:#8aab97;margin-bottom:5px"><span>Négociations en cours</span><span style="color:#f97316;font-weight:700">${totalNego}</span></div>
-          <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:6px;background:#f97316;border-radius:3px;width:${Math.round(totalNego/totalLeads*100)}%"></div></div>
-        </div>
-      </div>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div style="text-align:center">
-          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#4eca82">${Math.round(totalDeals/equipeData.length*10)/10}</div>
-          <div style="font-size:10px;color:#8aab97;text-transform:uppercase;letter-spacing:0.08em">Deals / membre</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#f97316">${Math.round(totalDeals/totalLeads*100)}%</div>
-          <div style="font-size:10px;color:#8aab97;text-transform:uppercase;letter-spacing:0.08em">Taux conversion</div>
-        </div>
-      </div>
-    </div>
-  `;
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${stat(nAch, 'Acheteurs', '#1a5c35')}${stat(nDeals, 'Deals', color)}${stat(nTer, 'Terrains', '#f97316')}</div>
+      ${m.zones ? `<div style="font-size:11.5px;color:#8aab97;margin-top:12px">📍 ${m.zones}</div>` : ''}
+      ${admin}
+    </div>`;
+  }).join('');
 }
 
+async function loadEquipe() {
+  try {
+    const rows = await supaGet('equipe', 'select=*&order=id.asc');
+    state.equipe = rows; equipeAvailable = true;
+  } catch(e) { equipeAvailable = false; state.equipe = []; }
+}
+function gfEmail() {
+  try {
+    const sess = JSON.parse(localStorage.getItem('gf-session') || 'null');
+    const p = JSON.parse(atob(sess.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return (p.email || '').toLowerCase();
+  } catch(e) { return ''; }
+}
+function applyRole() {
+  myEmail = gfEmail();
+  const me = (state.equipe || []).find(m => (m.email || '').toLowerCase() === myEmail && m.actif !== false);
+  myRole = !equipeAvailable ? 'admin' : (me ? me.role : 'sourceur');
+  if (me && me.nom) { currentAssocie = me.nom; try { localStorage.setItem('gf-associe', me.nom); } catch(e) {} }
+  document.body.classList.toggle('role-sourceur', myRole === 'sourceur');
+  document.body.classList.toggle('role-admin', myRole === 'admin');
+  if (myRole === 'sourceur') {
+    const el = document.querySelector('.nav-item[onclick*="showPage(\'terrains\'"]');
+    if (el) showPage('terrains', el);
+  } else if (currentPage === 'equipe') renderEquipe();
+}
+
+function openMembreModal() {
+  ['m-nom','m-email','m-specialite','m-zones'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('m-role').value = 'sourceur';
+  openModal('modal-membre');
+}
+async function saveMembre() {
+  const nom = document.getElementById('m-nom').value.trim();
+  const email = document.getElementById('m-email').value.trim().toLowerCase();
+  if (!nom || !email) { showNotif('⚠ Nom et email obligatoires', true); return; }
+  const row = { nom, email, role: document.getElementById('m-role').value, specialite: document.getElementById('m-specialite').value.trim() || null, zones: document.getElementById('m-zones').value.trim() || null };
+  const res = await supaPost('equipe', row);
+  if (!res || !res[0]) { showNotif('Échec : email déjà utilisé ou droits insuffisants.', true); return; }
+  state.equipe.push(res[0]);
+  logActivity('Ajout membre', 'equipe', res[0].id, nom);
+  closeModal('modal-membre'); renderEquipe(); showNotif('✓ Membre ajouté');
+}
+async function changeMembreRole(id, role) {
+  const m = state.equipe.find(x => x.id === id);
+  if (!m) return;
+  if ((m.email || '').toLowerCase() === myEmail && role !== 'admin' && !confirm('Vous allez perdre vos droits admin. Continuer ?')) { renderEquipe(); return; }
+  const res = await supaPatch('equipe', id, { role });
+  if (!res) { showNotif('Échec de la mise à jour.', true); renderEquipe(); return; }
+  m.role = role;
+  if ((m.email || '').toLowerCase() === myEmail) applyRole();
+  renderEquipe(); showNotif('✓ Rôle mis à jour');
+}
+async function deleteMembre(id) {
+  const m = state.equipe.find(x => x.id === id);
+  if (!m) return;
+  if ((m.email || '').toLowerCase() === myEmail) { showNotif('Vous ne pouvez pas vous retirer vous-même.', true); return; }
+  if (!confirm(`Retirer ${m.nom} de l'équipe ?`)) return;
+  const ok = await supaDelete('equipe', id);
+  if (!ok) { showNotif('Échec de la suppression.', true); return; }
+  state.equipe = state.equipe.filter(x => x.id !== id);
+  logActivity('Retrait membre', 'equipe', id, m.nom);
+  renderEquipe(); showNotif('Membre retiré.');
+}
 
 // ═══════════ TERRAIN DETAIL ═══════════
 let currentDetailId = null;
@@ -2183,7 +2256,7 @@ async function loadFromSupabase() {
   if (Array.isArray(acheteurs)) {
     state.acheteurs = acheteurs.map(a => ({
       id: a.id, nom: a.nom || '', contact: a.contact || '', type: a.type || '',
-      statut: a.statut || '', zones: a.zones || '',
+      statut: a.statut || '', zones: a.zones || '', associe: a.associe || '', villes: Array.isArray(a.villes) ? a.villes : [],
       ticketMin: a.ticket_min !== undefined ? a.ticket_min : (a.ticketMin || 0),
       ticketMax: a.ticket_max !== undefined ? a.ticket_max : (a.ticketMax || 0),
       usage: a.usage || '', notes: a.notes || '', score: a.score || 0,
@@ -2276,30 +2349,117 @@ saveTerrainDetail = async function() {
   saveState(); closeModal('modal-terrain-detail'); filterTerrains(); showNotif('✓ Terrain mis à jour !');
 }
 
-const _origSaveAcheteur = saveAcheteur;
+const VILLES_BASE = ['Casablanca','Rabat','Marrakech','Tanger','Agadir','Fès','Meknès','Kénitra','Salé','Témara','Mohammedia','Bouskoura','Dar Bouazza','Nouaceur','Skhirat','Settat','Berrechid','Benguérir','El Jadida','Tétouan','Oujda','Nador','Essaouira','Béni Mellal','Ouarzazate','Laâyoune','Dakhla','Ifrane'];
+let villesSel = new Set();
+let villesExtra = [];
+let editingAcheteurId = null;
+
+function villesAll() {
+  const extra = new Set(villesExtra);
+  state.acheteurs.forEach(a => (a.villes || []).forEach(v => extra.add(v)));
+  villesSel.forEach(v => extra.add(v));
+  VILLES_BASE.forEach(v => extra.delete(v));
+  return [...VILLES_BASE, ...[...extra].sort()];
+}
+function renderVilles() {
+  document.getElementById('a-villes-list').innerHTML = villesAll().map(v =>
+    `<label style="display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 6px;border-radius:6px;cursor:pointer"><input type="checkbox" ${villesSel.has(v) ? 'checked' : ''} onchange="toggleVille('${v.replace(/'/g, "\\'")}', this.checked)"> ${v}</label>`).join('');
+  const n = villesSel.size;
+  document.getElementById('a-villes-btn').textContent = n ? n + ' ville' + (n > 1 ? 's' : '') + ' sélectionnée' + (n > 1 ? 's' : '') : 'Sélectionner des villes';
+  document.getElementById('a-villes-chips').innerHTML = [...villesSel].map(v =>
+    `<span style="background:#e3f3ea;color:#1a5c35;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${v}</span>`).join('');
+}
+function toggleVille(v, on) { if (on) villesSel.add(v); else villesSel.delete(v); renderVilles(); }
+function toggleVilles(ev) {
+  ev.stopPropagation();
+  const p = document.getElementById('a-villes-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function addVilleCustom() {
+  const inp = document.getElementById('a-ville-new');
+  const v = inp.value.trim();
+  if (!v) return;
+  const known = villesAll().find(x => x.toLowerCase() === v.toLowerCase());
+  const name = known || v.charAt(0).toUpperCase() + v.slice(1);
+  if (!known) villesExtra.push(name);
+  villesSel.add(name); inp.value = ''; renderVilles();
+}
+document.addEventListener('click', () => { const p = document.getElementById('a-villes-panel'); if (p) p.style.display = 'none'; });
+
+function associeOptions(selected) {
+  const names = (state.equipe || []).filter(m => m.actif !== false).map(m => m.nom);
+  const list = names.length ? names : ['Ayoub','Hachim','Amine'];
+  if (selected && !list.includes(selected)) list.push(selected);
+  return '<option value="">Non défini</option>' + list.map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
+}
+function resetAcheteurForm() {
+  ['a-nom','a-contact','a-ticket-min','a-ticket-max','a-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('a-type').selectedIndex = 0;
+  document.getElementById('a-statut').selectedIndex = 0;
+  document.getElementById('a-usage').selectedIndex = 0;
+  document.getElementById('a-villes-panel').style.display = 'none';
+}
+function openAcheteurNew() {
+  editingAcheteurId = null; resetAcheteurForm();
+  document.getElementById('a-modal-title').textContent = 'Nouvel Acheteur';
+  document.getElementById('a-associe').innerHTML = associeOptions(currentAssocie || '');
+  villesSel = new Set(); renderVilles();
+  openModal('modal-acheteur');
+}
+function openAcheteurEdit(id) {
+  const a = state.acheteurs.find(x => x.id === id);
+  if (!a) return;
+  editingAcheteurId = id; resetAcheteurForm();
+  document.getElementById('a-modal-title').textContent = 'Modifier l\'acheteur';
+  document.getElementById('a-nom').value = a.nom || '';
+  document.getElementById('a-contact').value = a.contact || '';
+  document.getElementById('a-type').value = a.type || 'Promoteur';
+  document.getElementById('a-statut').value = a.statut || 'Froid';
+  document.getElementById('a-usage').value = a.usage || 'Tous';
+  document.getElementById('a-ticket-min').value = a.ticketMin || '';
+  document.getElementById('a-ticket-max').value = a.ticketMax || '';
+  document.getElementById('a-notes').value = a.notes || '';
+  document.getElementById('a-associe').innerHTML = associeOptions(a.associe || '');
+  villesSel = new Set((a.villes && a.villes.length) ? a.villes : (a.zones || '').split(',').map(x => x.trim()).filter(Boolean));
+  renderVilles();
+  openModal('modal-acheteur');
+}
+
 saveAcheteur = async function() {
   const nom = document.getElementById('a-nom').value.trim();
   if (!nom) { showNotif('⚠ Le nom est obligatoire', true); return; }
+  const villes = [...villesSel];
   const acheteur = {
     nom, contact: document.getElementById('a-contact').value,
     type: document.getElementById('a-type').value, statut: document.getElementById('a-statut').value,
-    zones: document.getElementById('a-zones').value,
+    zones: villes.join(', '), villes,
+    associe: document.getElementById('a-associe').value || null,
     ticket_min: parseFloat(document.getElementById('a-ticket-min').value) || null,
     ticket_max: parseFloat(document.getElementById('a-ticket-max').value) || null,
     usage: document.getElementById('a-usage').value,
-    notes: document.getElementById('a-notes').value, score: 0,
+    notes: document.getElementById('a-notes').value,
   };
-  if (supabaseReady) {
-    const res = await supaPost('acheteurs', acheteur);
-    if (res && res[0]) {
-      state.acheteurs.push({ id: res[0].id, nom, contact: acheteur.contact, type: acheteur.type, statut: acheteur.statut, zones: acheteur.zones, ticketMin: acheteur.ticket_min, ticketMax: acheteur.ticket_max, usage: acheteur.usage, notes: acheteur.notes, score: 0 });
-      await logActivity('Ajout acheteur', 'acheteur', res[0].id, nom);
-      showNotif('✓ Acheteur ajouté dans Supabase !');
+  const local = (id, score) => ({ id, nom, contact: acheteur.contact, type: acheteur.type, statut: acheteur.statut, zones: acheteur.zones, villes, associe: acheteur.associe || '', ticketMin: acheteur.ticket_min, ticketMax: acheteur.ticket_max, usage: acheteur.usage, notes: acheteur.notes, score });
+  if (editingAcheteurId) {
+    const idx = state.acheteurs.findIndex(x => x.id === editingAcheteurId);
+    if (supabaseReady) {
+      const res = await supaPatch('acheteurs', editingAcheteurId, acheteur);
+      if (!res) { showNotif('Échec de l\'enregistrement.', true); return; }
+      logActivity('Modif acheteur', 'acheteur', editingAcheteurId, nom);
     }
+    if (idx >= 0) state.acheteurs[idx] = local(editingAcheteurId, state.acheteurs[idx].score || 0);
+    saveState(); showNotif('✓ Acheteur mis à jour');
+  } else if (supabaseReady) {
+    const res = await supaPost('acheteurs', { ...acheteur, score: 0 });
+    if (!res || !res[0]) { showNotif('Échec de l\'ajout.', true); return; }
+    state.acheteurs.push(local(res[0].id, 0));
+    logActivity('Ajout acheteur', 'acheteur', res[0].id, nom);
+    showNotif('✓ Acheteur ajouté');
   } else {
-    state.acheteurs.push({ id: state.nextAcheteurId++, nom, contact: acheteur.contact, type: acheteur.type, statut: acheteur.statut, zones: acheteur.zones, ticketMin: acheteur.ticket_min, ticketMax: acheteur.ticket_max, usage: acheteur.usage, notes: acheteur.notes, score: 0 });
+    state.acheteurs.push(local(state.nextAcheteurId++, 0));
     saveState(); showNotif('✓ Acheteur ajouté (local).');
   }
+  editingAcheteurId = null;
   closeModal('modal-acheteur'); renderAcheteurs(); renderDashboard();
 }
 
@@ -2616,12 +2776,15 @@ async function gfLogout() {
 }
 function gfShowLogin() { document.getElementById('gf-login').style.display = 'flex'; setTimeout(() => document.getElementById('gf-email').focus(), 50); }
 let gfStarted = false;
-function gfStart() {
+async function gfStart() {
   document.getElementById('gf-login').style.display = 'none';
   if (gfStarted) return;
   gfStarted = true;
   loadState();
-  loadFromSupabase();
+  try { await loadFromSupabase(); } catch(e) {}
+  await loadEquipe();
+  applyRole();
+  renderPage(currentPage);
   setInterval(gfRefresh, 45 * 60 * 1000);
 }
 document.getElementById('gf-login-form').addEventListener('submit', async (ev) => {

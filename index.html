@@ -2524,7 +2524,7 @@ async function loadActivityLog() {
 function renderActivityLog() {
   const el = document.getElementById('activity-log-list');
   if (!el) return;
-  const logs = state.activityLog || [];
+  const logs = (state.activityLog || []).slice(0, 5);
   if (logs.length === 0) {
     el.innerHTML = '<div style="color:#aaa;font-size:12px;text-align:center;padding:16px 0;">Aucune activité enregistrée</div>';
     return;

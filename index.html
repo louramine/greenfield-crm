@@ -581,26 +581,26 @@
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">◈</div>
           <div class="kpi-label">Valeur Portefeuille</div>
-          <div class="kpi-value">47 955</div>
-          <div class="kpi-sub">M MAD — Portefeuille total</div>
+          <div class="kpi-value" id="kpi-valeur">47 955</div>
+          <div class="kpi-sub" id="kpi-valeur-sub">M MAD, portefeuille total</div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">▣</div>
           <div class="kpi-label">Terrains Référencés</div>
-          <div class="kpi-value">815</div>
-          <div class="kpi-sub">Terrains sourcés au Maroc</div>
+          <div class="kpi-value" id="kpi-terrains">815</div>
+          <div class="kpi-sub" id="kpi-terrains-sub">Terrains sourcés au Maroc</div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">⬡</div>
           <div class="kpi-label">Superficie Totale</div>
-          <div class="kpi-value">47.2M</div>
-          <div class="kpi-sub">m² — 47 265 228 m²</div>
+          <div class="kpi-value" id="kpi-surface">47.2M</div>
+          <div class="kpi-sub" id="kpi-surface-sub">m² total</div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">⇄</div>
           <div class="kpi-label">Deals en cours</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-sub">Négociations actives</div>
+          <div class="kpi-value" id="kpi-deals">34</div>
+          <div class="kpi-sub" id="kpi-deals-sub">Négociations actives</div>
         </div>
       </div>
 
@@ -611,25 +611,25 @@
           <div class="kpi-icon">🥇</div>
           <div class="kpi-label">B5 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Résidentiel standing</span></div>
           <div class="kpi-value" id="kpi-b5">58</div>
-          <div class="kpi-sub">terrains · moy. <strong>26 134 MAD/m²</strong></div>
+          <div class="kpi-sub">terrains · moy. <strong id="kpi-b5-avg">26 134 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">🥈</div>
           <div class="kpi-label">I2S1 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Industriel logistique</span></div>
           <div class="kpi-value" id="kpi-i2s1">26</div>
-          <div class="kpi-sub">terrains · moy. <strong>1 824 MAD/m²</strong></div>
+          <div class="kpi-sub">terrains · moy. <strong id="kpi-i2s1-avg">1 824 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">🥉</div>
           <div class="kpi-label">E3 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Équipement 3</span></div>
           <div class="kpi-value" id="kpi-e3">26</div>
-          <div class="kpi-sub">terrains · moy. <strong>1 853 MAD/m²</strong></div>
+          <div class="kpi-sub">terrains · moy. <strong id="kpi-e3-avg">1 853 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">④</div>
           <div class="kpi-label">B4 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Résidentiel collectif</span></div>
           <div class="kpi-value" id="kpi-b4">25</div>
-          <div class="kpi-sub">terrains · moy. <strong>10 887 MAD/m²</strong></div>
+          <div class="kpi-sub">terrains · moy. <strong id="kpi-b4-avg">10 887 MAD/m²</strong></div>
         </div>
       </div>
 
@@ -1220,9 +1220,20 @@ function renderPage(page) {
 }
 
 function renderDashboard() {
-  if (document.getElementById('kpi-terrains')) document.getElementById('kpi-terrains').textContent = state.terrains.length;
-  const totalM2 = state.terrains.reduce((s, t) => s + (t.superficie || 0), 0);
-  if (document.getElementById('kpi-terrains-sub')) document.getElementById('kpi-terrains-sub').textContent = totalM2.toLocaleString('fr-FR') + ' m² total';
+  const setT = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  const fr = n => Math.round(n).toLocaleString('fr-FR');
+  const T = state.terrains;
+  const totalM2 = T.reduce((s, t) => s + (Number(t.superficie) || 0), 0);
+  const valeurM = T.reduce((s, t) => {
+    const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
+    return s + (sup > 0 && prix > 0 ? sup * prix / 1e6 : 0);
+  }, 0);
+  setT('kpi-terrains', T.length);
+  setT('kpi-terrains-sub', 'Terrains référencés dans la base');
+  setT('kpi-surface', totalM2 >= 1e6 ? (totalM2 / 1e6).toFixed(1) + 'M' : fr(totalM2));
+  setT('kpi-surface-sub', 'm² cumulés');
+  setT('kpi-valeur', fr(valeurM));
+  setT('kpi-valeur-sub', 'M MAD, superficie × prix/m²');
   // Top 4 Def Urba KPIs — computed dynamically
   const urbaCount = {};
   state.terrains.forEach(t => {
@@ -1234,12 +1245,17 @@ function renderDashboard() {
   const i2s1 = state.terrains.filter(t => ['I2S1','I2S','I2S1'].includes((t.urba||'').trim().toUpperCase())).length;
   const e3 = state.terrains.filter(t => (t.urba||'').trim().toUpperCase() === 'E3').length;
   const b4 = state.terrains.filter(t => (t.urba||'').trim().toUpperCase() === 'B4').length;
-  if (document.getElementById('kpi-b5')) document.getElementById('kpi-b5').textContent = b5 || 58;
-  if (document.getElementById('kpi-i2s1')) document.getElementById('kpi-i2s1').textContent = i2s1 || 26;
-  if (document.getElementById('kpi-e3')) document.getElementById('kpi-e3').textContent = e3 || 26;
-  if (document.getElementById('kpi-b4')) document.getElementById('kpi-b4').textContent = b4 || 25;
+  const avgPrix = fn => { const a = T.filter(t => fn((t.urba||'').trim().toUpperCase()) && Number(t.prix) > 0); return a.length ? fr(a.reduce((s, t) => s + Number(t.prix), 0) / a.length) + ' MAD/m²' : '-'; };
+  setT('kpi-b5-avg', avgPrix(u => u === 'B5'));
+  setT('kpi-i2s1-avg', avgPrix(u => ['I2S1','I2S'].includes(u)));
+  setT('kpi-e3-avg', avgPrix(u => u === 'E3'));
+  setT('kpi-b4-avg', avgPrix(u => u === 'B4'));
+  if (document.getElementById('kpi-b5')) document.getElementById('kpi-b5').textContent = b5;
+  if (document.getElementById('kpi-i2s1')) document.getElementById('kpi-i2s1').textContent = i2s1;
+  if (document.getElementById('kpi-e3')) document.getElementById('kpi-e3').textContent = e3;
+  if (document.getElementById('kpi-b4')) document.getElementById('kpi-b4').textContent = b4;
 
-  if (document.getElementById('kpi-acheteurs')) document.getElementById('kpi-acheteurs').textContent = state.acheteurs.length || 11;
+  if (document.getElementById('kpi-acheteurs')) document.getElementById('kpi-acheteurs').textContent = state.acheteurs.length;
   if (document.getElementById('kpi-deals')) document.getElementById('kpi-deals').textContent = state.deals.length;
 
   const totalPipeline = state.deals.reduce((s, d) => s + (d.montant || 0), 0);
@@ -1263,17 +1279,17 @@ function renderDashboard() {
     pipelineSummaryEl.innerHTML = html;
   }
 
-  document.getElementById('pipeline-total-label').textContent = '142 deals actifs';
+  setT('pipeline-total-label', state.deals.length + ' deal' + (state.deals.length > 1 ? 's' : '') + ' actif' + (state.deals.length > 1 ? 's' : ''));
 
   // Match rate — 68% basé sur compatibilité zones/tickets/usage des 11 acheteurs vs 815 terrains
   const matchRate = 68;
-  document.getElementById('match-rate').textContent = matchRate + '%';
-  document.getElementById('match-fill').style.width = matchRate + '%';
+  if (document.getElementById('match-rate')) { setT('match-rate', matchRate + '%'); document.getElementById('match-fill').style.width = matchRate + '%'; }
 
   // Deals en phase avancée : offre(14) + closing(14) = 28 sur 142 total = 20%
-  const advancedRate = 20;
-  document.getElementById('advanced-rate').textContent = advancedRate + '% — 28 deals';
-  document.getElementById('advanced-fill').style.width = advancedRate + '%';
+  const advN = state.deals.filter(d => d.etape === 'offre' || d.etape === 'closing').length;
+  const advancedRate = state.deals.length ? Math.round(advN / state.deals.length * 100) : 0;
+  setT('advanced-rate', advancedRate + '%, ' + advN + ' deal' + (advN > 1 ? 's' : ''));
+  if (document.getElementById('advanced-fill')) document.getElementById('advanced-fill').style.width = advancedRate + '%';
 
   // Activity
   const actEl = document.getElementById('activity-feed');

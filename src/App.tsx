@@ -10,8 +10,8 @@ import { useAuth } from "./useAuth";
 import { useSupabase } from "./useSupabase";
 
 function CartePage() {
-  const EMBED_URL  = "https://www.google.com/maps/d/embed?mid=1eKT0j_tY2XUBYBJu-r5d7BjKGpdXWCY&ehbc=2E312F";
-  const VIEWER_URL = "https://www.google.com/maps/d/viewer?mid=1eKT0j_tY2XUBYBJu-r5d7BjKGpdXWCY";
+  const EMBED_URL  = "https://www.google.com/maps/d/embed?mid=1ezG_VEhXTLGrUeRAY5epdo1ggJ1pk9A&ehbc=2E312F";
+  const VIEWER_URL = "https://www.google.com/maps/d/viewer?mid=1ezG_VEhXTLGrUeRAY5epdo1ggJ1pk9A";
   return (
     <>
       <div style={{ padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(45,158,95,0.12)", background: "rgba(7,26,15,0.6)", backdropFilter: "blur(8px)", position: "sticky", top: 0, zIndex: 50 }}>

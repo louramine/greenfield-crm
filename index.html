@@ -525,12 +525,13 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
+.on-dashboard #addBtn, .on-dashboard #gf-export, .on-dashboard #associe-wrap { display:none !important }
 .pipeline-col.drag-over{outline:2px dashed #2d9e5f;outline-offset:-4px;background:rgba(45,158,95,.08)}
 .deal-card.dragging{opacity:.4}
 .deal-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.18)}
 </style>
 </head>
-<body>
+<body class="on-dashboard">
 <div id="gf-login"><div style="display:flex;flex-direction:column;align-items:center;width:100%"><img id="gf-login-logo" class="brand" alt="GREENFIELD"><form id="gf-login-form" autocomplete="on">
   <p>Accès réservé à l'équipe. Connectez-vous avec votre compte.</p>
   <input type="email" id="gf-email" placeholder="Email" autocomplete="username" required>
@@ -579,7 +580,7 @@
     <div class="page-title" id="pageTitle">Dashboard</div>
     <div class="topbar-actions" style="position:relative;">
       <!-- Associé selector -->
-      <div style="position:relative;display:inline-block;">
+      <div id="associe-wrap" style="position:relative;display:inline-block;">
         <button class="btn btn-ghost btn-sm" id="associe-badge" onclick="showAssocieSelector()" style="font-weight:700;border:2px solid var(--green-bright);">
           👤 Choisir associé
         </button>
@@ -592,7 +593,7 @@
       </div>
       <button class="btn btn-ghost btn-sm" onclick="loadFromSupabase()" title="Sync Supabase">⟳ Sync</button>
       <button class="btn btn-ghost btn-sm" onclick="gfLogout()" title="Se déconnecter">⏻ Déconnexion</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportData()">↓ Export</button>
+      <button class="btn btn-ghost btn-sm" id="gf-export" onclick="exportData()">↓ Export</button>
       <button class="btn btn-primary btn-sm" id="addBtn" onclick="handleAdd()">+ Ajouter</button>
     </div>
   </div>
@@ -1240,6 +1241,7 @@ function showPage(page, el) {
   document.getElementById('page-' + page).classList.add('active');
   el.classList.add('active');
   currentPage = page;
+  document.body.classList.toggle('on-dashboard', page === 'dashboard');
 
   const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs' };
   document.getElementById('pageTitle').textContent = titles[page];

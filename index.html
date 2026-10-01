@@ -584,6 +584,7 @@
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="loadFromSupabase()" title="Sync Supabase">⟳ Sync</button>
+      <button class="btn btn-ghost btn-sm" onclick="gfLogout()" title="Se déconnecter">⏻ Déconnexion</button>
       <button class="btn btn-ghost btn-sm" onclick="exportData()">↓ Export</button>
       <button class="btn btn-primary btn-sm" id="addBtn" onclick="handleAdd()">+ Ajouter</button>
     </div>
@@ -2657,6 +2658,11 @@ async function gfRefresh() {
   try { sess = JSON.parse(localStorage.getItem('gf-session') || 'null'); } catch(e) {}
   if (!sess || !sess.refresh_token) return false;
   try { await gfAuthCall('refresh_token', { refresh_token: sess.refresh_token }); return true; } catch(e) { return false; }
+}
+async function gfLogout() {
+  try { await fetch(`${SUPA_URL}/auth/v1/logout`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }); } catch(e) {}
+  try { localStorage.removeItem('gf-session'); } catch(e) {}
+  location.reload();
 }
 function gfShowLogin() { document.getElementById('gf-login').style.display = 'flex'; setTimeout(() => document.getElementById('gf-email').focus(), 50); }
 let gfStarted = false;

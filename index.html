@@ -1044,6 +1044,18 @@ body:not(.role-admin) .admin-only{display:none !important}
       <label class="form-label">Notes</label>
       <textarea class="form-textarea" id="d-notes" placeholder="Remarques sur le deal..."></textarea>
     </div>
+    <div id="dn-taches-wrap" style="margin:4px 0 12px;display:none">
+      <label class="form-label">Tâches</label>
+      <div id="dn-taches-list" style="margin-bottom:8px"></div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">
+        <input class="form-input" id="dn-titre" placeholder="Ex: Envoyer le teaser" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewDealTask();}">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px">
+          <select class="form-select" id="dn-assigne"></select>
+          <input class="form-input" id="dn-date" type="date">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addNewDealTask()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-deal')">Annuler</button>
       <button class="btn btn-primary" onclick="saveDeal()">Enregistrer</button>
@@ -1859,6 +1871,10 @@ function openDealModal() {
   document.getElementById('d-montant').value = '';
   document.getElementById('d-notes').value = '';
   document.getElementById('d-associe').innerHTML = contactOptions('');
+  newDealTasks = [];
+  document.getElementById('dn-titre').value = ''; document.getElementById('dn-date').value = '';
+  document.getElementById('dn-assigne').innerHTML = contactOptions('');
+  renderNewDealTasks();
   openModal('modal-deal');
 }
 
@@ -2092,6 +2108,27 @@ function renderMyTasks() {
     </div>`).join('') : '<div style="color:#aaa;font-size:13px;text-align:center;padding:14px 0">Aucune tâche en cours</div>';
 }
 
+let newDealTasks = [];
+function renderNewDealTasks() {
+  const wrap = document.getElementById('dn-taches-wrap');
+  wrap.style.display = tachesAvailable ? '' : 'none';
+  document.getElementById('dn-taches-list').innerHTML = newDealTasks.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0f0">
+      <div style="flex:1;min-width:0"><div style="font-size:13px">${escH(t.titre)}</div>
+      <div style="font-size:11px;color:#8aab97">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="color:#c0392b;padding:2px 8px" onclick="newDealTasks.splice(${i},1);renderNewDealTasks()">✕</button>
+    </div>`).join('');
+}
+function addNewDealTask() {
+  const titre = document.getElementById('dn-titre').value.trim();
+  const assigne = document.getElementById('dn-assigne').value;
+  if (!titre) { showNotif('⚠ Saisissez la tâche', true); return false; }
+  if (!assigne) { showNotif('⚠ Choisissez à qui assigner la tâche', true); return false; }
+  newDealTasks.push({ titre, assigne_a: assigne, echeance: document.getElementById('dn-date').value || null });
+  document.getElementById('dn-titre').value = ''; document.getElementById('dn-date').value = '';
+  renderNewDealTasks();
+  return true;
+}
 let equipeAvailable = false;
 let myRole = 'admin';
 let myEmail = '';
@@ -2622,6 +2659,7 @@ saveDeal = async function() {
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
   if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
   if (isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
+  if (document.getElementById('dn-titre').value.trim() && !addNewDealTask()) return;
   const terrain = state.terrains.find(t => t.id === terrainId);
   const acheteur = state.acheteurs.find(a => a.id === acheteurId);
   const deal = {
@@ -2637,6 +2675,14 @@ saveDeal = async function() {
     if (res && res[0]) {
       state.deals.push({ id: res[0].id, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1, associe: deal.associe });
       await logActivity('Nouveau deal', 'deal', res[0].id, `${terrain?.localisation} ↔ ${acheteur?.nom}`);
+      if (newDealTasks.length && tachesAvailable) {
+        const label = `${terrain?.localisation || ''} / ${acheteur?.nom || ''}`;
+        const rows = newDealTasks.map(t => ({ deal_id: res[0].id, deal_label: label, titre: t.titre, assigne_a: t.assigne_a, echeance: t.echeance, statut: 'a_faire', cree_par: currentAssocie || null }));
+        const rt = await supaPost('deal_taches', rows);
+        if (rt && rt.length) { state.taches.push(...rt); logActivity('Nouvelles tâches', 'deal', res[0].id, rows.map(r => r.titre).join(', ')); }
+        else showNotif('Deal créé, mais les tâches n\'ont pas pu être enregistrées.', true);
+      }
+      newDealTasks = [];
       showNotif('✓ Deal créé dans Supabase !');
     }
   } else {

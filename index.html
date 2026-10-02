@@ -3226,13 +3226,38 @@ async function mkSatellite(q) {
   } catch (e) { out = null; }
   mkMapCache[q] = out; return out;
 }
+// Vues satellites mutualisees: localisation -> vue de reference
+const MK_MAP_ALIAS = {
+  'bd anfa': 'racine', 'palmier': 'racine', 'bourgogne': 'racine', 'massira': 'racine', 'maarif': 'racine',
+  'rahma': 'massira', 'oasis': 'zenith', 'ain sebaa': 'bernoussi', 'belvedere': 'sidi belyout'
+};
+const mkNorm = v => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const mkSlug = v => mkNorm(v).replace(/ /g, '-');
+function mkMapKey(loc) {
+  const n = ' ' + mkNorm(loc) + ' ';
+  const keys = Object.keys(MK_MAP_ALIAS).sort((x, y) => y.length - x.length);
+  let k = keys.find(x => n.includes(' ' + x + ' '));
+  if (!k) return mkNorm(loc);
+  let guard = 0;
+  while (MK_MAP_ALIAS[k] && guard++ < 5) k = MK_MAP_ALIAS[k];
+  return k;
+}
+async function mkMapFor(loc, ville) {
+  const key = mkMapKey(loc), slug = key.replace(/ /g, '-');
+  if (mkMapCache['f:' + slug] === undefined) mkMapCache['f:' + slug] = slug ? await mkLoadImg('maps/' + slug + '.jpg') : null;
+  const st = mkMapCache['f:' + slug];
+  if (st) return { img: st, pin: false, pre: true };
+  const aliased = key !== mkNorm(loc);
+  const q = aliased ? key + ', Casablanca' : [loc, ville].filter(Boolean).join(', ');
+  const sat = await mkSatellite(q);
+  return sat ? { img: sat, pin: true, pre: false } : { img: null, pin: false, pre: false };
+}
 async function mkPrepareMap(d) {
   try { await Promise.all([document.fonts.load('800 40px Archivo'), document.fonts.load('400 20px Inter')]); } catch (e) {}
-  d.mapImg = null; d.pin = false;
+  d.mapImg = null; d.pin = false; d.mapPre = false;
   if (mkMapUpload) { d.mapImg = mkMapUpload; return; }
-  const q = [d.loc, d.ville].filter(Boolean).join(', ');
-  const sat = await mkSatellite(q);
-  if (sat) { d.mapImg = sat; d.pin = true; }
+  const m = await mkMapFor(d.loc, d.ville);
+  d.mapImg = m.img; d.pin = m.pin; d.mapPre = m.pre;
 }
 function mkCover(c, im, x, y, w, h) {
   const iw = im.width, ih = im.height, r = Math.max(w / iw, h / ih), sw = w / r, sh = h / r;
@@ -3272,7 +3297,7 @@ function mkPaint(cv, d, W, H) {
   for (let gy = 0; gy < H; gy += 108 * s) { c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke(); }
   // carte
   c.save(); c.beginPath(); c.rect(mx, my, mw, mh); c.clip();
-  if (d.mapImg) { mkCover(c, d.mapImg, mx, my, mw, mh); c.fillStyle = 'rgba(14,52,34,0.50)'; c.fillRect(mx, my, mw, mh); }
+  if (d.mapImg) { mkCover(c, d.mapImg, mx, my, mw, mh); if (!d.mapPre) { c.fillStyle = 'rgba(14,52,34,0.50)'; c.fillRect(mx, my, mw, mh); } }
   else { const g = c.createLinearGradient(mx, my, mx + mw, my + mh); g.addColorStop(0, '#16402c'); g.addColorStop(1, '#0e2a1c'); c.fillStyle = g; c.fillRect(mx, my, mw, mh);
     c.strokeStyle = 'rgba(127,224,168,0.10)'; c.lineWidth = 2 * s; for (let i = 1; i < 9; i++) { c.beginPath(); c.arc(mx + mw * 0.6, my + mh * 0.5, i * 70 * s, 0, 7); c.stroke(); } }
   if (d.pin) { const cx = mx + mw / 2, cy = my + mh / 2; c.strokeStyle = MINT; c.lineWidth = 3 * s; c.beginPath(); c.arc(cx, cy, 26 * s, 0, 7); c.stroke(); c.fillStyle = MINT; c.beginPath(); c.arc(cx, cy, 8 * s, 0, 7); c.fill(); }
@@ -3414,8 +3439,7 @@ async function mkPropale() {
     const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
     const d = { loc: t.localisation || '', ville: '', sup, prix, urba: t.urba || '', usage: t.usage || '', desc: '', points: [], site: base.site, mail: base.mail, tel: base.tel,
       forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0, mapImg: null, pin: false };
-    const sat = await mkSatellite(d.loc);
-    if (sat) { d.mapImg = sat; d.pin = true; }
+    const m = await mkMapFor(d.loc, ''); d.mapImg = m.img; d.pin = m.pin; d.mapPre = m.pre;
     const cv = document.createElement('canvas'); mkPaint(cv, d, 1200, 627); canvases.push(cv);
   }
   mkPdfPages = canvases.map(c => c.toDataURL('image/jpeg', 0.92));

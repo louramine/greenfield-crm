@@ -525,6 +525,8 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
+#associe-wrap, #gf-export, button[title="Sync Supabase"]{display:none !important}
+.role-sourceur .nav-item[onclick*="'equipe'"]{display:none !important}
 .role-sourceur #a-delete-btn{display:none !important}
 .role-sourceur #gf-export, .role-sourceur #associe-wrap, .role-sourceur button[onclick="confirmDeleteTerrain()"]{display:none !important}
 body:not(.role-admin) .admin-only{display:none !important}
@@ -1313,6 +1315,7 @@ function saveState() {
 let currentPage = 'dashboard';
 
 function showPage(page, el) {
+  if (page === 'equipe' && typeof myRole !== 'undefined' && myRole === 'sourceur') return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');

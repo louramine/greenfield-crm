@@ -594,7 +594,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <button onclick="setAssocie('Amine');document.getElementById('associe-selector').style.display='none';" style="display:block;width:100%;padding:9px 14px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;text-align:left;color:#1a5c35;" onmouseover="this.style.background='#e8f7ef'" onmouseout="this.style.background='transparent'">🔵 Amine</button>
         </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="loadFromSupabase()" title="Sync Supabase">⟳ Sync</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadFromSupabase().then(loadTaches).then(() => { renderDashboard(); renderPipeline(); })" title="Sync Supabase">⟳ Sync</button>
       <button class="btn btn-ghost btn-sm" onclick="gfLogout()" title="Se déconnecter">⏻ Déconnexion</button>
       <button class="btn btn-ghost btn-sm" id="gf-export" onclick="exportData()">↓ Export</button>
       <button class="btn btn-primary btn-sm" id="addBtn" onclick="handleAdd()">+ Ajouter</button>
@@ -688,6 +688,11 @@ body:not(.role-admin) .admin-only{display:none !important}
             <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Chargement...</div>
           </div>
         </div>
+      </div>
+
+      <div class="card" id="my-tasks-card" style="margin-top:20px;display:none">
+        <div class="card-title">Mes tâches</div>
+        <div id="my-tasks-list"></div>
       </div>
     </div>
 
@@ -1097,6 +1102,18 @@ body:not(.role-admin) .admin-only{display:none !important}
       <label class="form-label">Notes</label>
       <textarea class="form-textarea" id="de-notes"></textarea>
     </div>
+    <div id="de-taches-wrap" style="margin:4px 0 12px;display:none">
+      <label class="form-label">Tâches</label>
+      <div id="de-taches-list" style="margin-bottom:8px"></div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">
+        <input class="form-input" id="te-titre" placeholder="Nouvelle tâche, ex: Relancer le notaire" onkeydown="if(event.key==='Enter'){event.preventDefault();addTache();}">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px">
+          <select class="form-select" id="te-assigne"></select>
+          <input class="form-input" id="te-date" type="date">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addTache()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-right:auto;color:#c0392b" onclick="deleteDealEdit()">Supprimer</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-deal-edit')">Annuler</button>
@@ -1445,6 +1462,7 @@ function renderPipeline() {
         <div class="deal-acheteur">${aName}</div>
         <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '-'}</div>
         ${acheteur ? `<span class="deal-tag ${tagClass}">${acheteur.type}</span>` : ''}
+        ${taskBadge(d.id)}
         ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#8aab97;margin-top:6px">👤 ${d.associe}</div>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
@@ -1488,6 +1506,9 @@ function openDealEdit(id) {
   document.getElementById('de-montant').value = d.montant || '';
   document.getElementById('de-notes').value = d.notes || '';
   document.getElementById('de-associe').innerHTML = contactOptions(d.associe || '');
+  document.getElementById('te-titre').value = ''; document.getElementById('te-date').value = '';
+  document.getElementById('te-assigne').innerHTML = contactOptions('');
+  renderDealTaches();
   openModal('modal-deal-edit');
 }
 async function saveDealEdit() {
@@ -1986,6 +2007,92 @@ function buildMap() {
 
 
 // ═══════════ ÉQUIPE ═══════════
+// ═══════════ TACHES DES DEALS ═══════════
+let tachesAvailable = false;
+state.taches = [];
+const escH = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR') : '';
+const isLate = t => t.statut !== 'fait' && t.echeance && new Date(t.echeance + 'T23:59:59') < new Date();
+
+async function loadTaches() {
+  try { state.taches = await supaGet('deal_taches', 'select=*&order=created_at.asc'); tachesAvailable = true; }
+  catch(e) { tachesAvailable = false; state.taches = []; }
+}
+function taskBadge(dealId) {
+  const ts = (state.taches || []).filter(t => t.deal_id === dealId);
+  if (!ts.length) return '';
+  const open = ts.filter(t => t.statut !== 'fait').length;
+  const late = ts.some(isLate);
+  return `<div style="font-size:11px;margin-top:6px;font-weight:600;color:${late ? '#c0392b' : '#1a5c35'}">☑ ${ts.length - open}/${ts.length} tâche${ts.length > 1 ? 's' : ''}${late ? ' (en retard)' : ''}</div>`;
+}
+function renderDealTaches() {
+  const wrap = document.getElementById('de-taches-wrap');
+  if (!wrap) return;
+  wrap.style.display = tachesAvailable ? '' : 'none';
+  if (!tachesAvailable) return;
+  const ts = state.taches.filter(t => t.deal_id === editingDealId);
+  const canDelete = isAdmin() || state.deals.some(d => d.id === editingDealId && d.associe === currentAssocie);
+  document.getElementById('de-taches-list').innerHTML = ts.length ? ts.map(t => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0">
+      <input type="checkbox" ${t.statut === 'fait' ? 'checked' : ''} onchange="toggleTache(${t.id}, this.checked)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;${t.statut === 'fait' ? 'text-decoration:line-through;color:#999' : ''}">${escH(t.titre)}</div>
+        <div style="font-size:11px;color:${isLate(t) ? '#c0392b' : '#8aab97'}">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div>
+      </div>
+      ${canDelete ? `<button type="button" class="btn btn-ghost btn-sm" style="color:#c0392b;padding:2px 8px" onclick="deleteTache(${t.id})">✕</button>` : ''}
+    </div>`).join('') : '<div style="font-size:12px;color:#aaa;padding:4px 0">Aucune tâche</div>';
+}
+async function addTache() {
+  const titre = document.getElementById('te-titre').value.trim();
+  const assigne = document.getElementById('te-assigne').value;
+  if (!titre) { showNotif('⚠ Saisissez la tâche', true); return; }
+  if (!assigne) { showNotif('⚠ Choisissez à qui assigner la tâche', true); return; }
+  const d = state.deals.find(x => x.id === editingDealId);
+  if (!d) return;
+  const t = state.terrains.find(t => t.id == d.terrainId);
+  const label = (t ? t.localisation : d.terrainLabel || 'Deal') + ' / ' + ((state.acheteurs.find(a => a.id == d.acheteurId) || {}).nom || d.acheteurLabel || '');
+  const row = { deal_id: d.id, deal_label: label, titre, assigne_a: assigne, echeance: document.getElementById('te-date').value || null, statut: 'a_faire', cree_par: currentAssocie || null };
+  const res = await supaPost('deal_taches', row);
+  if (!res || !res[0]) { showNotif('Échec de l\'ajout de la tâche.', true); return; }
+  state.taches.push(res[0]);
+  logActivity('Nouvelle tâche', 'deal', d.id, `${titre} (pour ${assigne})`);
+  document.getElementById('te-titre').value = ''; document.getElementById('te-date').value = '';
+  renderDealTaches(); renderPipeline(); renderMyTasks();
+  showNotif('✓ Tâche ajoutée');
+}
+async function toggleTache(id, done) {
+  const t = state.taches.find(x => x.id === id);
+  if (!t) return;
+  const res = await supaPatch('deal_taches', id, { statut: done ? 'fait' : 'a_faire' });
+  if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); renderDealTaches(); renderMyTasks(); return; }
+  t.statut = done ? 'fait' : 'a_faire';
+  renderDealTaches(); renderPipeline(); renderMyTasks();
+}
+async function deleteTache(id) {
+  if (!confirm('Supprimer cette tâche ?')) return;
+  const ok = await supaDelete('deal_taches', id);
+  if (!ok) { showNotif('Échec de la suppression.', true); return; }
+  state.taches = state.taches.filter(x => x.id !== id);
+  renderDealTaches(); renderPipeline(); renderMyTasks();
+}
+function renderMyTasks() {
+  const card = document.getElementById('my-tasks-card');
+  if (!card) return;
+  card.style.display = tachesAvailable ? '' : 'none';
+  if (!tachesAvailable) return;
+  const mine = state.taches.filter(t => t.assigne_a === currentAssocie && t.statut !== 'fait')
+    .sort((a, b) => (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1);
+  document.getElementById('my-tasks-list').innerHTML = mine.length ? mine.map(t => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f4f4f4">
+      <input type="checkbox" onchange="toggleTache(${t.id}, this.checked)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${escH(t.titre)}</div>
+        <div style="font-size:11.5px;color:#8aab97;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(t.deal_label || '')}</div>
+      </div>
+      ${t.echeance ? `<div style="font-size:11.5px;font-weight:600;color:${isLate(t) ? '#c0392b' : '#8aab97'}">${fmtDate(t.echeance)}</div>` : ''}
+    </div>`).join('') : '<div style="color:#aaa;font-size:13px;text-align:center;padding:14px 0">Aucune tâche en cours</div>';
+}
+
 let equipeAvailable = false;
 let myRole = 'admin';
 let myEmail = '';
@@ -2755,6 +2862,7 @@ const _origRenderDashboard = renderDashboard;
 renderDashboard = function() {
   _origRenderDashboard();
   renderActivityLog();
+  renderMyTasks();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2831,6 +2939,7 @@ async function gfStart() {
   loadState();
   try { await loadFromSupabase(); } catch(e) {}
   await loadEquipe();
+  await loadTaches();
   applyRole();
   renderPage(currentPage);
   setInterval(gfRefresh, 45 * 60 * 1000);

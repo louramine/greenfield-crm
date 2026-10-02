@@ -525,6 +525,17 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
+.ms-filter{position:relative}
+.ms-btn{padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap}
+.ms-btn.active{border-color:#4eca82;color:#4eca82}
+.ms-panel{display:none;position:absolute;z-index:200;top:calc(100% + 6px);left:0;width:280px;background:#fff;color:#1a2a22;border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.35);padding:10px}
+.ms-panel.open{display:block}
+.ms-panel input[type=text]{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #cfd8d3;border-radius:8px;font-size:13px;margin-bottom:8px}
+.ms-list{max-height:260px;overflow:auto}
+.ms-list label{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.ms-list label:hover{background:#eef6f1}
+.ms-foot{display:flex;justify-content:space-between;margin-top:8px;font-size:12px}
+.ms-foot button{border:0;background:none;color:#1a5c35;font-weight:600;cursor:pointer}
 #associe-wrap, #gf-export, button[title="Sync Supabase"]{display:none !important}
 .role-sourceur .nav-item[onclick*="'equipe'"]{display:none !important}
 .role-sourceur #a-delete-btn{display:none !important}
@@ -765,22 +776,22 @@ body:not(.role-admin) .admin-only{display:none !important}
             style="width:100%;padding:10px 14px 10px 36px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(255,255,255,0.06);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;"
           />
         </div>
-        <select id="filter-urba" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-          <option value="">Toutes Def. Urba.</option>
+        <div class="ms-filter" id="ms-loc"></div>
+        <div class="ms-filter" id="ms-urba"></div>
+        <select id="filter-prix" onchange="applyPrixPreset()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;">
+          <option value="">Prix/m² : tranche</option>
+          <option value="0-500">0 à 500 MAD</option>
+          <option value="500-1000">500 à 1 000 MAD</option>
+          <option value="1000-2000">1 000 à 2 000 MAD</option>
+          <option value="2000-3000">2 000 à 3 000 MAD</option>
+          <option value="3000-5000">3 000 à 5 000 MAD</option>
+          <option value="5000-10000">5 000 à 10 000 MAD</option>
+          <option value="10000-20000">10 000 à 20 000 MAD</option>
+          <option value="20000-50000">20 000 à 50 000 MAD</option>
+          <option value="50000-">50 000 MAD et plus</option>
         </select>
-        <select id="filter-statut" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-          <option value="">Tous statuts</option>
-          <option value="Disponible">Disponible</option>
-          <option value="En négociation">En négociation</option>
-          <option value="Vendu">Vendu</option>
-        </select>
-        <select id="filter-prix" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-          <option value="">Tous prix/m²</option>
-          <option value="0-1000">0 – 1 000 MAD</option>
-          <option value="1000-5000">1 000 – 5 000 MAD</option>
-          <option value="5000-20000">5 000 – 20 000 MAD</option>
-          <option value="20000+">20 000+ MAD</option>
-        </select>
+        <input id="filter-prix-min" type="number" min="0" placeholder="Prix min" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
+        <input id="filter-prix-max" type="number" min="0" placeholder="Prix max" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
         <button onclick="resetFilters()" class="btn btn-ghost btn-sm" style="white-space:nowrap;">✕ Réinitialiser</button>
         <span id="terrains-count" style="font-size:12px;color:var(--gray-mid);white-space:nowrap;"></span>
       </div>
@@ -1553,26 +1564,72 @@ async function deleteDealEdit() {
   showNotif('Deal supprimé.');
 }
 
+// ─── Filtres multi-sélection des terrains ───
+const msSel = { loc: new Set(), urba: new Set() };
+const msCfg = { loc: { label: 'Localisation', get: t => (t.localisation || '').trim() }, urba: { label: 'Déf. urba', get: t => (t.urba || '').trim() } };
+const msSearch = { loc: '', urba: '' };
+
+function msOptions(k) {
+  const counts = {};
+  state.terrains.forEach(t => { const v = msCfg[k].get(t); if (v && v !== '—' && v !== 'nan') counts[v] = (counts[v] || 0) + 1; });
+  msSel[k].forEach(v => { if (!(v in counts)) counts[v] = 0; });
+  return Object.keys(counts).sort((a, b) => a.localeCompare(b, 'fr')).map(v => [v, counts[v]]);
+}
+function msRender(k) {
+  const root = document.getElementById('ms-' + k);
+  if (!root) return;
+  const n = msSel[k].size;
+  const wasOpen = root.querySelector('.ms-panel.open') !== null;
+  root.innerHTML = `<button type="button" class="ms-btn ${n ? 'active' : ''}" onclick="msToggle('${k}', event)">${msCfg[k].label}${n ? ' (' + n + ')' : ' : toutes'} ▾</button>
+    <div class="ms-panel ${wasOpen ? 'open' : ''}" onclick="event.stopPropagation()">
+      <input type="text" id="ms-q-${k}" placeholder="Rechercher..." value="${msSearch[k].replace(/"/g, '&quot;')}" oninput="msSearch['${k}']=this.value;msList('${k}')">
+      <div class="ms-list" id="ms-list-${k}"></div>
+      <div class="ms-foot"><button type="button" onclick="msClear('${k}')">Tout effacer</button><button type="button" onclick="msToggle('${k}', event)">Fermer</button></div>
+    </div>`;
+  msList(k);
+}
+function msList(k) {
+  const q = msSearch[k].toLowerCase().trim();
+  const opts = msOptions(k).filter(([v]) => !q || v.toLowerCase().includes(q));
+  const el = document.getElementById('ms-list-' + k);
+  if (!el) return;
+  el.innerHTML = opts.length ? opts.map(([v, c]) =>
+    `<label><input type="checkbox" ${msSel[k].has(v) ? 'checked' : ''} data-v="${v.replace(/"/g, '&quot;')}" onchange="msPick('${k}', this.dataset.v, this.checked)"> <span style="flex:1">${v.replace(/</g, '&lt;')}</span><span style="color:#8aab97;font-size:11px">${c}</span></label>`).join('')
+    : '<div style="color:#999;font-size:12px;padding:6px">Aucun résultat</div>';
+}
+function msPick(k, v, on) {
+  if (on) msSel[k].add(v); else msSel[k].delete(v);
+  const btn = document.querySelector('#ms-' + k + ' .ms-btn');
+  const n = msSel[k].size;
+  btn.className = 'ms-btn' + (n ? ' active' : '');
+  btn.textContent = msCfg[k].label + (n ? ' (' + n + ')' : ' : toutes') + ' ▾';
+  filterTerrains();
+}
+function msClear(k) { msSel[k].clear(); msRender(k); filterTerrains(); }
+function msToggle(k, ev) {
+  ev.stopPropagation();
+  document.querySelectorAll('.ms-panel').forEach(p => { if (p.parentElement.id !== 'ms-' + k) p.classList.remove('open'); });
+  document.querySelector('#ms-' + k + ' .ms-panel').classList.toggle('open');
+}
+document.addEventListener('click', () => document.querySelectorAll('.ms-panel.open').forEach(p => p.classList.remove('open')));
+function applyPrixPreset() {
+  const v = document.getElementById('filter-prix').value;
+  const [mn, mx] = v ? v.split('-') : ['', ''];
+  document.getElementById('filter-prix-min').value = mn;
+  document.getElementById('filter-prix-max').value = mx;
+  filterTerrains();
+}
+
 function renderTerrains() {
-  // Populate urba filter dropdown
-  const urbaSelect = document.getElementById('filter-urba');
-  if (urbaSelect && urbaSelect.options.length <= 1) {
-    const urbas = [...new Set(state.terrains.map(t => t.urba).filter(u => u && u !== '—' && u !== 'nan'))].sort();
-    urbas.forEach(u => {
-      const opt = document.createElement('option');
-      opt.value = u; opt.textContent = u;
-      urbaSelect.appendChild(opt);
-    });
-  }
+  msRender('loc'); msRender('urba');
   filterTerrains();
 }
 
 function filterTerrains() {
   const tbody = document.getElementById('terrains-tbody');
   const search = (document.getElementById('search-terrains')?.value || '').toLowerCase().trim();
-  const urbaFilter = document.getElementById('filter-urba')?.value || '';
-  const statutFilter = document.getElementById('filter-statut')?.value || '';
-  const prixFilter = document.getElementById('filter-prix')?.value || '';
+  const pmin = parseFloat(document.getElementById('filter-prix-min')?.value);
+  const pmax = parseFloat(document.getElementById('filter-prix-max')?.value);
 
   let filtered = state.terrains.filter(t => {
     // Text search
@@ -1580,18 +1637,11 @@ function filterTerrains() {
       const hay = [t.localisation, t.urba, t.tf, t.notes].join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
-    // Urba filter
-    if (urbaFilter && t.urba !== urbaFilter) return false;
-    // Statut filter
-    if (statutFilter && t.statut !== statutFilter) return false;
-    // Prix filter
-    if (prixFilter) {
-      const p = t.prix || 0;
-      if (prixFilter === '0-1000' && !(p >= 0 && p < 1000)) return false;
-      if (prixFilter === '1000-5000' && !(p >= 1000 && p < 5000)) return false;
-      if (prixFilter === '5000-20000' && !(p >= 5000 && p < 20000)) return false;
-      if (prixFilter === '20000+' && p < 20000) return false;
-    }
+    if (msSel.loc.size && !msSel.loc.has((t.localisation || '').trim())) return false;
+    if (msSel.urba.size && !msSel.urba.has((t.urba || '').trim())) return false;
+    const p = t.prix || 0;
+    if (!isNaN(pmin) && p < pmin) return false;
+    if (!isNaN(pmax) && p > pmax) return false;
     return true;
   });
 
@@ -1643,9 +1693,11 @@ function filterTerrains() {
 
 function resetFilters() {
   document.getElementById('search-terrains').value = '';
-  document.getElementById('filter-urba').value = '';
-  document.getElementById('filter-statut').value = '';
+  msSel.loc.clear(); msSel.urba.clear(); msSearch.loc = ''; msSearch.urba = '';
+  msRender('loc'); msRender('urba');
   document.getElementById('filter-prix').value = '';
+  document.getElementById('filter-prix-min').value = '';
+  document.getElementById('filter-prix-max').value = '';
   filterTerrains();
 }
 

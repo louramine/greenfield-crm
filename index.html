@@ -525,6 +525,18 @@
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
 </style>
 <style id="gf-kanban-css">
+.mk-src{flex:1;background:#fff;border:1px solid #cfe0d6;color:#1a5c35}
+.mk-src.active{background:#1a5c35;color:#fff;border-color:#1a5c35}
+.mk-post{margin-bottom:20px}
+.mk-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-weight:600;color:#0a2e1a}
+.mk-badge{font-size:11px;padding:3px 9px;border-radius:20px;background:#e8f7ef;color:#1a5c35;font-weight:600}
+.mk-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mk-text{width:100%;min-height:280px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical}
+.mk-cv{width:100%;height:auto;border-radius:8px;border:1px solid #cfe0d6;background:#0a2518;display:block}
+.mk-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.mk-tip{font-size:12px;color:#5d7d6b;margin-top:8px;line-height:1.45}
+@media(max-width:1100px){.mk-grid{grid-template-columns:1fr !important}.mk-cols{grid-template-columns:1fr}}
+
 .ms-filter{position:relative}
 .ms-btn{padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap}
 .ms-btn.active{border-color:#4eca82;color:#4eca82}
@@ -581,6 +593,9 @@ body:not(.role-admin) .admin-only{display:none !important}
   </div>
   <div class="nav-item" onclick="showPage('acheteurs', this)">
     <span class="nav-icon">◎</span> Acheteurs
+  </div>
+  <div class="nav-item" onclick="showPage('marketing', this)">
+    <span class="nav-icon">📣</span> Marketing
   </div>
   <div class="nav-item" onclick="showPage('equipe', this)">
     <span class="nav-icon">👥</span> Équipe
@@ -864,6 +879,45 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
     </div>
 
+
+    <!-- ═══════════ MARKETING ═══════════ -->
+    <div class="page" id="page-marketing">
+      <div style="display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:20px;align-items:start" class="mk-grid">
+        <div class="card">
+          <div class="card-title">Source du post</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="btn mk-src active" id="mk-src-crm" onclick="mkSetSrc('crm')">Terrain du CRM</button>
+            <button class="btn mk-src" id="mk-src-man" onclick="mkSetSrc('man')">Saisie manuelle</button>
+          </div>
+          <div class="form-group" id="mk-pick-wrap">
+            <label class="form-label">Terrain</label>
+            <select class="form-select" id="mk-terrain" onchange="mkFillFromTerrain()"></select>
+          </div>
+          <div class="form-group"><label class="form-label">Localisation *</label><input class="form-input" id="mk-loc" placeholder="Ex: Marrakech, Guéliz"></div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Superficie (m²)</label><input class="form-input" id="mk-sup" type="number" placeholder="10000"></div>
+            <div class="form-group"><label class="form-label">Prix au m² (MAD)</label><input class="form-input" id="mk-prix" type="number" placeholder="1300"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Définition urbanistique</label><input class="form-input" id="mk-urba" placeholder="Ex: Mix Used, BT2"></div>
+            <div class="form-group"><label class="form-label">Usage</label>
+              <select class="form-select" id="mk-usage"><option>Tertiaire</option><option>Résidentiel</option><option>Mixte</option><option>Hôtellerie</option><option>Industriel</option><option>Balnéaire</option><option>Logistique</option></select></div>
+          </div>
+          <div class="form-group"><label class="form-label">Points forts (un par ligne)</label><textarea class="form-input" id="mk-points" rows="3" placeholder="Titre foncier individuel&#10;Accès direct autoroute&#10;Terrain plat et viabilisé"></textarea></div>
+          <div class="form-group"><label class="form-label">Contact affiché</label><input class="form-input" id="mk-contact" placeholder="Ex: +212 6 00 00 00 00 / contact@greenfield.plus"></div>
+          <div class="form-group"><label class="form-label">Ton du texte</label>
+            <select class="form-select" id="mk-ton"><option value="pro">Professionnel</option><option value="inspire">Inspirant</option><option value="direct">Direct et chiffré</option></select></div>
+          <div class="form-group"><label class="form-label">Réseaux</label>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px">
+              <label><input type="checkbox" class="mk-net" value="linkedin" checked> LinkedIn</label>
+              <label><input type="checkbox" class="mk-net" value="instagram" checked> Instagram</label>
+              <label><input type="checkbox" class="mk-net" value="facebook" checked> Facebook</label>
+            </div></div>
+          <button class="btn btn-primary" style="width:100%" onclick="mkGenerate(true)">Générer les posts</button>
+        </div>
+        <div id="mk-out"><div class="card" style="color:#8aab97;font-size:13px">Choisissez un terrain ou saisissez les informations, puis cliquez sur Générer les posts. Un texte et un visuel au bon format seront proposés pour chaque réseau.</div></div>
+      </div>
+    </div>
 
     <!-- ═══════════ ÉQUIPE ═══════════ -->
     <div class="page" id="page-equipe">
@@ -1334,10 +1388,10 @@ function showPage(page, el) {
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
 
-  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs' };
+  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
 
-  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouvel Acheteur' };
+  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouvel Acheteur' };
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
@@ -1358,6 +1412,7 @@ function renderPage(page) {
   else if (page === 'terrains') renderTerrains();
   else if (page === 'acheteurs') renderAcheteurs();
   else if (page === 'equipe') renderEquipe();
+  else if (page === 'marketing') mkInit();
   else if (page === 'matching') renderMatchingSelect();
 }
 
@@ -3000,6 +3055,176 @@ function showAssocieSelector() {
       });
     }, 10);
   }
+}
+
+
+// ═══════════ MARKETING ═══════════
+let mkSrc = 'crm', mkVariant = 0, mkData = null;
+const MK_NETS = {
+  linkedin:  { label: 'LinkedIn',  formats: [['Post paysage 1200x627', 1200, 627], ['Post carré 1080x1080', 1080, 1080]], tip: 'Format paysage, texte professionnel et chiffré. Publiez en semaine en début de matinée.' },
+  instagram: { label: 'Instagram', formats: [['Post portrait 1080x1350', 1080, 1350], ['Story ou Reel 1080x1920', 1080, 1920], ['Post carré 1080x1080', 1080, 1080]], tip: 'Pour une vidéo, utilisez le format Reel ou Story 1080x1920 (9:16), 15 à 30 secondes, avec ce visuel en première image.' },
+  facebook:  { label: 'Facebook',  formats: [['Post lien 1200x630', 1200, 630], ['Post carré 1080x1080', 1080, 1080]], tip: 'Texte conversationnel avec appel à réagir. Une vidéo paysage 16:9 de 30 à 60 secondes fonctionne bien.' }
+};
+const mkNum = n => Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+function mkInit() {
+  const sel = document.getElementById('mk-terrain');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).map(t =>
+    `<option value="${t.id}">${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
+  if (cur) sel.value = cur;
+}
+function mkSetSrc(m) {
+  mkSrc = m;
+  document.getElementById('mk-src-crm').classList.toggle('active', m === 'crm');
+  document.getElementById('mk-src-man').classList.toggle('active', m === 'man');
+  document.getElementById('mk-pick-wrap').style.display = m === 'crm' ? '' : 'none';
+}
+function mkFillFromTerrain() {
+  const id = document.getElementById('mk-terrain').value;
+  const t = (state.terrains || []).find(x => String(x.id) === String(id));
+  if (!t) return;
+  const set = (k, v) => { document.getElementById(k).value = v == null ? '' : v; };
+  set('mk-loc', t.localisation); set('mk-sup', t.superficie); set('mk-prix', t.prix); set('mk-urba', t.urba);
+  const u = document.getElementById('mk-usage');
+  if (t.usage && [...u.options].some(o => o.value === t.usage)) u.value = t.usage;
+  if (t.notes && !document.getElementById('mk-points').value.trim()) set('mk-points', String(t.notes).slice(0, 300));
+}
+function mkRead() {
+  const v = id => document.getElementById(id).value.trim();
+  const sup = Number(v('mk-sup')) || 0, prix = Number(v('mk-prix')) || 0;
+  return {
+    loc: v('mk-loc'), sup, prix, urba: v('mk-urba'), usage: v('mk-usage'),
+    points: v('mk-points').split('\n').map(x => x.trim()).filter(Boolean),
+    contact: v('mk-contact'), ton: v('mk-ton'),
+    forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0,
+    nets: [...document.querySelectorAll('.mk-net:checked')].map(c => c.value)
+  };
+}
+function mkText(net, d, k) {
+  const sup = d.sup ? mkNum(d.sup) + ' m²' : '';
+  const prix = d.prix ? mkNum(d.prix) + ' MAD/m²' : '';
+  const forfait = d.forfait ? (d.forfait >= 10 ? Math.round(d.forfait) : d.forfait.toFixed(1)) + ' M MAD' : '';
+  const urba = d.urba ? 'Zonage : ' + d.urba : '';
+  const pts = d.points.map(p => '- ' + p).join('\n');
+  const ptsInline = d.points.slice(0, 3).join(', ');
+  const cta = d.contact ? 'Contact : ' + d.contact : 'Contactez Greenfield pour recevoir le dossier complet.';
+  const faits = [sup && 'Superficie : ' + sup, prix && 'Prix : ' + prix, forfait && 'Forfait : ' + forfait, urba].filter(Boolean).join('\n');
+  const loc = d.loc || 'Maroc';
+  const hook = {
+    pro:     ['Opportunité foncière à ' + loc, 'Nouveau terrain en portefeuille : ' + loc, 'Foncier d\'exception : ' + loc],
+    inspire: ['Et si votre prochain projet naissait à ' + loc + ' ?', 'Un terrain, une vision : ' + loc, 'Imaginez ce que vous pourriez bâtir à ' + loc],
+    direct:  [(sup ? sup + ' à ' : 'Terrain à ') + loc, loc + ' : terrain à saisir', 'À vendre à ' + loc + (prix ? ' à ' + prix : '')]
+  }[d.ton][k % 3];
+  const usage = d.usage ? ' à vocation ' + d.usage.toLowerCase() : '';
+  if (net === 'linkedin') {
+    return hook + '\n\nGreenfield, société de transactions immobilières, présente un terrain' + usage + ' situé à ' + loc + '.\n\n' + faits +
+      (pts ? '\n\nPoints clés :\n' + pts : '') + '\n\nVous êtes promoteur, investisseur ou développeur ? Échangeons sur le potentiel de cet actif.\n' + cta +
+      '\n\n#ImmobilierMaroc #Foncier #Investissement #Promotion #Greenfield';
+  }
+  if (net === 'instagram') {
+    const tags = '#immobiliermaroc #terrain #foncier #investissement #maroc #' + loc.toLowerCase().replace(/[^a-z0-9]/g, '') + ' #greenfield';
+    return hook + '\n\n' + [sup && '📐 ' + sup, prix && '💰 ' + prix, forfait && '🏷️ ' + forfait, d.urba && '🏗️ ' + d.urba].filter(Boolean).join('\n') +
+      (ptsInline ? '\n\n' + ptsInline + '.' : '') + '\n\n' + (d.contact ? 'Écrivez-nous en message privé ou : ' + d.contact : 'Écrivez-nous en message privé pour plus d\'informations.') + '\n\n' + tags;
+  }
+  return hook + '\n\nNous avons sélectionné un terrain' + usage + ' à ' + loc + ' et nous souhaitions le partager avec vous.\n\n' + faits +
+    (ptsInline ? '\n\nCe qui le distingue : ' + ptsInline + '.' : '') + '\n\nUn projet en tête ou une personne de votre réseau cherche du foncier ? Commentez ou partagez, nous reviendrons vers vous.\n' + cta + '\n\n#Greenfield #ImmobilierMaroc #Terrain';
+}
+function mkGenerate(reset) {
+  const d = mkRead();
+  if (!d.loc) { alert('La localisation est obligatoire.'); return; }
+  if (!d.nets.length) { alert('Choisissez au moins un réseau.'); return; }
+  if (reset) mkVariant = 0;
+  mkData = d;
+  const out = document.getElementById('mk-out');
+  out.innerHTML = d.nets.map(n => {
+    const N = MK_NETS[n];
+    return `<div class="card mk-post" id="mk-card-${n}">
+      <div class="mk-head"><span>${N.label}</span><span class="mk-badge">Texte et visuel</span>
+        <button class="btn" style="margin-left:auto" onclick="mkVariant++;mkGenerate(false)">Autre version du texte</button></div>
+      <div class="mk-cols">
+        <div><label class="form-label">Texte du post (modifiable)</label>
+          <textarea class="form-input mk-text" id="mk-txt-${n}">${escH(mkText(n, d, mkVariant))}</textarea>
+          <div class="mk-actions"><button class="btn btn-primary" onclick="mkCopy('${n}')">Copier le texte</button><span id="mk-ok-${n}" style="font-size:12px;color:#1a5c35"></span></div></div>
+        <div><label class="form-label">Format du visuel</label>
+          <select class="form-select" id="mk-fmt-${n}" onchange="mkDraw('${n}')">${N.formats.map((f, i) => `<option value="${i}">${f[0]}</option>`).join('')}</select>
+          <canvas class="mk-cv" id="mk-cv-${n}" style="margin-top:8px"></canvas>
+          <div class="mk-actions"><button class="btn btn-primary" onclick="mkDownload('${n}')">Télécharger le PNG</button></div>
+          <div class="mk-tip">${N.tip}</div></div>
+      </div></div>`;
+  }).join('');
+  d.nets.forEach(n => mkDraw(n));
+}
+function mkCopy(n) {
+  const t = document.getElementById('mk-txt-' + n).value;
+  const ok = document.getElementById('mk-ok-' + n);
+  const done = () => { ok.textContent = 'Texte copié'; setTimeout(() => ok.textContent = '', 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => { document.getElementById('mk-txt-' + n).select(); document.execCommand('copy'); done(); });
+  else { document.getElementById('mk-txt-' + n).select(); document.execCommand('copy'); done(); }
+}
+function mkWrap(ctx, text, x, y, maxW, lh, maxLines) {
+  const words = text.split(' '); let line = '', lines = [];
+  words.forEach(w => { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; });
+  if (line) lines.push(line);
+  lines.slice(0, maxLines).forEach((l, i) => ctx.fillText(l, x, y + i * lh));
+  return Math.min(lines.length, maxLines) * lh;
+}
+function mkDraw(n) {
+  const d = mkData; if (!d) return;
+  const f = MK_NETS[n].formats[Number(document.getElementById('mk-fmt-' + n).value)];
+  const W = f[1], H = f[2], cv = document.getElementById('mk-cv-' + n);
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  const u = Math.min(W, H) / 1080, tall = H / W > 1.2, wide = W / H > 1.5;
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0a2518'); g.addColorStop(1, '#1a5c35');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(78,202,130,0.10)'; c.beginPath(); c.arc(W * 0.92, H * 0.12, 260 * u, 0, 7); c.fill();
+  c.fillStyle = 'rgba(201,168,76,0.10)'; c.beginPath(); c.arc(W * 0.05, H * 0.95, 200 * u, 0, 7); c.fill();
+  const pad = 70 * u, sans = 'DM Sans, Arial, sans-serif';
+  const logo = document.getElementById('gf-side-logo');
+  if (logo && logo.naturalWidth) { const lw = 300 * u, lh = lw * logo.naturalHeight / logo.naturalWidth; c.drawImage(logo, pad, pad * 0.85, lw, lh); }
+  let y = tall ? H * 0.26 : (wide ? H * 0.34 : H * 0.28);
+  c.fillStyle = '#c9a84c'; c.font = '600 ' + 30 * u + 'px ' + sans; c.textBaseline = 'alphabetic';
+  c.fillText(('TERRAIN' + (d.usage ? ' ' + d.usage : '')).toUpperCase(), pad, y);
+  y += 20 * u;
+  c.fillStyle = '#ffffff'; c.font = '700 ' + (wide ? 62 : 80) * u + 'px ' + sans;
+  y += (wide ? 64 : 84) * u;
+  const hh = mkWrap(c, d.loc, pad, y, W - pad * 2, (wide ? 68 : 90) * u, 3);
+  y += hh + 10 * u;
+  if (d.urba) {
+    c.font = '500 ' + 30 * u + 'px ' + sans;
+    const tw = c.measureText(d.urba).width + 44 * u;
+    c.fillStyle = 'rgba(78,202,130,0.22)'; c.beginPath(); c.roundRect(pad, y, tw, 56 * u, 28 * u); c.fill();
+    c.fillStyle = '#7ffbb5'; c.fillText(d.urba, pad + 22 * u, y + 38 * u);
+    y += 56 * u + 36 * u;
+  }
+  const items = [];
+  if (d.sup) items.push([mkNum(d.sup), 'm²']);
+  if (d.prix) items.push([mkNum(d.prix), 'MAD / m²']);
+  if (d.forfait) items.push([d.forfait >= 10 ? String(Math.round(d.forfait)) : d.forfait.toFixed(1), 'M MAD']);
+  const cols = tall ? 1 : items.length || 1, gap = 24 * u;
+  const bw = tall ? W - pad * 2 : (W - pad * 2 - gap * (cols - 1)) / cols, bh = (wide ? 120 : 130) * u;
+  items.forEach((it, i) => {
+    const bx = tall ? pad : pad + i * (bw + gap), by = tall ? y + i * (bh + gap) : y;
+    c.fillStyle = 'rgba(255,255,255,0.08)'; c.strokeStyle = 'rgba(127,251,181,0.35)'; c.lineWidth = 2 * u;
+    c.beginPath(); c.roundRect(bx, by, bw, bh, 18 * u); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff'; c.font = '700 ' + 54 * u + 'px ' + sans; c.fillText(it[0], bx + 26 * u, by + 66 * u);
+    c.fillStyle = '#8fd9ae'; c.font = '500 ' + 26 * u + 'px ' + sans; c.fillText(it[1], bx + 26 * u, by + 104 * u);
+  });
+  if (items.length) y += tall ? items.length * (bh + gap) : bh + 30 * u;
+  if (d.points.length && H - y > 260 * u) {
+    c.fillStyle = '#e8f7ef'; c.font = '400 ' + 30 * u + 'px ' + sans;
+    d.points.slice(0, tall ? 4 : 2).forEach((p, i) => { c.fillStyle = '#4eca82'; c.fillText('●', pad, y + 40 * u + i * 48 * u); c.fillStyle = '#e8f7ef'; c.fillText(p.slice(0, 48), pad + 40 * u, y + 40 * u + i * 48 * u); });
+  }
+  c.fillStyle = '#c9a84c'; c.fillRect(pad, H - 120 * u, 90 * u, 4 * u);
+  c.fillStyle = '#ffffff'; c.font = '500 ' + 28 * u + 'px ' + sans;
+  c.fillText(d.contact || 'crm.greenfield.plus', pad, H - 62 * u);
+}
+function mkDownload(n) {
+  const cv = document.getElementById('mk-cv-' + n);
+  const a = document.createElement('a');
+  const slug = (mkData.loc || 'terrain').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  a.download = 'greenfield-' + slug + '-' + n + '.png'; a.href = cv.toDataURL('image/png'); a.click();
 }
 
 // ═══════════════════════════════════════════════════════════════

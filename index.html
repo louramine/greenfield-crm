@@ -605,6 +605,10 @@ body:not(.role-admin) .admin-only{display:none !important}
 
     <!-- ═══════════ DASHBOARD ═══════════ -->
     <div class="page active" id="page-dashboard">
+      <div class="card" id="my-tasks-card" style="margin-bottom:20px;display:none">
+        <div class="card-title">Mes tâches</div>
+        <div id="my-tasks-list"></div>
+      </div>
       <!-- Ligne 1 : Stats fixes Greenfield -->
       <div class="kpi-grid">
         <div class="kpi-card kpi-highlight">
@@ -688,11 +692,6 @@ body:not(.role-admin) .admin-only{display:none !important}
             <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Chargement...</div>
           </div>
         </div>
-      </div>
-
-      <div class="card" id="my-tasks-card" style="margin-top:20px;display:none">
-        <div class="card-title">Mes tâches</div>
-        <div id="my-tasks-list"></div>
       </div>
     </div>
 

@@ -884,6 +884,23 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="page" id="page-marketing">
       <div style="display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:20px;align-items:start" class="mk-grid">
         <div class="card">
+          <div class="card-title">Réseaux et formats</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:14px">
+            <label><input type="checkbox" class="mk-net" value="linkedin" checked onchange="mkNetChange()"> LinkedIn</label>
+            <label><input type="checkbox" class="mk-net" value="instagram" checked onchange="mkNetChange()"> Instagram</label>
+            <label><input type="checkbox" class="mk-net" value="facebook" checked onchange="mkNetChange()"> Facebook</label>
+            <label><input type="checkbox" class="mk-net" value="propale" onchange="mkNetChange()"> Propale PDF</label>
+          </div>
+          <div id="mk-propale-wrap" style="display:none;border:1px solid #cfe0d6;border-radius:10px;padding:12px;margin-bottom:14px;background:#f4faf7">
+            <div class="card-title" style="margin-bottom:8px">Propale PDF</div>
+            <div class="form-group"><label class="form-label">Nom du client (page de présentation)</label><input class="form-input" id="mk-client" placeholder="Ex: Groupe Atlas Invest"></div>
+            <div class="form-group"><label class="form-label">Terrains à inclure <span id="mk-pl-count" style="color:#5d7d6b;font-weight:400"></span></label>
+              <input class="form-input" id="mk-pl-search" placeholder="Rechercher un terrain" oninput="mkPlList()" style="margin-bottom:6px">
+              <div id="mk-pl-list" style="max-height:220px;overflow:auto;border:1px solid #cfe0d6;border-radius:8px;background:#fff;padding:6px 10px;font-size:13px"></div></div>
+            <button class="btn btn-primary" style="width:100%" onclick="mkPropale()">Générer la propale PDF</button>
+            <div class="mk-tip">Une page de présentation (client, logo, date) puis une page paysage par terrain, dans un seul PDF.</div>
+          </div>
+          <div id="mk-social-wrap">
           <div class="card-title">Source du post</div>
           <div style="display:flex;gap:8px;margin-bottom:12px">
             <button class="btn mk-src active" id="mk-src-crm" onclick="mkSetSrc('crm')">Terrain du CRM</button>
@@ -915,15 +932,10 @@ body:not(.role-admin) .admin-only{display:none !important}
             <input class="form-input" id="mk-tel" value="+212 776 250 052"></div>
           <div class="form-group"><label class="form-label">Ton du texte</label>
             <select class="form-select" id="mk-ton"><option value="pro">Professionnel</option><option value="inspire">Inspirant</option><option value="direct">Direct et chiffré</option></select></div>
-          <div class="form-group"><label class="form-label">Réseaux</label>
-            <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px">
-              <label><input type="checkbox" class="mk-net" value="linkedin" checked> LinkedIn</label>
-              <label><input type="checkbox" class="mk-net" value="instagram" checked> Instagram</label>
-              <label><input type="checkbox" class="mk-net" value="facebook" checked> Facebook</label>
-            </div></div>
           <button class="btn btn-primary" style="width:100%" onclick="mkGenerate(true)">Générer les posts</button>
+          </div>
         </div>
-        <div id="mk-out"><div class="card" style="color:#8aab97;font-size:13px">Choisissez un terrain ou saisissez les informations, puis cliquez sur Générer les posts. Un texte et un visuel au bon format seront proposés pour chaque réseau.</div></div>
+        <div><div id="mk-pdf-out"></div><div id="mk-out"><div class="card" style="color:#8aab97;font-size:13px">Choisissez un terrain ou saisissez les informations, puis cliquez sur Générer les posts. Un texte et un visuel au bon format seront proposés pour chaque réseau.</div></div></div>
       </div>
     </div>
 
@@ -3081,6 +3093,7 @@ function mkInit() {
   sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).map(t =>
     `<option value="${t.id}">${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
   if (cur) sel.value = cur;
+  mkPlList();
 }
 function mkSetSrc(m) {
   mkSrc = m;
@@ -3107,7 +3120,7 @@ function mkRead() {
     ville: v('mk-ville'), desc: v('mk-desc'), site: v('mk-site'), mail: v('mk-mail'), tel: v('mk-tel'),
     contact: [v('mk-tel'), v('mk-mail')].filter(Boolean).join(' / '), ton: v('mk-ton'),
     forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0,
-    nets: [...document.querySelectorAll('.mk-net:checked')].map(c => c.value)
+    nets: [...document.querySelectorAll('.mk-net:checked')].map(c => c.value).filter(v => v !== 'propale')
   };
 }
 function mkText(net, d, k) {
@@ -3235,7 +3248,9 @@ function mkIcon(c, kind, x, y, s) {
 function mkDraw(n) {
   const d = mkData; if (!d) return;
   const f = MK_NETS[n].formats[Number(document.getElementById('mk-fmt-' + n).value)];
-  const W = f[1], H = f[2], cv = document.getElementById('mk-cv-' + n);
+  mkPaint(document.getElementById('mk-cv-' + n), d, f[1], f[2]);
+}
+function mkPaint(cv, d, W, H) {
   cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
   const BG = '#10241a', MINT = '#7fe0a8', INK = '#eef5f0', GREY = '#a9bdb1', DIM = '#7d9488';
@@ -3332,6 +3347,96 @@ function mkDownload(n) {
   const a = document.createElement('a');
   const slug = (mkData.loc || 'terrain').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   a.download = 'greenfield-' + slug + '-' + n + '.png'; a.href = cv.toDataURL('image/png'); a.click();
+}
+
+
+// ═══════════ PROPALE PDF ═══════════
+let mkPlSel = new Set(), mkPdfPages = [], mkPdfName = 'propale';
+function mkNetChange() {
+  const on = v => { const e = document.querySelector('.mk-net[value="' + v + '"]'); return e && e.checked; };
+  const social = on('linkedin') || on('instagram') || on('facebook');
+  document.getElementById('mk-propale-wrap').style.display = on('propale') ? '' : 'none';
+  document.getElementById('mk-social-wrap').style.display = social ? '' : 'none';
+  if (!on('propale')) document.getElementById('mk-pdf-out').innerHTML = '';
+  if (on('propale')) mkPlList();
+}
+function mkPlList() {
+  const box = document.getElementById('mk-pl-list'); if (!box) return;
+  const q = (document.getElementById('mk-pl-search').value || '').toLowerCase();
+  const list = (state.terrains || []).filter(t => !q || [t.localisation, t.urba].join(' ').toLowerCase().includes(q));
+  box.innerHTML = list.length ? list.map(t => `<label style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #eef3f0">
+      <input type="checkbox" ${mkPlSel.has(String(t.id)) ? 'checked' : ''} onchange="mkPlToggle('${t.id}',this.checked)">
+      <span>${escH(t.localisation || '')} <span style="color:#8aab97">${escH(t.urba || '')} ${mkNum(Number(t.superficie) || 0)} m²</span></span></label>`).join('') : '<div style="color:#8aab97;padding:6px 0">Aucun terrain</div>';
+  document.getElementById('mk-pl-count').textContent = mkPlSel.size ? '(' + mkPlSel.size + ' sélectionné' + (mkPlSel.size > 1 ? 's' : '') + ')' : '';
+}
+function mkPlToggle(id, on) { if (on) mkPlSel.add(String(id)); else mkPlSel.delete(String(id)); mkPlList(); }
+function mkLoadScript(src) {
+  return new Promise((res, rej) => { if (window.jspdf) return res(); const e = document.createElement('script'); e.src = src; e.onload = res; e.onerror = rej; document.head.appendChild(e); });
+}
+function mkCoverPage(cv, client, dateTxt, d) {
+  const W = 1200, H = 627; cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  const BG = '#10241a', MINT = '#7fe0a8', INK = '#eef5f0', GREY = '#a9bdb1', DIM = '#7d9488';
+  const head = "Archivo, 'DM Sans', Arial, sans-serif", body = "Inter, 'DM Sans', Arial, sans-serif";
+  c.fillStyle = BG; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(127,224,168,0.05)'; c.lineWidth = 1;
+  for (let x = 0; x < W; x += 120) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+  for (let y = 0; y < H; y += 120) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  c.strokeStyle = 'rgba(127,224,168,0.10)'; c.lineWidth = 2;
+  for (let i = 1; i < 9; i++) { c.beginPath(); c.arc(W * 0.86, H * 0.2, i * 90, 0, 7); c.stroke(); }
+  const logo = document.getElementById('gf-side-logo');
+  if (logo && logo.naturalWidth) {
+    const lw = 420, lh = lw * logo.naturalHeight / logo.naturalWidth, t = document.createElement('canvas'); t.width = lw; t.height = Math.ceil(lh);
+    const tc = t.getContext('2d'); tc.drawImage(logo, 0, 0, lw, lh); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = MINT; tc.fillRect(0, 0, lw, lh);
+    c.drawImage(t, 80, 80);
+  }
+  const ls = v => { try { c.letterSpacing = v; } catch (e) {} };
+  c.fillStyle = DIM; c.font = "400 20px 'JetBrains Mono', 'DM Sans', monospace"; ls('7px'); c.fillText('PROPOSITION COMMERCIALE', 80, 250); ls('0px');
+  c.fillStyle = INK; c.font = '800 66px ' + head; c.fillText('Sélection de terrains', 80, 332);
+  c.strokeStyle = 'rgba(127,224,168,0.25)'; c.lineWidth = 1; c.beginPath(); c.moveTo(80, 372); c.lineTo(W - 80, 372); c.stroke();
+  if (client) { c.fillStyle = GREY; c.font = '400 22px ' + body; c.fillText('Préparée pour', 80, 430); c.fillStyle = MINT; c.font = '800 46px ' + head; c.fillText(client, 80, 486); }
+  c.fillStyle = GREY; c.font = '400 20px ' + body; c.textAlign = 'right'; c.fillText(dateTxt, W - 80, client ? 486 : 430); c.textAlign = 'left';
+  c.fillStyle = DIM; c.font = '400 16px ' + body; c.fillText([d.site, d.mail, d.tel].filter(Boolean).join('     '), 80, H - 50);
+}
+async function mkPropale() {
+  const ids = [...mkPlSel];
+  const terr = ids.map(id => (state.terrains || []).find(t => String(t.id) === id)).filter(Boolean);
+  if (!terr.length) { alert('Choisissez au moins un terrain.'); return; }
+  const out = document.getElementById('mk-pdf-out');
+  out.innerHTML = '<div class="card" style="margin-bottom:20px;font-size:13px;color:#5d7d6b">Génération de la propale en cours...</div>';
+  const base = mkRead();
+  const client = document.getElementById('mk-client').value.trim();
+  try { await Promise.all([document.fonts.load('800 40px Archivo'), document.fonts.load('400 20px Inter')]); } catch (e) {}
+  const dateTxt = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const canvases = [];
+  const cv0 = document.createElement('canvas'); mkCoverPage(cv0, client, dateTxt, base); canvases.push(cv0);
+  for (const t of terr) {
+    const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
+    const d = { loc: t.localisation || '', ville: '', sup, prix, urba: t.urba || '', usage: t.usage || '', desc: '', points: [], site: base.site, mail: base.mail, tel: base.tel,
+      forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0, mapImg: null, pin: false };
+    const sat = await mkSatellite(d.loc);
+    if (sat) { d.mapImg = sat; d.pin = true; }
+    const cv = document.createElement('canvas'); mkPaint(cv, d, 1200, 627); canvases.push(cv);
+  }
+  mkPdfPages = canvases.map(c => c.toDataURL('image/jpeg', 0.92));
+  mkPdfName = 'proposition-greenfield' + (client ? '-' + client.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '');
+  out.innerHTML = `<div class="card" style="margin-bottom:20px"><div class="mk-head"><span>Propale PDF</span><span class="mk-badge">${canvases.length} pages</span>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="mkPdfDownload()">Télécharger le PDF</button></div>
+    <div id="mk-pdf-thumbs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+    <div id="mk-pdf-msg" class="mk-tip"></div></div>`;
+  const th = document.getElementById('mk-pdf-thumbs');
+  mkPdfPages.forEach(u => { const im = new Image(); im.src = u; im.style.cssText = 'width:100%;border-radius:6px;border:1px solid #cfe0d6;display:block'; th.appendChild(im); });
+}
+async function mkPdfDownload() {
+  const msg = document.getElementById('mk-pdf-msg');
+  try {
+    await mkLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1200, 627], hotfixes: ['px_scaling'] });
+    mkPdfPages.forEach((u, i) => { if (i) pdf.addPage([1200, 627], 'landscape'); pdf.addImage(u, 'JPEG', 0, 0, 1200, 627); });
+    pdf.save(mkPdfName + '.pdf');
+    if (msg) msg.textContent = '';
+  } catch (e) { if (msg) msg.textContent = 'Impossible de générer le PDF (connexion à la bibliothèque PDF impossible). Réessayez.'; }
 }
 
 // ═══════════════════════════════════════════════════════════════

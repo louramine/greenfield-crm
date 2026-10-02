@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GREENFIELD — CRM Foncier</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Archivo:wght@700;800;900&family=Inter:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
     --green-deep: #0a2e1a;
@@ -904,7 +904,15 @@ body:not(.role-admin) .admin-only{display:none !important}
               <select class="form-select" id="mk-usage"><option>Tertiaire</option><option>Résidentiel</option><option>Mixte</option><option>Hôtellerie</option><option>Industriel</option><option>Balnéaire</option><option>Logistique</option></select></div>
           </div>
           <div class="form-group"><label class="form-label">Points forts (un par ligne)</label><textarea class="form-input" id="mk-points" rows="3" placeholder="Titre foncier individuel&#10;Accès direct autoroute&#10;Terrain plat et viabilisé"></textarea></div>
-          <div class="form-group"><label class="form-label">Contact affiché</label><input class="form-input" id="mk-contact" placeholder="Ex: +212 6 00 00 00 00 / contact@greenfield.plus"></div>
+          <div class="form-group"><label class="form-label">Ville ou région (affichée au-dessus du titre)</label><input class="form-input" id="mk-ville" placeholder="Ex: Casablanca"></div>
+          <div class="form-group"><label class="form-label">Phrase d'accroche du visuel</label><input class="form-input" id="mk-desc" placeholder="Ex: Terrain en front de mer, pour un projet d'exception"></div>
+          <div class="form-group"><label class="form-label">Image de carte (capture satellite)</label>
+            <input type="file" id="mk-map" accept="image/*" class="form-input" onchange="mkMapFile(this)">
+            <div class="mk-tip">Sans image, le CRM tente de trouver la carte satellite à partir de la localisation.</div></div>
+          <div class="form-group"><label class="form-label">Site, email, téléphone du bandeau</label>
+            <input class="form-input" id="mk-site" value="www.greenfield.plus" style="margin-bottom:6px">
+            <input class="form-input" id="mk-mail" value="contact@greenfield.plus" style="margin-bottom:6px">
+            <input class="form-input" id="mk-tel" value="+212 776 250 052"></div>
           <div class="form-group"><label class="form-label">Ton du texte</label>
             <select class="form-select" id="mk-ton"><option value="pro">Professionnel</option><option value="inspire">Inspirant</option><option value="direct">Direct et chiffré</option></select></div>
           <div class="form-group"><label class="form-label">Réseaux</label>
@@ -3096,7 +3104,8 @@ function mkRead() {
   return {
     loc: v('mk-loc'), sup, prix, urba: v('mk-urba'), usage: v('mk-usage'),
     points: v('mk-points').split('\n').map(x => x.trim()).filter(Boolean),
-    contact: v('mk-contact'), ton: v('mk-ton'),
+    ville: v('mk-ville'), desc: v('mk-desc'), site: v('mk-site'), mail: v('mk-mail'), tel: v('mk-tel'),
+    contact: [v('mk-tel'), v('mk-mail')].filter(Boolean).join(' / '), ton: v('mk-ton'),
     forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0,
     nets: [...document.querySelectorAll('.mk-net:checked')].map(c => c.value)
   };
@@ -3153,7 +3162,7 @@ function mkGenerate(reset) {
           <div class="mk-tip">${N.tip}</div></div>
       </div></div>`;
   }).join('');
-  d.nets.forEach(n => mkDraw(n));
+  mkPrepareMap(d).then(() => d.nets.forEach(n => mkDraw(n)));
 }
 function mkCopy(n) {
   const t = document.getElementById('mk-txt-' + n).value;
@@ -3169,56 +3178,154 @@ function mkWrap(ctx, text, x, y, maxW, lh, maxLines) {
   lines.slice(0, maxLines).forEach((l, i) => ctx.fillText(l, x, y + i * lh));
   return Math.min(lines.length, maxLines) * lh;
 }
+let mkMapUpload = null, mkMapCache = {};
+function mkMapFile(inp) {
+  const f = inp.files && inp.files[0];
+  if (!f) { mkMapUpload = null; return; }
+  const r = new FileReader();
+  r.onload = () => { const im = new Image(); im.onload = () => { mkMapUpload = im; if (mkData) mkPrepareMap(mkData).then(() => mkData.nets.forEach(n => mkDraw(n))); }; im.src = r.result; };
+  r.readAsDataURL(f);
+}
+function mkLoadImg(src) {
+  return new Promise(res => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+}
+async function mkSatellite(q) {
+  if (mkMapCache[q] !== undefined) return mkMapCache[q];
+  let out = null;
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q + ', Maroc'), { signal: ctl.signal });
+    const j = await r.json();
+    if (j && j[0]) {
+      const lat = parseFloat(j[0].lat), lon = parseFloat(j[0].lon), z = 14, n = Math.pow(2, z);
+      const fx = (lon + 180) / 360 * n, la = lat * Math.PI / 180;
+      const fy = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n;
+      const cv = document.createElement('canvas'); cv.width = cv.height = 1024;
+      const c = cv.getContext('2d'); let ok = 0;
+      const jobs = [];
+      for (let i = -2; i <= 2; i++) for (let k = -2; k <= 2; k++) {
+        const tx = Math.floor(fx) + i, ty = Math.floor(fy) + k;
+        jobs.push(mkLoadImg('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + ty + '/' + tx).then(im => { if (im) { c.drawImage(im, 512 + (tx - fx) * 256, 512 + (ty - fy) * 256); ok++; } }));
+      }
+      await Promise.all(jobs);
+      if (ok > 8) { try { cv.toDataURL(); out = cv; } catch (e) { out = null; } }
+    }
+  } catch (e) { out = null; }
+  mkMapCache[q] = out; return out;
+}
+async function mkPrepareMap(d) {
+  try { await Promise.all([document.fonts.load('800 40px Archivo'), document.fonts.load('400 20px Inter')]); } catch (e) {}
+  d.mapImg = null; d.pin = false;
+  if (mkMapUpload) { d.mapImg = mkMapUpload; return; }
+  const q = [d.loc, d.ville].filter(Boolean).join(', ');
+  const sat = await mkSatellite(q);
+  if (sat) { d.mapImg = sat; d.pin = true; }
+}
+function mkCover(c, im, x, y, w, h) {
+  const iw = im.width, ih = im.height, r = Math.max(w / iw, h / ih), sw = w / r, sh = h / r;
+  c.drawImage(im, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
+}
+function mkIcon(c, kind, x, y, s) {
+  c.save(); c.strokeStyle = '#7fe0a8'; c.fillStyle = '#7fe0a8'; c.lineWidth = 2 * s; c.lineCap = 'round';
+  if (kind === 'globe') { c.beginPath(); c.arc(x, y, 9 * s, 0, 7); c.stroke(); c.beginPath(); c.ellipse(x, y, 4 * s, 9 * s, 0, 0, 7); c.stroke(); c.beginPath(); c.moveTo(x - 9 * s, y); c.lineTo(x + 9 * s, y); c.stroke(); }
+  else if (kind === 'mail') { c.strokeRect(x - 9 * s, y - 6 * s, 18 * s, 12 * s); c.beginPath(); c.moveTo(x - 9 * s, y - 6 * s); c.lineTo(x, y + 1 * s); c.lineTo(x + 9 * s, y - 6 * s); c.stroke(); }
+  else { c.beginPath(); c.arc(x, y, 9.5 * s, 0, 7); c.fill(); c.fillStyle = '#10241a'; c.beginPath(); c.arc(x, y, 4 * s, 0, 7); c.fill(); }
+  c.restore();
+}
 function mkDraw(n) {
   const d = mkData; if (!d) return;
   const f = MK_NETS[n].formats[Number(document.getElementById('mk-fmt-' + n).value)];
   const W = f[1], H = f[2], cv = document.getElementById('mk-cv-' + n);
   cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
-  const u = Math.min(W, H) / 1080, tall = H / W > 1.2, wide = W / H > 1.5;
-  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0a2518'); g.addColorStop(1, '#1a5c35');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  c.fillStyle = 'rgba(78,202,130,0.10)'; c.beginPath(); c.arc(W * 0.92, H * 0.12, 260 * u, 0, 7); c.fill();
-  c.fillStyle = 'rgba(201,168,76,0.10)'; c.beginPath(); c.arc(W * 0.05, H * 0.95, 200 * u, 0, 7); c.fill();
-  const pad = 70 * u, sans = 'DM Sans, Arial, sans-serif';
+  const BG = '#10241a', MINT = '#7fe0a8', INK = '#eef5f0', GREY = '#a9bdb1', DIM = '#7d9488';
+  const head = "Archivo, 'DM Sans', Arial, sans-serif", body = "Inter, 'DM Sans', Arial, sans-serif";
+  const wide = W / H > 1.5;
+  const s = wide ? H / 627 : W / 1080;
+  const sup = d.sup ? mkNum(d.sup) : '', prix = d.prix ? mkNum(d.prix) : '';
+  const forfait = d.forfait ? (d.forfait >= 10 ? String(Math.round(d.forfait)) : d.forfait.toFixed(1)) : '';
+  const desc = d.desc || ('Terrain' + (d.usage ? ' à vocation ' + d.usage.toLowerCase() : '') + ' à ' + d.loc);
+  c.fillStyle = BG; c.fillRect(0, 0, W, H);
+  // zones
+  const topH = (wide ? 84 : 112) * s;
+  let mx, my, mw, mh, px, pw;
+  if (wide) { pw = W * 0.54; mx = pw; my = topH; mw = W - pw; mh = H - topH; px = 0; }
+  else { const botH = 524 * s; mx = 0; my = topH; mw = W; mh = H - topH - botH; px = 0; pw = W; }
+  // grille discrète
+  c.strokeStyle = 'rgba(127,224,168,0.05)'; c.lineWidth = 1;
+  for (let gx = 0; gx < W; gx += 108 * s) { c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, H); c.stroke(); }
+  for (let gy = 0; gy < H; gy += 108 * s) { c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke(); }
+  // carte
+  c.save(); c.beginPath(); c.rect(mx, my, mw, mh); c.clip();
+  if (d.mapImg) { mkCover(c, d.mapImg, mx, my, mw, mh); c.fillStyle = 'rgba(14,52,34,0.50)'; c.fillRect(mx, my, mw, mh); }
+  else { const g = c.createLinearGradient(mx, my, mx + mw, my + mh); g.addColorStop(0, '#16402c'); g.addColorStop(1, '#0e2a1c'); c.fillStyle = g; c.fillRect(mx, my, mw, mh);
+    c.strokeStyle = 'rgba(127,224,168,0.10)'; c.lineWidth = 2 * s; for (let i = 1; i < 9; i++) { c.beginPath(); c.arc(mx + mw * 0.6, my + mh * 0.5, i * 70 * s, 0, 7); c.stroke(); } }
+  if (d.pin) { const cx = mx + mw / 2, cy = my + mh / 2; c.strokeStyle = MINT; c.lineWidth = 3 * s; c.beginPath(); c.arc(cx, cy, 26 * s, 0, 7); c.stroke(); c.fillStyle = MINT; c.beginPath(); c.arc(cx, cy, 8 * s, 0, 7); c.fill(); }
+  const fadeV = c.createLinearGradient(0, my, 0, my + mh); fadeV.addColorStop(0, 'rgba(16,36,26,0.55)'); fadeV.addColorStop(0.18, 'rgba(16,36,26,0)'); fadeV.addColorStop(0.72, 'rgba(16,36,26,0)'); fadeV.addColorStop(1, wide ? 'rgba(16,36,26,0.55)' : BG);
+  c.fillStyle = fadeV; c.fillRect(mx, my, mw, mh);
+  if (wide) { const fh = c.createLinearGradient(mx, 0, mx + 140 * s, 0); fh.addColorStop(0, BG); fh.addColorStop(1, 'rgba(16,36,26,0)'); c.fillStyle = fh; c.fillRect(mx, my, 140 * s, mh); }
+  c.restore();
+  // bandeau
+  c.fillStyle = BG; c.fillRect(0, 0, W, topH);
+  c.strokeStyle = 'rgba(127,224,168,0.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, topH); c.lineTo(W, topH); c.stroke();
   const logo = document.getElementById('gf-side-logo');
-  if (logo && logo.naturalWidth) { const lw = 300 * u, lh = lw * logo.naturalHeight / logo.naturalWidth; c.drawImage(logo, pad, pad * 0.85, lw, lh); }
-  let y = tall ? H * 0.26 : (wide ? H * 0.34 : H * 0.28);
-  c.fillStyle = '#c9a84c'; c.font = '600 ' + 30 * u + 'px ' + sans; c.textBaseline = 'alphabetic';
-  c.fillText(('TERRAIN' + (d.usage ? ' ' + d.usage : '')).toUpperCase(), pad, y);
-  y += 20 * u;
-  c.fillStyle = '#ffffff'; c.font = '700 ' + (wide ? 62 : 80) * u + 'px ' + sans;
-  y += (wide ? 64 : 84) * u;
-  const hh = mkWrap(c, d.loc, pad, y, W - pad * 2, (wide ? 68 : 90) * u, 3);
-  y += hh + 10 * u;
-  if (d.urba) {
-    c.font = '500 ' + 30 * u + 'px ' + sans;
-    const tw = c.measureText(d.urba).width + 44 * u;
-    c.fillStyle = 'rgba(78,202,130,0.22)'; c.beginPath(); c.roundRect(pad, y, tw, 56 * u, 28 * u); c.fill();
-    c.fillStyle = '#7ffbb5'; c.fillText(d.urba, pad + 22 * u, y + 38 * u);
-    y += 56 * u + 36 * u;
+  const lw = (wide ? 190 : 360) * s;
+  if (logo && logo.naturalWidth) {
+    const lh = lw * logo.naturalHeight / logo.naturalWidth, t = document.createElement('canvas'); t.width = Math.ceil(lw); t.height = Math.ceil(lh);
+    const tc = t.getContext('2d'); tc.drawImage(logo, 0, 0, lw, lh); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = MINT; tc.fillRect(0, 0, lw, lh);
+    c.drawImage(t, 48 * s, topH / 2 - lh / 2);
   }
-  const items = [];
-  if (d.sup) items.push([mkNum(d.sup), 'm²']);
-  if (d.prix) items.push([mkNum(d.prix), 'MAD / m²']);
-  if (d.forfait) items.push([d.forfait >= 10 ? String(Math.round(d.forfait)) : d.forfait.toFixed(1), 'M MAD']);
-  const cols = tall ? 1 : items.length || 1, gap = 24 * u;
-  const bw = tall ? W - pad * 2 : (W - pad * 2 - gap * (cols - 1)) / cols, bh = (wide ? 120 : 130) * u;
-  items.forEach((it, i) => {
-    const bx = tall ? pad : pad + i * (bw + gap), by = tall ? y + i * (bh + gap) : y;
-    c.fillStyle = 'rgba(255,255,255,0.08)'; c.strokeStyle = 'rgba(127,251,181,0.35)'; c.lineWidth = 2 * u;
-    c.beginPath(); c.roundRect(bx, by, bw, bh, 18 * u); c.fill(); c.stroke();
-    c.fillStyle = '#ffffff'; c.font = '700 ' + 54 * u + 'px ' + sans; c.fillText(it[0], bx + 26 * u, by + 66 * u);
-    c.fillStyle = '#8fd9ae'; c.font = '500 ' + 26 * u + 'px ' + sans; c.fillText(it[1], bx + 26 * u, by + 104 * u);
-  });
-  if (items.length) y += tall ? items.length * (bh + gap) : bh + 30 * u;
-  if (d.points.length && H - y > 260 * u) {
-    c.fillStyle = '#e8f7ef'; c.font = '400 ' + 30 * u + 'px ' + sans;
-    d.points.slice(0, tall ? 4 : 2).forEach((p, i) => { c.fillStyle = '#4eca82'; c.fillText('●', pad, y + 40 * u + i * 48 * u); c.fillStyle = '#e8f7ef'; c.fillText(p.slice(0, 48), pad + 40 * u, y + 40 * u + i * 48 * u); });
+  const rows = [['globe', d.site], ['mail', d.mail], ['wa', d.tel]].filter(r => r[1]);
+  c.textBaseline = 'middle'; c.textAlign = 'left';
+  if (wide) {
+    c.font = '400 ' + 12 * s + 'px ' + body; c.fillStyle = GREY;
+    const gap = 30 * s; let tw = 0; rows.forEach(r => tw += c.measureText(r[1]).width + 24 * s + gap); tw -= gap;
+    let x = W - 36 * s - tw;
+    rows.forEach(r => { mkIcon(c, r[0], x + 7 * s, topH / 2, 0.55 * s); c.fillStyle = GREY; c.fillText(r[1], x + 20 * s, topH / 2); x += c.measureText(r[1]).width + 24 * s + gap; });
+  } else {
+    c.font = '400 ' + 18 * s + 'px ' + body; const ry = topH / 2 - (rows.length - 1) * 25 * s / 2;
+    let maxw = 0; rows.forEach(r => maxw = Math.max(maxw, c.measureText(r[1]).width));
+    const x0 = W - 20 * s - maxw - 32 * s;
+    rows.forEach((r, i) => { mkIcon(c, r[0], x0 + 9 * s, ry + i * 25 * s, 0.9 * s); c.fillStyle = GREY; c.fillText(r[1], x0 + 32 * s, ry + i * 25 * s); });
   }
-  c.fillStyle = '#c9a84c'; c.fillRect(pad, H - 120 * u, 90 * u, 4 * u);
-  c.fillStyle = '#ffffff'; c.font = '500 ' + 28 * u + 'px ' + sans;
-  c.fillText(d.contact || 'crm.greenfield.plus', pad, H - 62 * u);
+  c.textBaseline = 'alphabetic';
+  // bloc texte
+  const L = (wide ? 40 : 48) * s;
+  const inner = wide ? pw - L - 36 * s : W - 2 * L;
+  let y0 = wide ? topH + 70 * s : my + mh + 42 * s;
+  const ls = (v) => { try { c.letterSpacing = v; } catch (e) {} };
+  c.fillStyle = DIM; c.font = '400 ' + (wide ? 12 : 18) * s + "px 'JetBrains Mono', 'DM Sans', monospace"; ls((wide ? 4 : 6) * s + 'px');
+  c.fillText((d.ville || '').toUpperCase(), L, y0 + 14 * s); ls('0px');
+  // titre
+  const tsz = (wide ? 44 : 72) * s;
+  c.font = '800 ' + tsz + 'px ' + head;
+  let title = d.loc.toUpperCase(), tag = (d.urba || '').toUpperCase();
+  c.fillStyle = INK;
+  let ty = y0 + (wide ? 60 : 96) * s;
+  let tagSz = (wide ? 24 : 44) * s;
+  c.font = '800 ' + tsz + 'px ' + head; let tW = c.measureText(title).width;
+  c.font = '800 ' + tagSz + 'px ' + head; let gW = tag ? c.measureText(tag).width + 16 * s : 0;
+  let shrink = tsz;
+  while (tW + gW > inner && shrink > tsz * 0.5) { shrink -= 2 * s; c.font = '800 ' + shrink + 'px ' + head; tW = c.measureText(title).width; }
+  c.font = '800 ' + shrink + 'px ' + head; c.fillStyle = INK; c.fillText(title, L, ty);
+  if (tag) { c.font = '800 ' + tagSz + 'px ' + head; c.fillStyle = MINT; c.fillText(tag, L + tW + 16 * s, ty); }
+  // description
+  c.font = '400 ' + (wide ? 15 : 24) * s + 'px ' + body; c.fillStyle = GREY;
+  const dl = mkWrap(c, desc, L, ty + (wide ? 34 : 52) * s, inner, (wide ? 21 : 32) * s, 2);
+  let sy = ty + (wide ? 34 : 52) * s + dl - (wide ? 6 : 8) * s + (wide ? 18 : 22) * s;
+  // stats
+  const line = (yy) => { c.strokeStyle = 'rgba(127,224,168,0.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(L, yy); c.lineTo(L + inner, yy); c.stroke(); };
+  line(sy);
+  const stat = (x, v, lab) => { c.fillStyle = MINT; c.font = '800 ' + (wide ? 30 : 46) * s + 'px ' + head; c.fillText(v, x, sy + (wide ? 50 : 72) * s); c.fillStyle = GREY; c.font = '400 ' + (wide ? 12 : 18) * s + 'px ' + body; c.fillText(lab, x, sy + (wide ? 74 : 106) * s); };
+  const sh = (wide ? 104 : 140) * s;
+  if (sup) stat(L, sup, 'Superficie m²');
+  if (prix) { stat(L + inner / 2 + 34 * s, prix, 'Prix DH/m²'); c.strokeStyle = 'rgba(127,224,168,0.18)'; c.beginPath(); c.moveTo(L + inner / 2, sy + 16 * s); c.lineTo(L + inner / 2, sy + sh - 30 * s); c.stroke(); }
+  line(sy + sh);
+  if (forfait) {
+    const fy = sy + sh + (wide ? 76 : 100) * s;
+    c.fillStyle = INK; c.font = '800 ' + (wide ? 52 : 84) * s + 'px ' + head; c.fillText(forfait, L, fy);
+    const fw = c.measureText(forfait).width; c.fillStyle = MINT; c.font = '800 ' + (wide ? 20 : 32) * s + 'px ' + head; c.fillText('MDH', L + fw + 10 * s, fy);
+  }
 }
 function mkDownload(n) {
   const cv = document.getElementById('mk-cv-' + n);

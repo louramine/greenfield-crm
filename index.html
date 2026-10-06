@@ -2668,6 +2668,9 @@ saveTerrain = async function() {
       state.terrains.push({ ...terrain, id: res[0].id, dateSourcing: terrain.date_sourcing });
       await logActivity('Ajout terrain', 'terrain', res[0].id, loc);
       showNotif('✓ Terrain ajouté dans Supabase !');
+    } else {
+      showNotif("Échec : le terrain n'a pas été enregistré dans la base. Vérifiez votre connexion ou vos droits.", true);
+      return;
     }
   } else {
     terrain.id = state.nextTerrainId++;

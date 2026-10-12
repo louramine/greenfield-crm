@@ -1,0 +1,107 @@
+-- A executer dans Supabase > SQL Editor, en une seule fois (tout le script)
+-- Marque "Vendu" les 70 terrains en rouge dans le listing du 14 septembre 2026.
+-- Les terrains sont conserves. Seul le statut change. Rien n'est supprime.
+-- Correspondance avec la base par superficie + TF + definition urbanistique.
+
+create temp table vendus_sept as
+select * from (values
+  (9, 15866, '128/47', 'c4s'),
+  (11, 508, '39963/c', 'b3s'),
+  (13, 17000, '99101/63', 'bt2s1'),
+  (15, 74216, '22853/33', 'c3/d3'),
+  (33, 900, '', 'b5'),
+  (36, 62482, '50411/33', 'd3s'),
+  (37, 50034, '17303/33', 'b4'),
+  (41, 80000, '8317/c', 'e3'),
+  (42, 626, '139505/12', 'fb4'),
+  (43, 457, '10889/33', 'fb5'),
+  (51, 2738, '3tf', 'b5'),
+  (54, 9884, '199615/63', 'retail'),
+  (65, 10000, '936/33', 'd4s'),
+  (77, 22547, '10611/c', 'c3'),
+  (86, 120000, '', 'i2'),
+  (89, 5000, '5682/c', 'a7'),
+  (91, 27003, '9311/33', 'i2s1'),
+  (97, 50000, '88742/47', 'c4s'),
+  (100, 30000, '', 'e4'),
+  (101, 244900, '5128/c', 'c4/pbc5/cv'),
+  (104, 59600, '5835/c', 'e3'),
+  (114, 74216, '22853/33', 'c3 d3'),
+  (119, 32279, '58449/33', 'i2s1'),
+  (125, 77920, '10274/c', 'b4'),
+  (129, 0, '156238/63', 'e4'),
+  (130, 0, '124001/63', 'e4'),
+  (131, 1221, '20658/c', 'b5'),
+  (142, 160000, '58068/c', 'e3'),
+  (146, 1860, '36655/32', 'b5'),
+  (147, 28000, '104043/c', 'e2'),
+  (150, 43505, '185582/63 - 185583/63', 'bt2s1'),
+  (167, 50000, '62256/c', 'pbc5'),
+  (195, 410, '2842/d', 'b5'),
+  (196, 10000, 'exclu', 'r+5'),
+  (222, 207096, '6428/d', 'i2'),
+  (223, 90000, '45572/04', 'sd2'),
+  (228, 500000, '8128/c', 'mix used (e4)'),
+  (233, 608, '47365/c', 'b3s fb5'),
+  (234, 515, '47367/c', 'b3s fb5'),
+  (235, 1549, '46026/c ou 32579/c', 'b5'),
+  (243, 496800, '6725/d', 'lotissement'),
+  (257, 6965, '35381/c2', 'b4'),
+  (264, 90000, '773/c', 'ras'),
+  (271, 43441, '19124/d', 'd2s'),
+  (292, 680, '30378/c', 'b5'),
+  (303, 57610, '13237/c 59529/c', 'e2'),
+  (306, 79077, '24292/33', 'c3'),
+  (307, 13840, '34962/c', 'b4'),
+  (332, 23620, '32916/c', 'i2s1'),
+  (346, 68000, '11277/33', 'a5s e2'),
+  (351, 98111, '20947/d', 'bt2 d3s e2'),
+  (357, 98111, '20947/d', 'e2s'),
+  (370, 30000, '12070/d', 'pbc5'),
+  (372, 2498, '5674/c', 'b5'),
+  (374, 37000, '70076/c', 'bt2s1'),
+  (377, 1289, '14784/c', 'b4'),
+  (379, 220000, '9235/33', 'bt2s'),
+  (399, 54746, '69981/c', 'd1'),
+  (401, 149901, '58/63', 'c4 d1'),
+  (437, 30000, '397/47', 'd4s'),
+  (438, 80000, '166613/12', 'i2'),
+  (445, 20200, '15910/33', 'i2s1'),
+  (453, 85196, '73114/63', 'e3 bt2'),
+  (473, 6460, '82027/47', 'c4s'),
+  (493, 130000, '11608/c', 'a6s3'),
+  (536, 20000, '208725/12', 'i2'),
+  (654, 509, '50273/c', 'a7'),
+  (684, 13000, '17382/33', 'i8'),
+  (687, 17200, '1029/33', 'i2s1'),
+  (726, 16520, '1195/26', 'i2s1')
+) as v(n, superficie, tf, urba);
+
+-- 1. Apercu : nombre de terrains de la base qui correspondent a chaque ligne (doit etre 1 partout)
+select v.n, count(t.id) as correspondances
+  from vendus_sept v
+  left join public.terrains t
+    on coalesce(t.superficie, 0) = v.superficie
+   and lower(regexp_replace(trim(coalesce(t.tf, '')), '\s+', ' ', 'g')) = v.tf
+   and lower(regexp_replace(trim(coalesce(t.urba, '')), '\s+', ' ', 'g')) = v.urba
+ group by v.n
+having count(t.id) <> 1
+ order by v.n;
+
+-- 2. Mise a jour : uniquement les lignes qui correspondent a exactement un terrain
+update public.terrains t
+   set statut = 'Vendu'
+  from (
+    select min(t2.id) as id
+      from vendus_sept v
+      join public.terrains t2
+        on coalesce(t2.superficie, 0) = v.superficie
+       and lower(regexp_replace(trim(coalesce(t2.tf, '')), '\s+', ' ', 'g')) = v.tf
+       and lower(regexp_replace(trim(coalesce(t2.urba, '')), '\s+', ' ', 'g')) = v.urba
+     group by v.n
+    having count(t2.id) = 1
+  ) m
+ where t.id = m.id;
+
+-- 3. Controle : nombre de terrains vendus dans la base
+select count(*) as terrains_vendus from public.terrains where statut = 'Vendu';

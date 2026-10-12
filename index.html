@@ -852,6 +852,7 @@ body:not(.role-admin) .admin-only{display:none !important}
         </select>
         <input id="filter-prix-min" type="number" min="0" placeholder="Prix min" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
         <input id="filter-prix-max" type="number" min="0" placeholder="Prix max" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="hide-vendus" onchange="filterTerrains()"> Masquer les vendus</label>
         <select id="sort-terrains" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
           <option value="">Tri : par défaut</option>
           <option value="sup-desc">Superficie : la plus grande</option>
@@ -1490,29 +1491,29 @@ function renderPage(page) {
 function renderDashboard() {
   const setT = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   const fr = n => Math.round(n).toLocaleString('fr-FR');
-  const T = state.terrains;
+  const T = state.terrains.filter(t => t.statut !== 'Vendu');
   const totalM2 = T.reduce((s, t) => s + (Number(t.superficie) || 0), 0);
   const valeurM = T.reduce((s, t) => {
     const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
     return s + (sup > 0 && prix > 0 ? sup * prix / 1e6 : 0);
   }, 0);
   setT('kpi-terrains', T.length);
-  setT('kpi-terrains-sub', 'Terrains référencés dans la base');
+  setT('kpi-terrains-sub', 'Terrains disponibles (hors vendus)');
   setT('kpi-surface', totalM2 >= 1e6 ? (totalM2 / 1e6).toFixed(1) + 'M' : fr(totalM2));
   setT('kpi-surface-sub', 'm² cumulés');
   setT('kpi-valeur', fr(valeurM));
   setT('kpi-valeur-sub', 'M MAD, superficie × prix/m²');
   // Top 4 Def Urba KPIs — computed dynamically
   const urbaCount = {};
-  state.terrains.forEach(t => {
+  T.forEach(t => {
     const u = (t.urba || '').trim().toUpperCase();
     if (!u) return;
     urbaCount[u] = (urbaCount[u] || 0) + 1;
   });
-  const b5 = state.terrains.filter(t => (t.urba||'').trim().toUpperCase() === 'B5').length;
-  const i2s1 = state.terrains.filter(t => ['I2S1','I2S','I2S1'].includes((t.urba||'').trim().toUpperCase())).length;
-  const e3 = state.terrains.filter(t => (t.urba||'').trim().toUpperCase() === 'E3').length;
-  const b4 = state.terrains.filter(t => (t.urba||'').trim().toUpperCase() === 'B4').length;
+  const b5 = T.filter(t => (t.urba||'').trim().toUpperCase() === 'B5').length;
+  const i2s1 = T.filter(t => ['I2S1','I2S','I2S1'].includes((t.urba||'').trim().toUpperCase())).length;
+  const e3 = T.filter(t => (t.urba||'').trim().toUpperCase() === 'E3').length;
+  const b4 = T.filter(t => (t.urba||'').trim().toUpperCase() === 'B4').length;
   const avgPrix = fn => { const a = T.filter(t => fn((t.urba||'').trim().toUpperCase()) && Number(t.prix) > 0); return a.length ? fr(a.reduce((s, t) => s + Number(t.prix), 0) / a.length) + ' MAD/m²' : '-'; };
   setT('kpi-b5-avg', avgPrix(u => u === 'B5'));
   setT('kpi-i2s1-avg', avgPrix(u => ['I2S1','I2S'].includes(u)));
@@ -1777,6 +1778,7 @@ function filterTerrains() {
     }
     if (msSel.loc.size && !msSel.loc.has((t.localisation || '').trim())) return false;
     if (msSel.urba.size && !msSel.urba.has((t.urba || '').trim())) return false;
+    if (document.getElementById('hide-vendus')?.checked && t.statut === 'Vendu') return false;
     const p = t.prix || 0;
     if (!isNaN(pmin) && p < pmin) return false;
     if (!isNaN(pmax) && p > pmax) return false;
@@ -1817,7 +1819,7 @@ function filterTerrains() {
       const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
       return String(str).replace(regex, '<mark style="background:#4eca8244;color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
     };
-    return `<tr style="${isOld ? 'opacity:0.75;' : ''}">
+    return `<tr style="${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
       <td><strong style="color:var(--green-mid)">${i+1}</strong></td>
       <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
@@ -1841,6 +1843,7 @@ function resetFilters() {
   document.getElementById('filter-prix-min').value = '';
   document.getElementById('filter-prix-max').value = '';
   document.getElementById('sort-terrains').value = '';
+  const hv = document.getElementById('hide-vendus'); if (hv) hv.checked = false;
   filterTerrains();
 }
 
@@ -1883,7 +1886,7 @@ function renderAcheteurs() {
 function renderMatchingSelect() {
   const sel = document.getElementById('matching-terrain-select');
   sel.innerHTML = '<option value="">— Choisir un terrain —</option>' +
-    state.terrains.map(t => `<option value="${t.id}">${t.localisation} — ${Number(t.superficie).toLocaleString('fr-FR')} m²</option>`).join('');
+    state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${t.localisation} — ${Number(t.superficie).toLocaleString('fr-FR')} m²</option>`).join('');
   document.getElementById('matching-results').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⟳</div><div class="empty-state-text">Sélectionnez un terrain pour lancer le matching</div></div>`;
 }
 
@@ -3161,7 +3164,7 @@ function mkInit() {
   const sel = document.getElementById('mk-terrain');
   if (!sel) return;
   const cur = sel.value;
-  sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).map(t =>
+  sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).filter(t => t.statut !== 'Vendu').map(t =>
     `<option value="${t.id}">${t.ref ? escH(t.ref) + ' ' : ''}${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
   if (cur) sel.value = cur;
   mkPlList();
@@ -3460,7 +3463,7 @@ function mkNetChange() {
 function mkPlList() {
   const box = document.getElementById('mk-pl-list'); if (!box) return;
   const q = (document.getElementById('mk-pl-search').value || '').toLowerCase();
-  const list = (state.terrains || []).filter(t => !q || [t.localisation, t.urba].join(' ').toLowerCase().includes(q));
+  const list = (state.terrains || []).filter(t => t.statut !== 'Vendu').filter(t => !q || [t.localisation, t.urba].join(' ').toLowerCase().includes(q));
   box.innerHTML = list.length ? list.map(t => `<label style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #eef3f0">
       <input type="checkbox" ${mkPlSel.has(String(t.id)) ? 'checked' : ''} onchange="mkPlToggle('${t.id}',this.checked)">
       <span>${escH(t.localisation || '')} <span style="color:#8aab97">${escH(t.urba || '')} ${mkNum(Number(t.superficie) || 0)} m²</span></span></label>`).join('') : '<div style="color:#8aab97;padding:6px 0">Aucun terrain</div>';

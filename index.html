@@ -831,7 +831,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <input
             id="search-terrains"
             type="text"
-            placeholder="Rechercher par quartier, def urba, TF..."
+            placeholder="Rechercher par réf, quartier, def urba, TF..."
             oninput="filterTerrains()"
             style="width:100%;padding:10px 14px 10px 36px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(255,255,255,0.06);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;"
           />
@@ -866,6 +866,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <thead>
             <tr>
               <th>#</th>
+              <th>Réf.</th>
               <th>Localisation</th>
               <th>Def. Urba.</th>
               <th>Superficie</th>
@@ -960,7 +961,7 @@ body:not(.role-admin) .admin-only{display:none !important}
             <label class="form-label">Terrain</label>
             <select class="form-select" id="mk-terrain" onchange="mkFillFromTerrain()"></select>
           </div>
-          <div class="form-group"><label class="form-label">Localisation *</label><input class="form-input" id="mk-loc" placeholder="Ex: Marrakech, Guéliz"></div>
+          <div class="form-grid"><div class="form-group"><label class="form-label">Localisation *</label><input class="form-input" id="mk-loc" placeholder="Ex: Marrakech, Guéliz"></div><div class="form-group"><label class="form-label">Référence</label><input class="form-input" id="mk-ref" placeholder="GF-0001"></div></div>
           <div class="form-grid">
             <div class="form-group"><label class="form-label">Superficie (m²)</label><input class="form-input" id="mk-sup" type="number" placeholder="10000"></div>
             <div class="form-group"><label class="form-label">Prix au m² (MAD)</label><input class="form-input" id="mk-prix" type="number" placeholder="1300"></div>
@@ -1007,7 +1008,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Localisation *</label>
-        <input class="form-input" id="t-localisation" placeholder="Ex: Marrakech, Guéliz">
+        <input class="form-input" id="t-localisation" list="t-loc-list" autocomplete="off" placeholder="Choisir ou saisir un quartier"><datalist id="t-loc-list"></datalist>
       </div>
       <div class="form-group">
         <label class="form-label">Définition Urbanistique</label>
@@ -1745,7 +1746,19 @@ function applyPrixPreset() {
   filterTerrains();
 }
 
+function mkQuartierList() {
+  const dl = document.getElementById('t-loc-list'); if (!dl) return;
+  const set = [...new Set((state.terrains || []).map(t => (t.localisation || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  dl.innerHTML = set.map(v => `<option value="${escH(v)}">`).join('');
+}
+function normQuartier(v) {
+  const clean = String(v || '').replace(/\s+/g, ' ').trim();
+  const k = x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const hit = (state.terrains || []).map(t => (t.localisation || '').trim()).find(x => x && k(x) === k(clean));
+  return hit || (clean.charAt(0).toUpperCase() + clean.slice(1));
+}
 function renderTerrains() {
+  mkQuartierList();
   msRender('loc'); msRender('urba');
   filterTerrains();
 }
@@ -1759,7 +1772,7 @@ function filterTerrains() {
   let filtered = state.terrains.filter(t => {
     // Text search
     if (search) {
-      const hay = [t.localisation, t.urba, t.tf, t.notes].join(' ').toLowerCase();
+      const hay = [t.ref, t.localisation, t.urba, t.tf, t.notes].join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     if (msSel.loc.size && !msSel.loc.has((t.localisation || '').trim())) return false;
@@ -1778,7 +1791,7 @@ function filterTerrains() {
   if (countEl) countEl.textContent = `${filtered.length} terrain${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}`;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
     return;
   }
 
@@ -1806,6 +1819,7 @@ function filterTerrains() {
     };
     return `<tr style="${isOld ? 'opacity:0.75;' : ''}">
       <td><strong style="color:var(--green-mid)">${i+1}</strong></td>
+      <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
       <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><span class="badge badge-blue">${highlight(t.urba) || '—'}</span></td>
       <td>${Number(t.superficie).toLocaleString('fr-FR')} m²</td>
@@ -2595,7 +2609,7 @@ async function loadFromSupabase() {
       tf: t.tf, usage: t.usage, statut: t.statut || 'À qualifier',
       statut_juridique: t.statut_juridique || 'Non renseigné',
       notes: t.notes || '', commentaire: t.commentaire || '', sourceur: t.sourceur || '',
-      dateSourcing: t.date_sourcing || '', daysOld: t.days_old || 0, googleMap: t.google_map || '',
+      dateSourcing: t.date_sourcing || '', daysOld: t.days_old || 0, googleMap: t.google_map || '', ref: t.ref || '',
     }));
     supabaseReady = true;
     msgs.push(terrains.length + ' terrains');
@@ -2650,7 +2664,7 @@ async function loadFromSupabase() {
 // ─── Override CRUD to sync Supabase ───────────────────────────
 const _origSaveTerrain = saveTerrain;
 saveTerrain = async function() {
-  const loc = document.getElementById('t-localisation').value.trim();
+  const loc = normQuartier(document.getElementById('t-localisation').value);
   const sup = parseFloat(document.getElementById('t-superficie').value);
   const prix = parseFloat(document.getElementById('t-prix').value);
   if (!loc || !sup || !prix) { showNotif('⚠ Remplissez les champs obligatoires (*)', true); return; }
@@ -2665,7 +2679,7 @@ saveTerrain = async function() {
     const res = await supaPost('terrains', terrain);
     if (res && res[0]) {
       terrain.id = res[0].id;
-      state.terrains.push({ ...terrain, id: res[0].id, dateSourcing: terrain.date_sourcing });
+      state.terrains.push({ ...terrain, id: res[0].id, ref: res[0].ref || '', dateSourcing: terrain.date_sourcing });
       await logActivity('Ajout terrain', 'terrain', res[0].id, loc);
       showNotif('✓ Terrain ajouté dans Supabase !');
     } else {
@@ -3148,7 +3162,7 @@ function mkInit() {
   if (!sel) return;
   const cur = sel.value;
   sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).map(t =>
-    `<option value="${t.id}">${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
+    `<option value="${t.id}">${t.ref ? escH(t.ref) + ' ' : ''}${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
   if (cur) sel.value = cur;
   mkPlList();
 }
@@ -3163,7 +3177,7 @@ function mkFillFromTerrain() {
   const t = (state.terrains || []).find(x => String(x.id) === String(id));
   if (!t) return;
   const set = (k, v) => { document.getElementById(k).value = v == null ? '' : v; };
-  set('mk-loc', t.localisation); set('mk-sup', t.superficie); set('mk-prix', t.prix); set('mk-urba', t.urba);
+  set('mk-loc', t.localisation); set('mk-ref', t.ref); set('mk-sup', t.superficie); set('mk-prix', t.prix); set('mk-urba', t.urba);
   const u = document.getElementById('mk-usage');
   if (t.usage && [...u.options].some(o => o.value === t.usage)) u.value = t.usage;
   if (t.notes && !document.getElementById('mk-points').value.trim()) set('mk-points', String(t.notes).slice(0, 300));
@@ -3172,7 +3186,7 @@ function mkRead() {
   const v = id => document.getElementById(id).value.trim();
   const sup = Number(v('mk-sup')) || 0, prix = Number(v('mk-prix')) || 0;
   return {
-    loc: v('mk-loc'), sup, prix, urba: v('mk-urba'), usage: v('mk-usage'),
+    loc: v('mk-loc'), ref: v('mk-ref'), sup, prix, urba: v('mk-urba'), usage: v('mk-usage'),
     points: v('mk-points').split('\n').map(x => x.trim()).filter(Boolean),
     ville: v('mk-ville'), desc: v('mk-desc'), site: v('mk-site'), mail: v('mk-mail'), tel: v('mk-tel'),
     contact: [v('mk-tel'), v('mk-mail')].filter(Boolean).join(' / '), ton: v('mk-ton'),
@@ -3187,7 +3201,7 @@ function mkText(net, d, k) {
   const urba = d.urba ? 'Zonage : ' + d.urba : '';
   const pts = d.points.map(p => '- ' + p).join('\n');
   const ptsInline = d.points.slice(0, 3).join(', ');
-  const cta = d.contact ? 'Contact : ' + d.contact : 'Contactez Greenfield pour recevoir le dossier complet.';
+  const cta = (d.ref ? 'Réf. ' + d.ref + '\n' : '') + (d.contact ? 'Contact : ' + d.contact : 'Contactez Greenfield pour recevoir le dossier complet.');
   const faits = [sup && 'Superficie : ' + sup, prix && 'Prix : ' + prix, forfait && 'Forfait : ' + forfait, urba].filter(Boolean).join('\n');
   const loc = d.loc || 'Maroc';
   const hook = {
@@ -3204,7 +3218,7 @@ function mkText(net, d, k) {
   if (net === 'instagram') {
     const tags = '#immobiliermaroc #terrain #foncier #investissement #maroc #' + loc.toLowerCase().replace(/[^a-z0-9]/g, '') + ' #greenfield';
     return hook + '\n\n' + [sup && '📐 ' + sup, prix && '💰 ' + prix, forfait && '🏷️ ' + forfait, d.urba && '🏗️ ' + d.urba].filter(Boolean).join('\n') +
-      (ptsInline ? '\n\n' + ptsInline + '.' : '') + '\n\n' + (d.contact ? 'Écrivez-nous en message privé ou : ' + d.contact : 'Écrivez-nous en message privé pour plus d\'informations.') + '\n\n' + tags;
+      (ptsInline ? '\n\n' + ptsInline + '.' : '') + (d.ref ? '\n\nRéf. ' + d.ref : '') + '\n\n' + (d.contact ? 'Écrivez-nous en message privé ou : ' + d.contact : 'Écrivez-nous en message privé pour plus d\'informations.') + '\n\n' + tags;
   }
   return hook + '\n\nNous avons sélectionné un terrain' + usage + ' à ' + loc + ' et nous souhaitions le partager avec vous.\n\n' + faits +
     (ptsInline ? '\n\nCe qui le distingue : ' + ptsInline + '.' : '') + '\n\nUn projet en tête ou une personne de votre réseau cherche du foncier ? Commentez ou partagez, nous reviendrons vers vous.\n' + cta + '\n\n#Greenfield #ImmobilierMaroc #Terrain';
@@ -3393,6 +3407,7 @@ function mkPaint(cv, d, W, H) {
   const ls = (v) => { try { c.letterSpacing = v; } catch (e) {} };
   c.fillStyle = DIM; c.font = '400 ' + (wide ? 12 : 18) * s + "px 'JetBrains Mono', 'DM Sans', monospace"; ls((wide ? 4 : 6) * s + 'px');
   c.fillText((d.ville || '').toUpperCase(), L, y0 + 14 * s); ls('0px');
+  if (d.ref) { c.textAlign = 'right'; c.fillStyle = MINT; c.font = '500 ' + (wide ? 12 : 18) * s + "px 'JetBrains Mono', 'DM Sans', monospace"; c.fillText('RÉF. ' + d.ref, L + inner, y0 + 14 * s); c.textAlign = 'left'; }
   // titre
   const tsz = (wide ? 44 : 72) * s;
   c.font = '800 ' + tsz + 'px ' + head;
@@ -3494,7 +3509,7 @@ async function mkPropale() {
   const cv0 = document.createElement('canvas'); mkCoverPage(cv0, client, dateTxt, base); canvases.push(cv0);
   for (const t of terr) {
     const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
-    const d = { loc: t.localisation || '', ville: '', sup, prix, urba: t.urba || '', usage: t.usage || '', desc: '', points: [], site: base.site, mail: base.mail, tel: base.tel,
+    const d = { loc: t.localisation || '', ref: t.ref || '', ville: '', sup, prix, urba: t.urba || '', usage: t.usage || '', desc: '', points: [], site: base.site, mail: base.mail, tel: base.tel,
       forfait: sup > 0 && prix > 0 ? sup * prix / 1e6 : 0, mapImg: null, pin: false };
     const m = await mkMapFor(d.loc, ''); d.mapImg = m.img; d.pin = m.pin; d.mapPre = m.pre;
     const cv = document.createElement('canvas'); mkPaint(cv, d, 1200, 627); canvases.push(cv);

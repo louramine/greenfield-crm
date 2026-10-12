@@ -606,9 +606,7 @@ body:not(.role-admin) .admin-only{display:none !important}
 .mv-tab{padding:9px 18px;border-radius:9px;border:1px solid rgba(45,158,95,.3);background:rgba(45,158,95,.1);color:var(--green-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .mv-tab.active{background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);border-color:transparent}
 .mv-form,.mvf-card{background:#fff;border-radius:14px;padding:22px 24px;color:var(--green-deep);box-shadow:var(--shadow)}
-.mv-plus{width:40px;height:40px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);font-size:24px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 2px 12px rgba(78,202,130,.3)}
-.mv-plus-l{margin-left:12px;font-size:13px;color:var(--gray-mid)}
-#mv-newbar{display:flex;align-items:center;margin-bottom:14px}
+.mv-plus{padding:9px 18px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(78,202,130,.3)}
 .mv-intro{font-size:13px;color:#4a6b58;margin-bottom:16px}
 .mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:10px}
 .mv-full{grid-column:1/-1}
@@ -873,11 +871,11 @@ body:not(.role-admin) .admin-only{display:none !important}
     <!-- ═══════════ MATCHING ═══════════ -->
     <div class="page" id="page-matching">
       <div class="mv-tabs">
-        <button type="button" class="mv-tab active" id="mv-tab-valo" onclick="mvTab('valo')">Valorisation</button>
+        <button type="button" class="mv-tab active" id="mv-tab-valo" onclick="mvTab('valo')">Analyse terrain</button>
         <button type="button" class="mv-tab" id="mv-tab-match" onclick="mvTab('match')">Matching acheteurs</button>
+        <div id="mv-newbar" style="display:none;margin-left:auto"><button type="button" class="mv-plus" onclick="mvNew()">+ Nouveau terrain à analyser</button></div>
       </div>
       <div id="valo-pane">
-        <div id="mv-newbar" style="display:none"><button type="button" class="mv-plus" onclick="mvNew()" title="Nouveau formulaire">+</button><span class="mv-plus-l">Nouveau terrain à valoriser</span></div>
         <div class="mv-form" id="mv-form">
           <div class="mv-intro">Renseignez le terrain et joignez ses documents. L'outil le positionne parmi les terrains semblables (annonces du marché et terrains Greenfield).</div>
           <div class="mv-grid">
@@ -1506,7 +1504,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="modal-actions" style="justify-content:space-between;margin-top:20px;">
       <button class="btn" onclick="confirmDeleteTerrain()" style="background:#fdf2f2;color:#c0392b;border:1.5px solid #fad7d0;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer;">🗑 Supprimer</button>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost" onclick="mvFromTerrain(currentDetailId)">Valoriser</button>
+        <button class="btn btn-ghost" onclick="mvFromTerrain(currentDetailId)">Analyser</button>
         <button class="btn btn-ghost" onclick="closeModal('modal-terrain-detail')">Annuler</button>
         <button class="btn btn-primary" onclick="saveTerrainDetail()">Enregistrer</button>
       </div>
@@ -1993,8 +1991,9 @@ function renderMatchingSelect() {
   document.getElementById('matching-results').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⟳</div><div class="empty-state-text">Sélectionnez un terrain pour lancer le matching</div></div>`;
 }
 
-function runMatching() {
-  const terrainId = parseInt(document.getElementById('matching-terrain-select').value);
+function runMatching(adhoc) {
+  const isAd = !!(adhoc && adhoc.adhoc);
+  const terrainId = isAd ? 1 : parseInt(document.getElementById('matching-terrain-select').value);
   const resultsEl = document.getElementById('matching-results');
 
   if (!terrainId) {
@@ -2002,7 +2001,7 @@ function runMatching() {
     return;
   }
 
-  const terrain = state.terrains.find(t => t.id === terrainId);
+  const terrain = isAd ? adhoc : state.terrains.find(t => t.id === terrainId);
   if (!terrain) return;
 
   if (state.acheteurs.length === 0) {
@@ -2046,11 +2045,12 @@ function runMatching() {
         <div class="match-sub">${a.type} · ${a.zones || 'Zones non précisées'} · ${a.ticketMin||'?'}–${a.ticketMax||'?'} M MAD</div>
         <div class="match-tags">${reasons.map(r => `<span class="match-tag">${r}</span>`).join('')}</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="createDealFromMatch(${terrain.id}, ${a.id})">Créer deal</button>
+      ${isAd ? '' : `<button class="btn btn-primary btn-sm" onclick="createDealFromMatch(${terrain.id}, ${a.id})">Créer deal</button>`}
     </div>`;
   }).join('');
 
-  resultsEl.innerHTML = `
+  const adBanner = isAd ? `<div style="margin-bottom:12px;padding:12px 14px;border-radius:10px;background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.35);color:var(--gold-light);font-size:13px">Terrain analysé : <strong>${escH(terrain.localisation)}</strong>, ${Math.round(terrain.superficie).toLocaleString('fr-FR')} m², ${forfait.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M MAD (${terrain.prixSource}). Ce terrain n'est pas dans le CRM, ajoutez-le pour créer un deal.</div>` : '';
+  resultsEl.innerHTML = adBanner + `
     <div style="margin-bottom:14px;color:rgba(255,255,255,0.6);font-size:13px">
       <strong style="color:var(--green-light)">${scored.filter(a => a.score >= 60).length}</strong> acheteurs très compatibles · 
       <strong style="color:var(--gold-light)">${scored.filter(a => a.score >= 35 && a.score < 60).length}</strong> compatibles · 
@@ -3912,14 +3912,22 @@ function mvComps(inp, pool) {
 // ---------- UI ----------
 function mvShowForm(on) {
   document.getElementById('mv-form').style.display = on ? '' : 'none';
-  document.getElementById('mv-newbar').style.display = on ? 'none' : 'flex';
+  MV.formOn = on; mvBar();
 }
+function mvBar() { document.getElementById('mv-newbar').style.display = (!MV.formOn && MV.tab === 'valo') ? 'block' : 'none'; }
 function mvNew() { mvReset(); mvShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function mvGoMatch() {
-  const id = MV.last && MV.last.crmId;
+  const L = MV.last; if (!L) return;
   mvTab('match');
   const sel = document.getElementById('matching-terrain-select');
-  if (id && sel) { sel.value = String(id); if (sel.value === String(id)) runMatching(); }
+  if (L.crmId && sel) {
+    sel.value = String(L.crmId);
+    if (sel.value === String(L.crmId)) runMatching(); else sel.value = '';
+  } else {
+    if (sel) sel.value = '';
+    const st = mvStats(L.res.kept), pr = L.inp.prix || st.med;
+    runMatching({ adhoc: true, id: null, localisation: L.inp.q, superficie: L.inp.sup, prix: pr, usage: 'Mixte', prixSource: L.inp.prix ? 'prix demandé' : 'valeur estimée' });
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function mvTab(t) {
@@ -3928,6 +3936,7 @@ function mvTab(t) {
   document.getElementById('matching-pane').style.display = t === 'match' ? '' : 'none';
   document.getElementById('mv-tab-valo').classList.toggle('active', t === 'valo');
   document.getElementById('mv-tab-match').classList.toggle('active', t === 'match');
+  mvBar();
 }
 function mvInit() {
   const sel = document.getElementById('mv-crm');
@@ -4211,7 +4220,7 @@ function mvRender(inp, res, pool) {
   const li = arr => '<ul>' + arr.map(x => `<li>${x}</li>`).join('') + '</ul>';
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   return `<div class="mvf-card" id="mv-fiche">
-    <div class="mvf-head"><div><div class="mvf-kick">Fiche de valorisation</div><h2>${mvE(inp.q)}, ${mvFr(sup)} m²${inp.zon ? ', zone ' + mvE(inp.zon) : ''}</h2>
+    <div class="mvf-head"><div><div class="mvf-kick">Analyse terrain</div><h2>${mvE(inp.q)}, ${mvFr(sup)} m²${inp.zon ? ', zone ' + mvE(inp.zon) : ''}</h2>
       <div class="mvf-sub">${mvE(inp.sec || 'Secteur non identifié')}${inp.fam ? ' · famille ' + inp.fam : ''} · établie le ${today}</div></div>
       <div class="mvf-actions"><button class="btn btn-primary btn-sm" onclick="mvPrint()">Imprimer / PDF</button></div></div>
     <div class="mvf-verdict ${vCls}">${verdict}</div>

@@ -1346,6 +1346,12 @@ body:not(.role-admin) .admin-only{display:none !important}
     </div>
 
     <div class="form-group">
+      <label class="form-label">Documents du terrain <span style="color:#8aab97;font-weight:400">(PDF ou image, 10 Mo max)</span></label>
+      <div id="td-docs" style="border:1px solid #dfe9e3;border-radius:10px;overflow:hidden"></div>
+      <input type="file" id="td-file" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="tdUploadChosen(this)">
+    </div>
+
+    <div class="form-group">
       <label class="form-label">Commentaire</label>
       <textarea class="form-textarea" id="d-commentaire" placeholder="Notes, remarques, informations complémentaires..." style="min-height:90px;"></textarea>
     </div>
@@ -2484,9 +2490,86 @@ function openTerrainDetail(id) {
   if (diEl) diEl.value = new Date().toISOString().slice(0,10);
 
   openModal('modal-terrain-detail');
+  tdLoad(id);
 
   // Load interactions after modal opens
   renderInteractions(id);
+}
+
+// Documents des terrains (Supabase Storage prive + table terrain_documents)
+const TD_TYPES = [
+  { k: 'plan_cadastral', l: 'Plan cadastral' },
+  { k: 'note_renseignement', l: 'Note de renseignement' },
+  { k: 'certificat_propriete', l: 'Certificat de propriété' }
+];
+let tdDocs = {}, tdPending = null, tdUnavailable = false;
+function tdSize(n) { n = Number(n) || 0; return n >= 1048576 ? (n / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko'; }
+async function tdLoad(terrainId) {
+  tdDocs = {}; tdUnavailable = false; tdRender();
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?terrain_id=eq.${encodeURIComponent(terrainId)}&select=*`, { headers: SUPA_HEADERS });
+    if (!res.ok) { tdUnavailable = true; tdRender(); return; }
+    (await res.json()).forEach(d => { tdDocs[d.type] = d; });
+  } catch (e) { tdUnavailable = true; }
+  if (currentDetailId === terrainId) tdRender();
+}
+function tdRender() {
+  const box = document.getElementById('td-docs'); if (!box) return;
+  if (tdUnavailable) { box.innerHTML = '<div style="padding:12px;color:#8aab97;font-size:13px">Documents indisponibles (la configuration Supabase des documents n\'est pas encore faite).</div>'; return; }
+  box.innerHTML = TD_TYPES.map((t, i) => {
+    const d = tdDocs[t.k];
+    const left = d
+      ? `<a href="#" onclick="tdOpen('${t.k}');return false" style="color:var(--green-mid);font-weight:600;text-decoration:none;word-break:break-all">${escH(d.nom_fichier)}</a> <span style="color:#8aab97;font-size:11px">${tdSize(d.taille)}${d.ajoute_par ? ', ' + escH(d.ajoute_par) : ''}</span>`
+      : '<span style="color:#aaa">Aucun document</span>';
+    const del = d && (isAdmin() || d.ajoute_par === currentAssocie) ? ` <button class="btn btn-ghost btn-sm" onclick="tdDelete('${t.k}')" title="Supprimer">Supprimer</button>` : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px;${i ? 'border-top:1px solid #eef3f0' : ''}">
+      <div style="flex:0 0 150px;font-weight:600;color:var(--green-deep)">${t.l}</div>
+      <div style="flex:1;min-width:0">${left}</div>
+      <div style="display:flex;gap:6px;flex:0 0 auto"><button class="btn btn-ghost btn-sm" onclick="tdPick('${t.k}')">${d ? 'Remplacer' : 'Ajouter'}</button>${del}</div>
+    </div>`;
+  }).join('');
+}
+function tdPick(k) { tdPending = k; const f = document.getElementById('td-file'); f.value = ''; f.click(); }
+async function tdUploadChosen(inp) {
+  const f = inp.files && inp.files[0], k = tdPending, tid = currentDetailId;
+  if (!f || !k || tid == null) return;
+  if (f.size > 10485760) { showNotif('Fichier trop lourd (10 Mo maximum).', true); return; }
+  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { showNotif('Format accepté : PDF, JPG, PNG ou WebP.', true); return; }
+  const safe = f.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
+  const path = `${tid}/${k}/${Date.now()}-${safe}`;
+  showNotif('Envoi en cours...');
+  try {
+    const up = await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'], 'Content-Type': f.type, 'x-upsert': 'false' }, body: f });
+    if (!up.ok) throw new Error('Envoi refusé (' + up.status + ')');
+    const old = tdDocs[k];
+    const row = { terrain_id: String(tid), type: k, nom_fichier: f.name, chemin: path, taille: f.size, mime: f.type, ajoute_par: currentAssocie || null };
+    const r = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?on_conflict=terrain_id,type`, { method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(row) });
+    if (!r.ok) { await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }); throw new Error('Enregistrement refusé (' + r.status + ')'); }
+    const saved = await r.json(); tdDocs[k] = saved[0] || row;
+    if (old && old.chemin) fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${old.chemin}`, { method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }).catch(() => {});
+    tdRender(); showNotif('Document ajouté.');
+    const t = state.terrains.find(x => x.id === tid); if (t) addActivity(`Document ajouté (${TD_TYPES.find(x => x.k === k).l}) : ${t.localisation}`);
+  } catch (e) { showNotif('Échec : ' + e.message, true); }
+}
+async function tdOpen(k) {
+  const d = tdDocs[k]; if (!d) return;
+  const w = window.open('', '_blank');
+  try {
+    const r = await fetch(`${SUPA_URL}/storage/v1/object/sign/terrain-docs/${d.chemin}`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'], 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+    if (!r.ok) throw new Error('Accès refusé');
+    const j = await r.json(); const u = SUPA_URL + '/storage/v1' + j.signedURL;
+    if (w) w.location.href = u; else location.href = u;
+  } catch (e) { if (w) w.close(); showNotif('Impossible d\'ouvrir le document.', true); }
+}
+async function tdDelete(k) {
+  const d = tdDocs[k]; if (!d || !confirm('Supprimer ce document ?')) return;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?id=eq.${d.id}`, { method: 'DELETE', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' } });
+    const j = r.ok ? await r.json() : [];
+    if (!j.length) throw new Error('Suppression refusée');
+    fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${d.chemin}`, { method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }).catch(() => {});
+    delete tdDocs[k]; tdRender(); showNotif('Document supprimé.');
+  } catch (e) { showNotif('Échec : ' + e.message, true); }
 }
 
 function saveTerrainDetail() {

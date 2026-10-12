@@ -1894,10 +1894,14 @@ function renderAcheteurs() {
   }).join('');
 }
 
+function terrainLabel(t) {
+  const sup = Number(t.superficie) || 0;
+  return [t.ref || 'Sans réf.', t.localisation || 'Non renseigné', sup ? sup.toLocaleString('fr-FR') + ' m²' : 'm² n.c.'].join(' / ');
+}
 function renderMatchingSelect() {
   const sel = document.getElementById('matching-terrain-select');
   sel.innerHTML = '<option value="">— Choisir un terrain —</option>' +
-    state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${t.localisation} — ${Number(t.superficie).toLocaleString('fr-FR')} m²</option>`).join('');
+    state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
   document.getElementById('matching-results').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⟳</div><div class="empty-state-text">Sélectionnez un terrain pour lancer le matching</div></div>`;
 }
 
@@ -2076,7 +2080,7 @@ async function deleteAcheteur(id) {
 function openDealModal() {
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
-  tSel.innerHTML = state.terrains.map(t => `<option value="${t.id}">${t.localisation}</option>`).join('');
+  tSel.innerHTML = state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
   aSel.innerHTML = state.acheteurs.length > 0
     ? state.acheteurs.map(a => `<option value="${a.id}">${a.nom}</option>`).join('')
     : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
@@ -3214,7 +3218,7 @@ function mkInit() {
   if (!sel) return;
   const cur = sel.value;
   sel.innerHTML = '<option value="">Choisir un terrain</option>' + (state.terrains || []).filter(t => t.statut !== 'Vendu').map(t =>
-    `<option value="${t.id}">${t.ref ? escH(t.ref) + ' ' : ''}${escH(t.localisation || '')} (${mkNum(Number(t.superficie) || 0)} m²)</option>`).join('');
+    `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
   if (cur) sel.value = cur;
   mkPlList();
 }
@@ -3222,7 +3226,7 @@ function mkSetSrc(m) {
   mkSrc = m;
   document.getElementById('mk-src-crm').classList.toggle('active', m === 'crm');
   document.getElementById('mk-src-man').classList.toggle('active', m === 'man');
-  document.getElementById('mk-pick-wrap').style.display = m === 'crm' ? '' : 'none';
+  document.getElementById('mk-pick-wrap').style.display = '';
 }
 function mkFillFromTerrain() {
   const id = document.getElementById('mk-terrain').value;
@@ -3512,10 +3516,10 @@ function mkNetChange() {
 function mkPlList() {
   const box = document.getElementById('mk-pl-list'); if (!box) return;
   const q = (document.getElementById('mk-pl-search').value || '').toLowerCase();
-  const list = (state.terrains || []).filter(t => t.statut !== 'Vendu').filter(t => !q || [t.localisation, t.urba].join(' ').toLowerCase().includes(q));
+  const list = (state.terrains || []).filter(t => t.statut !== 'Vendu').filter(t => !q || [t.ref, t.localisation, t.urba].join(' ').toLowerCase().includes(q));
   box.innerHTML = list.length ? list.map(t => `<label style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #eef3f0">
       <input type="checkbox" ${mkPlSel.has(String(t.id)) ? 'checked' : ''} onchange="mkPlToggle('${t.id}',this.checked)">
-      <span>${escH(t.localisation || '')} <span style="color:#8aab97">${escH(t.urba || '')} ${mkNum(Number(t.superficie) || 0)} m²</span></span></label>`).join('') : '<div style="color:#8aab97;padding:6px 0">Aucun terrain</div>';
+      <span>${escH(terrainLabel(t))} <span style="color:#8aab97">${escH(t.urba || '')}</span></span></label>`).join('') : '<div style="color:#8aab97;padding:6px 0">Aucun terrain</div>';
   document.getElementById('mk-pl-count').textContent = mkPlSel.size ? '(' + mkPlSel.size + ' sélectionné' + (mkPlSel.size > 1 ? 's' : '') + ')' : '';
 }
 function mkPlToggle(id, on) { if (on) mkPlSel.add(String(id)); else mkPlSel.delete(String(id)); mkPlList(); }

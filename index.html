@@ -606,6 +606,9 @@ body:not(.role-admin) .admin-only{display:none !important}
 .mv-tab{padding:9px 18px;border-radius:9px;border:1px solid rgba(45,158,95,.3);background:rgba(45,158,95,.1);color:var(--green-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .mv-tab.active{background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);border-color:transparent}
 .mv-form,.mvf-card{background:#fff;border-radius:14px;padding:22px 24px;color:var(--green-deep);box-shadow:var(--shadow)}
+.mv-plus{width:40px;height:40px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);font-size:24px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 2px 12px rgba(78,202,130,.3)}
+.mv-plus-l{margin-left:12px;font-size:13px;color:var(--gray-mid)}
+#mv-newbar{display:flex;align-items:center;margin-bottom:14px}
 .mv-intro{font-size:13px;color:#4a6b58;margin-bottom:16px}
 .mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:10px}
 .mv-full{grid-column:1/-1}
@@ -644,6 +647,7 @@ body:not(.role-admin) .admin-only{display:none !important}
 .mvf-legend .b{display:inline-block;width:18px;height:10px;background:rgba(45,158,95,.2);margin-right:4px}
 .mvf-pos,.mvf-card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}
 .mvf-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.mvf-next{display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #eef3f0}
 .mvf-tw{overflow-x:auto}
 .mvf-t{width:100%;border-collapse:collapse;font-size:12.5px}
 .mvf-t th{text-align:left;color:#7a9a88;font-weight:600;padding:6px 8px;border-bottom:1.5px solid #dfe9e3}
@@ -873,7 +877,8 @@ body:not(.role-admin) .admin-only{display:none !important}
         <button type="button" class="mv-tab" id="mv-tab-match" onclick="mvTab('match')">Matching acheteurs</button>
       </div>
       <div id="valo-pane">
-        <div class="mv-form">
+        <div id="mv-newbar" style="display:none"><button type="button" class="mv-plus" onclick="mvNew()" title="Nouveau formulaire">+</button><span class="mv-plus-l">Nouveau terrain à valoriser</span></div>
+        <div class="mv-form" id="mv-form">
           <div class="mv-intro">Renseignez le terrain et joignez ses documents. L'outil le positionne parmi les terrains semblables (annonces du marché et terrains Greenfield).</div>
           <div class="mv-grid">
             <div class="mv-f mv-full"><label class="form-label">Partir d'un terrain du CRM (facultatif)</label><select class="form-select" id="mv-crm" onchange="mvPrefillCrm()"></select></div>
@@ -3905,6 +3910,18 @@ function mvComps(inp, pool) {
 }
 
 // ---------- UI ----------
+function mvShowForm(on) {
+  document.getElementById('mv-form').style.display = on ? '' : 'none';
+  document.getElementById('mv-newbar').style.display = on ? 'none' : 'flex';
+}
+function mvNew() { mvReset(); mvShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function mvGoMatch() {
+  const id = MV.last && MV.last.crmId;
+  mvTab('match');
+  const sel = document.getElementById('matching-terrain-select');
+  if (id && sel) { sel.value = String(id); if (sel.value === String(id)) runMatching(); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 function mvTab(t) {
   MV.tab = t;
   document.getElementById('valo-pane').style.display = t === 'valo' ? '' : 'none';
@@ -3945,6 +3962,7 @@ function mvFromTerrain(id) {
   document.getElementById('mv-crm').value = String(id);
   mvPrefillCrm();
   document.getElementById('mv-out').innerHTML = '';
+  mvShowForm(true);
 }
 function mvReset() {
   ['mv-crm', 'mv-q', 'mv-sup', 'mv-prix', 'mv-zon', 'mv-voirie', 'mv-notes'].forEach(i => { document.getElementById(i).value = ''; });
@@ -4046,8 +4064,9 @@ async function mvRun() {
   const inp = { q, sup, prix, zon, fam: mvFam(zon), voirie, bati, sec: MV.data.qsect[mvN(q)] || null, notes: document.getElementById('mv-notes').value.trim() };
   const pool = mvPool(crmId);
   const res = mvComps(inp, pool);
-  MV.last = { inp, res, pool };
+  MV.last = { inp, res, pool, crmId };
   out.innerHTML = mvRender(inp, res, pool);
+  mvShowForm(false);
   const saveBox = document.getElementById('mv-save-docs');
   if (crmId && saveBox && saveBox.checked && Object.keys(MV.files).length) mvSaveDocs(crmId);
   out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4229,6 +4248,7 @@ function mvRender(inp, res, pool) {
     <div class="mvf-tw"><table class="mvf-t"><thead><tr><th>Source</th><th>Quartier</th><th>Zonage</th><th class="r">Surface m²</th><th class="r">Prix MAD/m²</th><th class="r">Écart médiane</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${sorted.length > 12 ? `<div class="mvf-noprint" style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="mvToggleAll()">${MV.showAll ? 'Réduire la liste' : 'Voir les ' + sorted.length + ' comparables'}</button></div>` : ''}
     ${removed}
+    <div class="mvf-noprint mvf-next"><button type="button" class="btn btn-primary" onclick="mvGoMatch()">Passer au matching acheteurs</button><span class="mvf-sub">${MV.last && MV.last.crmId ? 'Le terrain du CRM est présélectionné.' : 'Choisissez ensuite un terrain du CRM.'}</span></div>
   </div>`;
 }
 function mvToggleAll() { MV.showAll = !MV.showAll; if (MV.last) document.getElementById('mv-out').innerHTML = mvRender(MV.last.inp, MV.last.res, MV.last.pool); }

@@ -1,3 +1,24 @@
+do $$
+declare typ text;
+begin
+  select data_type into typ from information_schema.columns
+   where table_schema = 'public' and table_name = 'terrains' and column_name = 'id';
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'terrains' and column_name = 'id'
+                and column_default is not null) then
+    return;
+  end if;
+  if typ in ('integer', 'bigint', 'smallint') then
+    create sequence if not exists public.terrains_id_seq;
+    perform setval('public.terrains_id_seq', greatest((select coalesce(max(id), 0) from public.terrains), 1), (select count(*) > 0 from public.terrains));
+    alter table public.terrains alter column id set default nextval('public.terrains_id_seq');
+  elsif typ = 'uuid' then
+    alter table public.terrains alter column id set default gen_random_uuid();
+  else
+    alter table public.terrains alter column id set default gen_random_uuid()::text;
+  end if;
+end $$;
+
 alter table public.terrains add column if not exists localisation_origine text;
 alter table public.terrains add column if not exists quartier text;
 alter table public.terrains add column if not exists ref text;

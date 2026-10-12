@@ -601,6 +601,56 @@ body:not(.role-admin) .admin-only{display:none !important}
   .kpi-value{font-size:26px}
 }
 </style>
+<style id="mv-css">
+.mv-tabs{display:flex;gap:8px;margin-bottom:18px}
+.mv-tab{padding:9px 18px;border-radius:9px;border:1px solid rgba(45,158,95,.3);background:rgba(45,158,95,.1);color:var(--green-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.mv-tab.active{background:linear-gradient(135deg,var(--green-bright),var(--green-light));color:var(--dark);border-color:transparent}
+.mv-form,.mvf-card{background:#fff;border-radius:14px;padding:22px 24px;color:var(--green-deep);box-shadow:var(--shadow)}
+.mv-intro{font-size:13px;color:#4a6b58;margin-bottom:16px}
+.mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:10px}
+.mv-full{grid-column:1/-1}
+.mv-form .form-label{color:#4a6b58}
+.mv-chkrow{display:flex;align-items:end}
+.mv-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--green-deep);margin-top:8px;cursor:pointer}
+.mv-docs{border:1px solid #dfe9e3;border-radius:10px;overflow:hidden;margin-bottom:6px}
+.mv-doc{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px}
+.mv-doc+.mv-doc{border-top:1px solid #eef3f0}
+.mv-doc-l{flex:0 0 170px;font-weight:600;color:var(--green-deep)}
+.mv-doc-m{flex:1;min-width:0;word-break:break-word}
+.mv-doc-r{flex:0 0 auto;display:flex;gap:6px}
+.mv-docs .btn-ghost{color:#1a5c35;border-color:rgba(45,158,95,.3)}
+.mv-sub{color:#7a9a88;font-size:12px}
+.mv-btns{display:flex;gap:10px;margin-top:16px}
+.mv-btns .btn-ghost{color:#1a5c35}
+#mv-out{margin-top:18px}
+.mvf-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.mvf-kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#2d9e5f;font-weight:700}
+.mvf-card h2{font-size:21px;margin:2px 0 2px;color:var(--green-deep)}
+.mvf-card h3{font-size:14px;margin:20px 0 8px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.06em}
+.mvf-sub,.mvf-note{font-size:12px;color:#7a9a88}
+.mvf-actions .btn-primary{white-space:nowrap}
+.mvf-verdict{padding:14px 16px;border-radius:10px;font-size:14px;line-height:1.5;margin-bottom:14px;border-left:5px solid #c9a84c;background:#fbf6e6}
+.mvf-verdict.ok{border-color:#2d9e5f;background:#e8f7ef}
+.mvf-verdict.low{border-color:#c0392b;background:#fdf2f2}
+.mvf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mvf-k{background:#f3f8f5;border-radius:10px;padding:12px}
+.mvf-k span{display:block;font-size:11px;color:#7a9a88;text-transform:uppercase;letter-spacing:.05em}
+.mvf-k b{display:block;font-family:'Archivo','Arial Black',sans-serif;font-weight:900;font-size:21px;letter-spacing:-.03em;margin:3px 0}
+.mvf-k i{font-style:normal;font-size:11.5px;color:#4a6b58}
+.mvf-k.ok b{color:#1a8a4a}.mvf-k.mid b{color:#a8851f}.mvf-k.low b{color:#c0392b}
+.mvf-legend{font-size:12px;color:#4a6b58;display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:4px 0 8px}
+.mvf-legend .d{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.mvf-legend .d.g{background:#1a5c35}.mvf-legend .d.o{background:#c9a84c}
+.mvf-legend .b{display:inline-block;width:18px;height:10px;background:rgba(45,158,95,.2);margin-right:4px}
+.mvf-pos,.mvf-card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}
+.mvf-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.mvf-tw{overflow-x:auto}
+.mvf-t{width:100%;border-collapse:collapse;font-size:12.5px}
+.mvf-t th{text-align:left;color:#7a9a88;font-weight:600;padding:6px 8px;border-bottom:1.5px solid #dfe9e3}
+.mvf-t td{padding:6px 8px;border-bottom:1px solid #eef3f0}
+.mvf-t .r{text-align:right}
+@media(max-width:760px){.mv-grid,.mvf-cols{grid-template-columns:1fr}.mvf-kpis{grid-template-columns:1fr 1fr}.mv-doc{flex-wrap:wrap}.mv-doc-l{flex-basis:100%}}
+</style>
 </head>
 <body class="on-dashboard">
 <div id="gf-login"><div style="display:flex;flex-direction:column;align-items:center;width:100%"><img id="gf-login-logo" class="brand" alt="GREENFIELD"><form id="gf-login-form" autocomplete="on">
@@ -818,6 +868,31 @@ body:not(.role-admin) .admin-only{display:none !important}
 
     <!-- ═══════════ MATCHING ═══════════ -->
     <div class="page" id="page-matching">
+      <div class="mv-tabs">
+        <button type="button" class="mv-tab active" id="mv-tab-valo" onclick="mvTab('valo')">Valorisation</button>
+        <button type="button" class="mv-tab" id="mv-tab-match" onclick="mvTab('match')">Matching acheteurs</button>
+      </div>
+      <div id="valo-pane">
+        <div class="mv-form">
+          <div class="mv-intro">Renseignez le terrain et joignez ses documents. L'outil le positionne parmi les terrains semblables (annonces du marché et terrains Greenfield).</div>
+          <div class="mv-grid">
+            <div class="mv-f mv-full"><label class="form-label">Partir d'un terrain du CRM (facultatif)</label><select class="form-select" id="mv-crm" onchange="mvPrefillCrm()"></select></div>
+            <div class="mv-f"><label class="form-label">Quartier *</label><input class="form-input" id="mv-q" list="mv-q-list" placeholder="Ex : Mejjatia, Californie, Bouskoura"><datalist id="mv-q-list"></datalist></div>
+            <div class="mv-f"><label class="form-label">Superficie (m²) *</label><input class="form-input" id="mv-sup" type="number" min="1" placeholder="Ex : 30000"></div>
+            <div class="mv-f"><label class="form-label">Prix demandé (MAD/m²), facultatif</label><input class="form-input" id="mv-prix" type="number" min="0" placeholder="Ex : 1300"></div>
+            <div class="mv-f"><label class="form-label">Zonage (code urbanisme)</label><input class="form-input" id="mv-zon" placeholder="Ex : B3, D2, A1, I"></div>
+            <div class="mv-f"><label class="form-label">Surface sous voirie (m²)</label><input class="form-input" id="mv-voirie" type="number" min="0" placeholder="Si connue"></div>
+            <div class="mv-f mv-chkrow"><label class="mv-chk"><input type="checkbox" id="mv-bati"> Bâtiments existants sur le terrain</label></div>
+            <div class="mv-f mv-full"><label class="form-label">Notes</label><textarea class="form-textarea" id="mv-notes" rows="2" placeholder="Accès, état du titre, contexte de la vente..."></textarea></div>
+          </div>
+          <label class="form-label" style="margin-top:6px">Documents (PDF ou image, 10 Mo max)</label>
+          <div id="mv-docs" class="mv-docs"></div>
+          <input type="file" id="mv-file" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="mvFileChosen(this)">
+          <div class="mv-btns"><button type="button" class="btn btn-primary" onclick="mvRun()">Analyser le terrain</button><button type="button" class="btn btn-ghost" onclick="mvReset()">Réinitialiser</button></div>
+        </div>
+        <div id="mv-out"></div>
+      </div>
+      <div id="matching-pane" style="display:none">
       <div style="margin-bottom:20px">
         <label class="form-label" style="color:var(--gray-mid)">Sélectionner un terrain pour voir les acheteurs compatibles</label>
         <select class="form-select" id="matching-terrain-select" onchange="runMatching()" style="max-width:400px;background:#0d3320;color:var(--white);border-color:rgba(45,158,95,0.3)">
@@ -829,6 +904,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <div class="empty-state-icon">⟳</div>
           <div class="empty-state-text">Sélectionnez un terrain pour lancer le matching</div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -1425,6 +1501,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="modal-actions" style="justify-content:space-between;margin-top:20px;">
       <button class="btn" onclick="confirmDeleteTerrain()" style="background:#fdf2f2;color:#c0392b;border:1.5px solid #fad7d0;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer;">🗑 Supprimer</button>
       <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="mvFromTerrain(currentDetailId)">Valoriser</button>
         <button class="btn btn-ghost" onclick="closeModal('modal-terrain-detail')">Annuler</button>
         <button class="btn btn-primary" onclick="saveTerrainDetail()">Enregistrer</button>
       </div>
@@ -1502,7 +1579,7 @@ function renderPage(page) {
   else if (page === 'acheteurs') renderAcheteurs();
   else if (page === 'equipe') renderEquipe();
   else if (page === 'marketing') mkInit();
-  else if (page === 'matching') renderMatchingSelect();
+  else if (page === 'matching') { renderMatchingSelect(); mvInit(); }
 }
 
 function renderDashboard() {
@@ -2530,26 +2607,31 @@ function tdRender() {
   }).join('');
 }
 function tdPick(k) { tdPending = k; const f = document.getElementById('td-file'); f.value = ''; f.click(); }
+async function tdUploadFile(tid, k, f) {
+  if (f.size > 10485760) throw new Error('Fichier trop lourd (10 Mo maximum).');
+  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) throw new Error('Format accepté : PDF, JPG, PNG ou WebP.');
+  const safe = f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
+  const path = `${tid}/${k}/${Date.now()}-${safe}`;
+  const AH = { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] };
+  let old = (String(currentDetailId) === String(tid)) ? tdDocs[k] : null;
+  if (!old) {
+    try { const q = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?terrain_id=eq.${encodeURIComponent(String(tid))}&type=eq.${k}&select=chemin`, { headers: SUPA_HEADERS }); const j = q.ok ? await q.json() : []; old = j[0] || null; } catch (e) { old = null; }
+  }
+  const up = await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'POST', headers: { ...AH, 'Content-Type': f.type, 'x-upsert': 'false' }, body: f });
+  if (!up.ok) throw new Error('Envoi refusé (' + up.status + ')');
+  const row = { terrain_id: String(tid), type: k, nom_fichier: f.name, chemin: path, taille: f.size, mime: f.type, ajoute_par: currentAssocie || null };
+  const r = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?on_conflict=terrain_id,type`, { method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(row) });
+  if (!r.ok) { await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'DELETE', headers: AH }); throw new Error('Enregistrement refusé (' + r.status + ')'); }
+  const saved = await r.json();
+  if (String(currentDetailId) === String(tid)) { tdDocs[k] = saved[0] || row; tdRender(); }
+  if (old && old.chemin) fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${old.chemin}`, { method: 'DELETE', headers: AH }).catch(() => {});
+  const t = state.terrains.find(x => String(x.id) === String(tid)); if (t) addActivity(`Document ajouté (${TD_TYPES.find(x => x.k === k).l}) : ${t.localisation}`);
+}
 async function tdUploadChosen(inp) {
   const f = inp.files && inp.files[0], k = tdPending, tid = currentDetailId;
   if (!f || !k || tid == null) return;
-  if (f.size > 10485760) { showNotif('Fichier trop lourd (10 Mo maximum).', true); return; }
-  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { showNotif('Format accepté : PDF, JPG, PNG ou WebP.', true); return; }
-  const safe = f.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
-  const path = `${tid}/${k}/${Date.now()}-${safe}`;
   showNotif('Envoi en cours...');
-  try {
-    const up = await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'], 'Content-Type': f.type, 'x-upsert': 'false' }, body: f });
-    if (!up.ok) throw new Error('Envoi refusé (' + up.status + ')');
-    const old = tdDocs[k];
-    const row = { terrain_id: String(tid), type: k, nom_fichier: f.name, chemin: path, taille: f.size, mime: f.type, ajoute_par: currentAssocie || null };
-    const r = await fetch(`${SUPA_URL}/rest/v1/terrain_documents?on_conflict=terrain_id,type`, { method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(row) });
-    if (!r.ok) { await fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${path}`, { method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }); throw new Error('Enregistrement refusé (' + r.status + ')'); }
-    const saved = await r.json(); tdDocs[k] = saved[0] || row;
-    if (old && old.chemin) fetch(`${SUPA_URL}/storage/v1/object/terrain-docs/${old.chemin}`, { method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }).catch(() => {});
-    tdRender(); showNotif('Document ajouté.');
-    const t = state.terrains.find(x => x.id === tid); if (t) addActivity(`Document ajouté (${TD_TYPES.find(x => x.k === k).l}) : ${t.localisation}`);
-  } catch (e) { showNotif('Échec : ' + e.message, true); }
+  try { await tdUploadFile(tid, k, f); showNotif('Document ajouté.'); } catch (e) { showNotif('Échec : ' + e.message, true); }
 }
 async function tdOpen(k) {
   const d = tdDocs[k]; if (!d) return;
@@ -3733,6 +3815,432 @@ document.getElementById('gf-login-form').addEventListener('submit', async (ev) =
   } catch(e) { err.textContent = 'Email ou mot de passe incorrect.'; }
 });
 (async () => { (await gfRefresh()) ? gfStart() : gfShowLogin(); })();
+</script>
+<script>
+// ===== Valorisation de terrains (rubrique Matching) =====
+const MV = { data: null, files: {}, facts: {}, last: null, showAll: false, tab: 'valo' };
+const MV_DOCS = [
+  { k: 'plan_cadastral', l: 'Plan cadastral' },
+  { k: 'note_renseignement', l: 'Note de renseignement' },
+  { k: 'certificat_propriete', l: 'Certificat de propriété' }
+];
+const mvN = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const mvFr = n => Math.round(n).toLocaleString('fr-FR');
+const mvM = n => (n / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: n >= 1e8 ? 0 : 1, minimumFractionDigits: 0 });
+const mvE = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function mvFam(zon) {
+  const z = String(zon || '').trim().toUpperCase();
+  if (!z) return null;
+  const t = z.split(/[\s\/,;]+/)[0].replace(/^FB(?=\d)/, '');
+  if (/^(RA|RAS|RMD|RFD|ZR|ZRU)$/.test(t)) return 'Rural';
+  if (/^(BT\d?|SD\d?|TL|TOURIST|BALN|ZTH|HE\d|GH\d|SB\d)/.test(t)) return 'Tourisme';
+  if (/^(I\d|ZI|PBC)/.test(t)) return 'Industriel';
+  if (/^R\+?1$/.test(t)) return 'Villa';
+  if (/^R\+?\d/.test(t)) return 'Immeuble';
+  if (/^[ABC]\d/.test(t)) return 'Immeuble';
+  if (/^[DE]\d/.test(t)) return 'Villa';
+  if (/^(ZUG|MIX|HABITAT|IMMEUBLE|MIXTE|MIXUSE|AM\d)/.test(t)) return 'Immeuble';
+  if (/^VILLA/.test(t)) return 'Villa';
+  return null;
+}
+function mvFamUsage(u) {
+  u = String(u || '');
+  if (/^Villa/.test(u)) return 'Villa';
+  if (/^Immeuble/.test(u)) return 'Immeuble';
+  if (/^Industriel/.test(u)) return 'Industriel';
+  if (/^Agricole/.test(u)) return 'Rural';
+  return null;
+}
+function mvPct(arr, p) {
+  const a = [...arr].sort((x, y) => x - y); if (!a.length) return null;
+  const i = (a.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i);
+  return a[lo] + (a[hi] - a[lo]) * (i - lo);
+}
+async function mvLoad() {
+  if (MV.data) return MV.data;
+  const r = await fetch('/valo-data.json?v=20261012');
+  if (!r.ok) throw new Error('Données de marché introuvables');
+  MV.data = await r.json();
+  return MV.data;
+}
+function mvPool(excludeId) {
+  const d = MV.data, pool = [];
+  (state.terrains || []).forEach(t => {
+    if (t.statut === 'Vendu' || String(t.id) === String(excludeId)) return;
+    const sup = Number(t.superficie), prix = Number(t.prix);
+    if (!(sup > 0 && prix > 0)) return;
+    const q = t.localisation || '';
+    pool.push({ src: 'Greenfield', q, sec: d.qsect[mvN(q)] || null, fam: mvFam(t.urba), zon: t.urba || '', sup, prix, ref: t.ref || '' });
+  });
+  d.market.forEach(r => {
+    const sup = r[5], prix = r[6];
+    if (!(sup > 0 && prix > 0)) return;
+    const q = r[2];
+    pool.push({ src: r[0], q, sec: r[1] !== 'Non localisé' ? r[1] : (d.qsect[mvN(q)] || null), fam: mvFam(r[4]) || mvFamUsage(r[3]), zon: r[4] || r[3] || '', sup, prix, lien: r[8] });
+  });
+  return pool;
+}
+function mvClean(set) {
+  if (!set.length) return { kept: [], removed: [], med: null };
+  const med = mvPct(set.map(p => p.prix), 0.5);
+  const kept = set.filter(p => p.prix <= med * 2 && p.prix >= med * 0.5);
+  return { kept, removed: set.filter(p => !kept.includes(p)), med };
+}
+function mvComps(inp, pool) {
+  const lo = inp.sup * 0.3, hi = inp.sup * 3;
+  const inSize = p => p.sup >= lo && p.sup <= hi;
+  const famOK = p => !inp.fam || p.fam === inp.fam;
+  const sameQ = p => mvN(p.q) === mvN(inp.q);
+  const sameS = p => inp.sec && p.sec === inp.sec;
+  let lvl = 1, set = pool.filter(p => sameQ(p) && famOK(p) && inSize(p));
+  if (mvClean(set).kept.length < 5) {
+    lvl = 2; set = pool.filter(p => (inp.sec ? sameS(p) : true) && famOK(p) && inSize(p));
+  }
+  if (mvClean(set).kept.length < 5) {
+    lvl = 3; set = inp.sec ? pool.filter(sameS) : pool.filter(p => famOK(p) || inSize(p));
+  }
+  const c = mvClean(set);
+  return { lvl, ...c };
+}
+
+// ---------- UI ----------
+function mvTab(t) {
+  MV.tab = t;
+  document.getElementById('valo-pane').style.display = t === 'valo' ? '' : 'none';
+  document.getElementById('matching-pane').style.display = t === 'match' ? '' : 'none';
+  document.getElementById('mv-tab-valo').classList.toggle('active', t === 'valo');
+  document.getElementById('mv-tab-match').classList.toggle('active', t === 'match');
+}
+function mvInit() {
+  const sel = document.getElementById('mv-crm');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Nouveau terrain (hors CRM)</option>' + (state.terrains || []).filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${mvE(terrainLabel(t))}</option>`).join('');
+  if (cur) sel.value = cur;
+  const dl = document.getElementById('mv-q-list');
+  const set = new Set((state.terrains || []).map(t => (t.localisation || '').trim()).filter(Boolean));
+  mvLoad().then(d => {
+    d.market.forEach(r => { if (r[2] && r[2] !== 'Non Precise' && r[2] !== 'Autre Secteur') set.add(r[2]); });
+    d.listing.forEach(r => set.add(r[1]));
+    dl.innerHTML = [...set].sort((a, b) => a.localeCompare(b, 'fr')).map(v => `<option value="${mvE(v)}">`).join('');
+  }).catch(() => {});
+  mvDocsRender();
+}
+function mvPrefillCrm() {
+  const id = document.getElementById('mv-crm').value;
+  const t = (state.terrains || []).find(x => String(x.id) === String(id));
+  if (!t) return;
+  document.getElementById('mv-q').value = t.localisation || '';
+  document.getElementById('mv-sup').value = t.superficie || '';
+  document.getElementById('mv-prix').value = Number(t.prix) > 0 ? t.prix : '';
+  document.getElementById('mv-zon').value = t.urba || '';
+  mvDocsRender();
+}
+function mvFromTerrain(id) {
+  closeModal('modal-terrain-detail');
+  const nav = document.querySelector('.sidebar .nav-item[onclick*="\'matching\'"]');
+  if (nav) showPage('matching', nav);
+  mvTab('valo'); mvInit();
+  document.getElementById('mv-crm').value = String(id);
+  mvPrefillCrm();
+  document.getElementById('mv-out').innerHTML = '';
+}
+function mvReset() {
+  ['mv-crm', 'mv-q', 'mv-sup', 'mv-prix', 'mv-zon', 'mv-voirie', 'mv-notes'].forEach(i => { document.getElementById(i).value = ''; });
+  document.getElementById('mv-bati').checked = false;
+  MV.files = {}; MV.facts = {};
+  mvDocsRender();
+  document.getElementById('mv-out').innerHTML = '';
+}
+function mvDocsRender() {
+  const box = document.getElementById('mv-docs'); if (!box) return;
+  const crm = document.getElementById('mv-crm').value;
+  box.innerHTML = MV_DOCS.map(d => {
+    const f = MV.files[d.k], fa = MV.facts[d.k];
+    return `<div class="mv-doc"><div class="mv-doc-l">${d.l}</div>
+      <div class="mv-doc-m">${f ? '<b>' + mvE(f.name) + '</b> <span class="mv-sub">' + (f.size >= 1048576 ? (f.size / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(f.size / 1024)) + ' Ko') + '</span>' : '<span class="mv-sub">Aucun fichier</span>'}
+      ${fa ? '<div class="mv-sub">' + mvE(fa.msg) + '</div>' : ''}</div>
+      <div class="mv-doc-r"><button type="button" class="btn btn-ghost btn-sm" onclick="mvPick('${d.k}')">${f ? 'Remplacer' : 'Ajouter'}</button>${f ? ' <button type="button" class="btn btn-ghost btn-sm" onclick="mvDropDoc(\'' + d.k + '\')">Retirer</button>' : ''}</div></div>`;
+  }).join('') + (crm ? '<label class="mv-chk"><input type="checkbox" id="mv-save-docs" checked> Enregistrer ces documents dans la fiche du terrain choisi</label>' : '');
+}
+function mvPick(k) { MV.pending = k; const f = document.getElementById('mv-file'); f.value = ''; f.click(); }
+function mvDropDoc(k) { delete MV.files[k]; delete MV.facts[k]; mvDocsRender(); }
+async function mvFileChosen(inp) {
+  const f = inp.files && inp.files[0], k = MV.pending;
+  if (!f || !k) return;
+  if (f.size > 10485760) { showNotif('Fichier trop lourd (10 Mo maximum).', true); return; }
+  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { showNotif('Format accepté : PDF, JPG, PNG ou WebP.', true); return; }
+  MV.files[k] = f; MV.facts[k] = { msg: f.type === 'application/pdf' ? 'Lecture du document en cours...' : 'Image jointe, lecture automatique indisponible.', items: {} };
+  mvDocsRender();
+  if (f.type === 'application/pdf') {
+    try {
+      const txt = await mvPdfText(f);
+      MV.facts[k] = mvExtract(txt, k);
+    } catch (e) { MV.facts[k] = { msg: 'Lecture automatique impossible, saisissez les infos à la main.', items: {} }; }
+    mvDocsRender();
+    mvApplyFacts();
+  }
+}
+function mvLoadScript(src) {
+  return new Promise((res, rej) => { const e = document.createElement('script'); e.src = src; e.onload = res; e.onerror = rej; document.head.appendChild(e); });
+}
+async function mvPdfText(file) {
+  if (!window.pdfjsLib) {
+    await mvLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let out = '';
+  for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
+    const pg = await pdf.getPage(i), c = await pg.getTextContent();
+    out += ' ' + c.items.map(x => x.str).join(' ');
+  }
+  return out.replace(/\s+/g, ' ');
+}
+function mvExtract(txt, k) {
+  const items = {};
+  if (txt.length < 40) return { msg: 'Document scanné, texte non lisible. Saisissez les infos à la main.', items };
+  let m;
+  if ((m = txt.match(/(?:T\.?\s?F\.?|titre foncier)\s*(?:n[°o]?\s*)?(\d{1,6}\s?\/\s?[0-9A-Za-z]{1,3})/i))) items.tf = m[1].replace(/\s/g, '');
+  if ((m = txt.match(/zone\s+([A-Z]{1,3}\s?\d{1,2}[A-Za-z]?\d?)\b/))) items.zon = m[1].replace(/\s/g, '');
+  else if ((m = txt.match(/secteur\s+([A-Z]{1,3}\s?\d{1,2}[A-Za-z]?\d?)\b/))) items.zon = m[1].replace(/\s/g, '');
+  if ((m = txt.match(/(?:superficie|contenance|surface)[^0-9]{0,50}(\d[\d .,]{1,10})\s*(m\s?²|m2|m\b|ha|hectare)/i))) {
+    let v = parseFloat(m[1].replace(/\s/g, '').replace(',', '.'));
+    if (/ha|hectare/i.test(m[2])) v *= 10000;
+    if (v > 20 && v < 5e7) items.sup = Math.round(v);
+  }
+  if ((m = txt.match(/note de renseignements?[^0-9]{0,30}n[°o]?\s*([0-9]+\s?\/\s?[0-9]{2,4})/i))) items.noteRef = m[1];
+  if ((m = txt.match(/(\d{1,2}[\/.-]\d{1,2}[\/.-](?:19|20)\d{2})/))) items.date = m[1];
+  const parts = [];
+  if (items.tf) parts.push('TF ' + items.tf);
+  if (items.zon) parts.push('zone ' + items.zon);
+  if (items.sup) parts.push(mvFr(items.sup) + ' m²');
+  if (items.noteRef) parts.push('note n° ' + items.noteRef);
+  if (items.date) parts.push('daté ' + items.date);
+  return { msg: parts.length ? 'Détecté : ' + parts.join(', ') : 'Aucune information exploitable détectée.', items };
+}
+function mvApplyFacts() {
+  const all = Object.values(MV.facts).map(f => f.items || {});
+  const pick = key => { for (const it of all) if (it[key]) return it[key]; return null; };
+  const z = document.getElementById('mv-zon'), s = document.getElementById('mv-sup');
+  if (!z.value.trim() && pick('zon')) z.value = pick('zon');
+  if (!s.value && pick('sup')) s.value = pick('sup');
+}
+
+// ---------- Analyse ----------
+async function mvRun() {
+  const out = document.getElementById('mv-out');
+  const q = document.getElementById('mv-q').value.trim();
+  const sup = Number(document.getElementById('mv-sup').value);
+  const prix = Number(document.getElementById('mv-prix').value) || 0;
+  const zon = document.getElementById('mv-zon').value.trim();
+  const voirie = Number(document.getElementById('mv-voirie').value) || 0;
+  const bati = document.getElementById('mv-bati').checked;
+  if (!q) { showNotif('Indiquez le quartier du terrain.', true); return; }
+  if (!(sup > 0)) { showNotif('Indiquez la superficie en m².', true); return; }
+  if (voirie >= sup) { showNotif('La surface sous voirie doit être inférieure à la superficie.', true); return; }
+  out.innerHTML = '<div class="mvf-card" style="text-align:center;color:#5d7d6b">Analyse en cours...</div>';
+  try { await mvLoad(); } catch (e) { out.innerHTML = '<div class="mvf-card">Données de marché indisponibles : ' + mvE(e.message) + '</div>'; return; }
+  const crmId = document.getElementById('mv-crm').value;
+  const inp = { q, sup, prix, zon, fam: mvFam(zon), voirie, bati, sec: MV.data.qsect[mvN(q)] || null, notes: document.getElementById('mv-notes').value.trim() };
+  const pool = mvPool(crmId);
+  const res = mvComps(inp, pool);
+  MV.last = { inp, res, pool };
+  out.innerHTML = mvRender(inp, res, pool);
+  const saveBox = document.getElementById('mv-save-docs');
+  if (crmId && saveBox && saveBox.checked && Object.keys(MV.files).length) mvSaveDocs(crmId);
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+async function mvSaveDocs(crmId) {
+  const t = (state.terrains || []).find(x => String(x.id) === String(crmId));
+  let ok = 0;
+  for (const k of Object.keys(MV.files)) {
+    try { await tdUploadFile(t ? t.id : crmId, k, MV.files[k]); ok++; } catch (e) { showNotif('Document non enregistré : ' + e.message, true); }
+  }
+  if (ok) showNotif(ok + ' document' + (ok > 1 ? 's' : '') + ' enregistré' + (ok > 1 ? 's' : '') + ' dans la fiche du terrain.');
+}
+
+function mvStats(arr) {
+  const p = arr.map(x => x.prix);
+  return { n: p.length, p25: mvPct(p, 0.25), med: mvPct(p, 0.5), p75: mvPct(p, 0.75), min: Math.min(...p), max: Math.max(...p) };
+}
+function mvSvg(inp, kept, st, central) {
+  const W = 760, H = 150, L = 20, R = 20, top = 22, base = 100;
+  const vals = kept.map(p => p.prix).concat(inp.prix ? [inp.prix] : [], [central]);
+  let mn = Math.min(...vals), mx = Math.max(...vals);
+  const useLog = mx / Math.max(mn, 1) > 6;
+  const f = v => useLog ? Math.log(Math.max(v, 1)) : v;
+  const a = f(mn) - (f(mx) - f(mn)) * 0.05, b = f(mx) + (f(mx) - f(mn)) * 0.05;
+  const x = v => L + (f(v) - a) / (b - a || 1) * (W - L - R);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Position du prix parmi les comparables">`;
+  s += `<rect x="${x(st.p25)}" y="${top}" width="${Math.max(2, x(st.p75) - x(st.p25))}" height="${base - top}" fill="#2d9e5f" opacity="0.12"/>`;
+  s += `<line x1="${L}" x2="${W - R}" y1="${base}" y2="${base}" stroke="#b9cfc2"/>`;
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const v = useLog ? Math.exp(a + (b - a) * i / ticks) : a + (b - a) * i / ticks;
+    s += `<text x="${L + (W - L - R) * i / ticks}" y="${base + 16}" font-size="10" fill="#7a9a88" text-anchor="middle">${mvFr(v)}</text>`;
+  }
+  s += `<text x="${W - R}" y="${H - 6}" font-size="10" fill="#7a9a88" text-anchor="end">MAD/m²${useLog ? ' (échelle logarithmique)' : ''}</text>`;
+  kept.forEach((p, i) => {
+    const cy = base - 10 - ((i * 37) % 6) * 9;
+    s += `<circle cx="${x(p.prix)}" cy="${cy}" r="4.5" fill="${p.src === 'Greenfield' ? '#1a5c35' : '#c9a84c'}" opacity="0.8"/>`;
+  });
+  [['p25', st.p25, '#7a9a88'], ['med', st.med, '#0a2e1a'], ['p75', st.p75, '#7a9a88']].forEach(([n, v, c]) => {
+    s += `<line x1="${x(v)}" x2="${x(v)}" y1="${top}" y2="${base}" stroke="${c}" stroke-width="${n === 'med' ? 2 : 1}" stroke-dasharray="${n === 'med' ? '' : '4 3'}"/>`;
+    s += `<text x="${x(v)}" y="${top - 6}" font-size="10" fill="${c}" text-anchor="middle">${n === 'med' ? 'Médiane ' : n.toUpperCase() + ' '}${mvFr(v)}</text>`;
+  });
+  if (inp.prix) {
+    s += `<path d="M${x(inp.prix)} ${base + 2} l-7 -12 l14 0 z" fill="#c0392b"/><text x="${x(inp.prix)}" y="${base + 30}" font-size="11" font-weight="700" fill="#c0392b" text-anchor="middle">Prix demandé ${mvFr(inp.prix)}</text>`;
+  }
+  return s + '</svg>';
+}
+function mvRender(inp, res, pool) {
+  const d = MV.data, kept = res.kept;
+  const n = kept.length;
+  const sup = inp.sup, net = inp.voirie > 0 ? sup - inp.voirie : sup;
+  if (!n) {
+    return `<div class="mvf-card"><h3>Analyse impossible</h3><p>Aucun comparable trouvé pour ${mvE(inp.q)}. Vérifiez le quartier ou précisez le zonage.</p></div>`;
+  }
+  const st = mvStats(kept);
+  const central = st.med;
+  const lowT = st.p25 * sup, midT = central * sup, highT = st.p75 * sup;
+  const unk = !inp.sec && !pool.some(p => mvN(p.q) === mvN(inp.q));
+  const rel = unk || res.lvl === 3 || n < 5 ? 'Faible' : (n >= 15 && res.lvl <= 2 ? 'Bonne' : 'Moyenne');
+  const relCls = rel === 'Bonne' ? 'ok' : rel === 'Moyenne' ? 'mid' : 'low';
+  const lvlTxt = res.lvl === 1 ? 'même quartier' + (inp.fam ? ', même famille de zonage' : '') + ', surface proche' : res.lvl === 2 ? (inp.sec ? 'même secteur (' + inp.sec + ')' : 'tout le marché') + (inp.fam ? ', même famille de zonage' : '') + ', surface proche' : 'élargi à tout le secteur, toutes familles de zonage (fiabilité faible)';
+  // Verdict
+  let verdict = '', vCls = 'mid', rank = null;
+  if (inp.prix) {
+    rank = Math.round(kept.filter(p => p.prix <= inp.prix).length / n * 100);
+    const ecart = Math.round((inp.prix / central - 1) * 100);
+    const lab = inp.prix < st.p25 ? 'sous le marché' : inp.prix <= st.p75 ? 'dans le marché' : 'ambitieux';
+    vCls = inp.prix < st.p25 ? 'ok' : inp.prix <= st.p75 ? 'mid' : 'low';
+    verdict = `Prix demandé de ${mvFr(inp.prix)} MAD/m² (${mvM(inp.prix * sup)} M MAD au total) : <b>${lab}</b>. Il se situe au ${rank}e percentile des ${n} comparables, ${ecart >= 0 ? '+' : ''}${ecart} % par rapport à la médiane (${mvFr(central)} MAD/m²).`;
+    if (inp.voirie > 0) {
+      const u = inp.prix * sup / net;
+      verdict += ` Sur la surface utile (${mvFr(net)} m² après voirie), le prix réel ressort à ${mvFr(u)} MAD/m²${u > st.p75 ? ', au-dessus du marché' : ''}.`;
+    }
+  } else {
+    verdict = `Valeur estimée entre ${mvFr(st.p25)} et ${mvFr(st.p75)} MAD/m², valeur centrale ${mvFr(central)} MAD/m², soit environ ${mvM(midT)} M MAD pour ${mvFr(sup)} m².`;
+  }
+  // Spectre : percentile dans le secteur / famille
+  const refPrix = inp.prix || central;
+  const sectorSet = pool.filter(p => (inp.sec ? p.sec === inp.sec : true) && (!inp.fam || p.fam === inp.fam));
+  const secRank = sectorSet.length >= 8 ? Math.round(sectorSet.filter(p => p.prix <= refPrix).length / sectorSet.length * 100) : null;
+  const sizeRank = Math.round(kept.filter(p => p.sup <= sup).length / n * 100);
+  const gf = kept.filter(p => p.src === 'Greenfield'), on = kept.filter(p => p.src !== 'Greenfield');
+  const stG = gf.length ? mvPct(gf.map(p => p.prix), 0.5) : null, stO = on.length ? mvPct(on.map(p => p.prix), 0.5) : null;
+  const tier = secRank == null ? null : secRank >= 75 ? 'haut de gamme' : secRank >= 40 ? 'milieu de gamme' : 'entrée de gamme';
+  // Repères DGI
+  const arrName = d.arr[mvN(inp.q)];
+  const dgiRow = arrName ? d.dgi.find(r => mvN(r[1]) === mvN(arrName)) : null;
+  let dgiTxt = '';
+  if (dgiRow) {
+    const isV = inp.fam === 'Villa';
+    const mn = isV ? dgiRow[4] : dgiRow[2], mx = isV ? dgiRow[5] : dgiRow[3];
+    if (mn && mx) {
+      const pos = central < mn ? 'sous la fourchette' : central > mx ? 'au-dessus de la fourchette' : 'dans la fourchette';
+      dgiTxt = `Référentiel DGI (${dgiRow[0]}, arrondissement ${dgiRow[1]}, zone ${isV ? 'villa' : 'immeuble'}) : ${mvFr(mn)} à ${mvFr(mx)} MAD/m². La valeur centrale est ${pos}. Ce référentiel est ancien (2016 pour Casablanca) et indicatif.`;
+    }
+  }
+  const ipai = d.ipai.filter(r => /Casablanca|National/.test(r[1]) && /Prix/.test(r[3])).map(r => `${r[0]} ${r[1]} ${r[2].toLowerCase()} : ${r[4] > 0 ? '+' : ''}${String(r[4]).replace('.', ',')} %`);
+  // Quartiers voisins
+  const neigh = {};
+  pool.filter(p => inp.sec && p.sec === inp.sec && (!inp.fam || p.fam === inp.fam)).forEach(p => { (neigh[p.q] = neigh[p.q] || []).push(p.prix); });
+  const neighRows = Object.entries(neigh).filter(([q, v]) => v.length >= 3 && mvN(q) !== mvN(inp.q)).map(([q, v]) => [q, mvPct(v, 0.5), v.length]).sort((a, b) => b[2] - a[2]).slice(0, 6);
+  // Atouts et vigilances
+  const plus = [], moins = [];
+  const secMed = sectorSet.length ? mvPct(sectorSet.map(p => p.prix), 0.5) : null;
+  if (secMed && central >= secMed * 1.3) plus.push(`Quartier valorisé : la médiane locale (${mvFr(central)}) dépasse de ${Math.round((central / secMed - 1) * 100)} % celle du secteur (${mvFr(secMed)}).`);
+  if (inp.fam === 'Immeuble') plus.push('Zonage de type immeuble : forte constructibilité et meilleure valorisation au m² que les zones villa ou rurales.');
+  if (/mix/i.test(inp.zon)) plus.push('Zonage mixte : plusieurs programmes possibles (logements, commerces, bureaux), ce qui élargit le nombre d\'acheteurs.');
+  if (sup < 1000 && inp.fam === 'Immeuble' && /Centre|Sud/.test(inp.sec || '')) plus.push('Petit lot en zone urbaine dense : rare et très liquide, recherché par les promoteurs de petits immeubles.');
+  if (sup >= 10000 && inp.fam === 'Immeuble') plus.push('Grande assiette en zone immeuble : permet une opération d\'ensemble, intéressante pour un promoteur.');
+  if (/Casablanca/.test(inp.sec || '')) plus.push('Tendance récente favorable : prix des terrains urbains de Casablanca +1,8 % et ventes +41 % au T2 2026 (IPAI).');
+  if (Object.keys(MV.files).length === 3) plus.push('Dossier documentaire complet (plan cadastral, note de renseignement, certificat de propriété) : sécurise la transaction.');
+  if (inp.prix && inp.prix < st.p25) plus.push('Prix demandé sous le marché : marge de négociation favorable à l\'acheteur et revente facilitée.');
+  const ratio = sup / mvPct(kept.map(p => p.sup), 0.5);
+  if (ratio > 3 || sup >= 50000) moins.push(`Grande surface (${mvFr(sup)} m², ${ratio.toFixed(1).replace('.', ',')} fois la médiane des comparables) : décote d'échelle habituelle au m² et clientèle plus étroite.`);
+  if (ratio < 0.33) moins.push('Surface nettement plus petite que les comparables : le prix au m² peut être supérieur à la médiane, à vérifier.');
+  if (inp.fam === 'Villa') moins.push('Zonage villa : constructibilité limitée, valeur au m² inférieure aux zones immeuble.');
+  if (inp.fam === 'Rural') moins.push('Zonage rural ou non urbanisé : pas de droit à construire immédiat, valeur d\'attente.');
+  if (inp.fam === 'Industriel') moins.push('Zonage industriel : marché de niche, demande liée à la logistique et à l\'industrie, valeur au m² plus basse.');
+  if (inp.fam === 'Tourisme') moins.push('Zonage touristique ou spécifique : programme contraint et marché étroit.');
+  if (inp.voirie > 0) moins.push(`${mvFr(inp.voirie)} m² (${Math.round(inp.voirie / sup * 100)} %) réservés à la voirie : le prix utile au m² est plus élevé que le prix affiché.`);
+  if (inp.bati) moins.push('Bâtiments existants : démolition et évacuation à prévoir, à chiffrer avant offre.');
+  if (/Dar Bouazza|Médiouna|Bouskoura|Mohammedia/.test(inp.sec || '')) moins.push('Secteur de périphérie : liquidité plus faible et délais de revente plus longs que le centre.');
+  moins.push('Tendance nationale : prix des terrains -3 % au T1 2026 (BAM et ANCFCC).');
+  if (unk) moins.push('Quartier non reconnu dans nos données : la comparaison porte sur tout le marché, la valeur est très approximative.');
+  if (res.lvl === 3 || n < 5) moins.push('Peu de comparables directs : l\'estimation est à prendre avec prudence.');
+  // À vérifier
+  const chk = [];
+  MV_DOCS.forEach(dd => { if (!MV.files[dd.k]) chk.push(`${dd.l} : à obtenir et à joindre au dossier.`); });
+  if (inp.voirie === 0) chk.push('Relevé du géomètre : surface constructible réelle et surface sous emprise de voirie.');
+  chk.push('Note de renseignement urbanistique récente (moins d\'un an) : elle fait foi pour le zonage et les règles.');
+  chk.push('Viabilisation, accès et nuisances à proximité (décharge, voie ferrée, ligne haute tension).');
+  if (inp.bati) chk.push('Nature, état et occupation des bâtiments existants.');
+  const facts = Object.entries(MV.facts).filter(([k, f]) => f && f.items && Object.keys(f.items).length).map(([k, f]) => `<li><b>${MV_DOCS.find(x => x.k === k).l}</b> : ${mvE(f.msg.replace('Détecté : ', ''))}</li>`).join('');
+  // Tableau comparables
+  const sorted = [...kept].sort((p, q) => Math.abs(Math.log(p.sup / sup)) - Math.abs(Math.log(q.sup / sup)));
+  const rows = (MV.showAll ? sorted : sorted.slice(0, 12)).map(p => {
+    const e = Math.round((p.prix / central - 1) * 100);
+    const lk = p.lien ? `<a href="${mvE(p.lien)}" target="_blank" rel="noopener">${p.src}</a>` : (p.ref ? mvE(p.ref) : p.src);
+    return `<tr><td>${lk}</td><td>${mvE(p.q)}</td><td>${mvE(p.zon || 'n.c.')}</td><td class="r">${mvFr(p.sup)}</td><td class="r"><b>${mvFr(p.prix)}</b></td><td class="r">${e >= 0 ? '+' : ''}${e} %</td></tr>`;
+  }).join('');
+  const removed = res.removed.length ? `<p class="mvf-note">${res.removed.length} valeur${res.removed.length > 1 ? 's' : ''} hors norme écartée${res.removed.length > 1 ? 's' : ''} (plus de 2 fois ou moins de la moitié de la médiane de ${mvFr(res.med)} MAD/m²).</p>` : '';
+  const li = arr => '<ul>' + arr.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return `<div class="mvf-card" id="mv-fiche">
+    <div class="mvf-head"><div><div class="mvf-kick">Fiche de valorisation</div><h2>${mvE(inp.q)}, ${mvFr(sup)} m²${inp.zon ? ', zone ' + mvE(inp.zon) : ''}</h2>
+      <div class="mvf-sub">${mvE(inp.sec || 'Secteur non identifié')}${inp.fam ? ' · famille ' + inp.fam : ''} · établie le ${today}</div></div>
+      <div class="mvf-actions"><button class="btn btn-primary btn-sm" onclick="mvPrint()">Imprimer / PDF</button></div></div>
+    <div class="mvf-verdict ${vCls}">${verdict}</div>
+    <div class="mvf-kpis">
+      <div class="mvf-k"><span>Valeur centrale</span><b>${mvFr(central)}</b><i>MAD/m², ${mvM(midT)} M MAD</i></div>
+      <div class="mvf-k"><span>Fourchette (P25 à P75)</span><b>${mvFr(st.p25)} à ${mvFr(st.p75)}</b><i>${mvM(lowT)} à ${mvM(highT)} M MAD</i></div>
+      <div class="mvf-k"><span>Comparables retenus</span><b>${n}</b><i>${gf.length} Greenfield, ${on.length} en ligne</i></div>
+      <div class="mvf-k ${relCls}"><span>Fiabilité</span><b>${rel}</b><i>${lvlTxt}</i></div>
+    </div>
+    <h3>Où se situe ce terrain parmi les terrains semblables</h3>
+    ${mvSvg(inp, kept, st, central)}
+    <div class="mvf-legend"><span class="d g"></span> Terrains Greenfield <span class="d o"></span> Annonces en ligne <span class="b"></span> Fourchette P25 à P75</div>
+    <ul class="mvf-pos">
+      ${secRank != null ? `<li>Position dans le secteur${inp.fam ? ' (' + inp.fam.toLowerCase() + ')' : ''} : <b>${secRank}e percentile</b>, soit ${tier}.</li>` : ''}
+      <li>Surface : plus grande que ${sizeRank} % des comparables retenus (médiane ${mvFr(mvPct(kept.map(p => p.sup), 0.5))} m²).</li>
+      ${stG && stO ? `<li>Médiane Greenfield : ${mvFr(stG)} MAD/m². Médiane annonces en ligne : ${mvFr(stO)} MAD/m² (écart ${Math.round((stG / stO - 1) * 100) >= 0 ? '+' : ''}${Math.round((stG / stO - 1) * 100)} %).</li>` : (stG ? `<li>Médiane Greenfield : ${mvFr(stG)} MAD/m².</li>` : (stO ? `<li>Médiane annonces en ligne : ${mvFr(stO)} MAD/m².</li>` : ''))}
+      ${inp.voirie > 0 ? `<li>Valeur sur surface utile (${mvFr(net)} m²) : ${mvM(central * sup)} M MAD, soit ${mvFr(central * sup / net)} MAD/m² utile.</li>` : ''}
+    </ul>
+    <div class="mvf-cols">
+      <div><h3>Atouts</h3>${plus.length ? li(plus) : '<p class="mvf-note">Aucun atout marquant identifié avec les données disponibles.</p>'}</div>
+      <div><h3>Points de vigilance</h3>${li(moins)}</div>
+    </div>
+    <h3>Repères du marché</h3>
+    <ul class="mvf-pos">
+      ${dgiTxt ? `<li>${dgiTxt}</li>` : ''}
+      ${ipai.length ? `<li>Tendance officielle (BAM et ANCFCC) : ${ipai.join(', ')}.</li>` : ''}
+      ${neighRows.length ? `<li>Quartiers voisins (médiane MAD/m²) : ${neighRows.map(r => mvE(r[0]) + ' ' + mvFr(r[1]) + ' (' + r[2] + ')').join(', ')}.</li>` : ''}
+      <li>Toutes les données sont des prix demandés (annonces et listing), pas des prix de vente conclus. La valeur est indicative et ne constitue pas une expertise.</li>
+    </ul>
+    ${facts ? `<h3>Informations lues dans les documents</h3><ul>${facts}</ul>` : ''}
+    <h3>Points à vérifier avant offre</h3>${li(chk)}
+    ${inp.notes ? `<h3>Notes</h3><p>${mvE(inp.notes)}</p>` : ''}
+    <h3>Comparables</h3>
+    <div class="mvf-tw"><table class="mvf-t"><thead><tr><th>Source</th><th>Quartier</th><th>Zonage</th><th class="r">Surface m²</th><th class="r">Prix MAD/m²</th><th class="r">Écart médiane</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${sorted.length > 12 ? `<div class="mvf-noprint" style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="mvToggleAll()">${MV.showAll ? 'Réduire la liste' : 'Voir les ' + sorted.length + ' comparables'}</button></div>` : ''}
+    ${removed}
+  </div>`;
+}
+function mvToggleAll() { MV.showAll = !MV.showAll; if (MV.last) document.getElementById('mv-out').innerHTML = mvRender(MV.last.inp, MV.last.res, MV.last.pool); }
+function mvPrint() {
+  const el = document.getElementById('mv-fiche'); if (!el) return;
+  const w = window.open('', '_blank'); if (!w) { showNotif('Autorisez les fenêtres pop-up pour imprimer.', true); return; }
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.mvf-noprint,.mvf-actions').forEach(x => x.remove());
+  w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiche de valorisation Greenfield</title><style>' + document.getElementById('mv-css').textContent + 'body{font-family:Arial,sans-serif;margin:24px;color:#0a2e1a}.mvf-card{box-shadow:none!important;padding:0!important}@page{margin:14mm}</style></head><body>' + clone.outerHTML + '</body></html>');
+  w.document.close(); setTimeout(() => { w.focus(); w.print(); }, 400);
+}
+
 </script>
 </body>
 </html>

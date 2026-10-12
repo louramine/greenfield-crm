@@ -740,9 +740,14 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
 
       <div class="card" id="quartier-card" style="margin-bottom:20px">
-        <div class="card-title">Terrains par quartier <span id="quartier-sub" style="font-size:11px;color:var(--gray-mid);font-weight:400;text-transform:none;letter-spacing:0"></span></div>
-        <div id="quartier-chart"></div>
-        <div style="text-align:center;margin-top:10px"><button class="btn btn-ghost btn-sm" id="quartier-toggle" onclick="qtToggle()">Voir tous les quartiers</button></div>
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:0;cursor:pointer" onclick="qtOpen()">
+          <span>Terrains par quartier <span id="quartier-sub" style="font-size:11px;color:var(--gray-mid);font-weight:400;text-transform:none;letter-spacing:0"></span></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="quartier-open" style="min-width:34px;font-size:16px;line-height:1" title="Afficher ou masquer">+</button>
+        </div>
+        <div id="quartier-body" style="display:none;margin-top:14px">
+          <div id="quartier-chart"></div>
+          <div style="text-align:center;margin-top:10px"><button class="btn btn-ghost btn-sm" id="quartier-toggle" onclick="qtToggle()">Voir tous les quartiers</button></div>
+        </div>
       </div>
 
       <div class="dashboard-grid">
@@ -3115,6 +3120,13 @@ function associeColor(nom) {
 // ═══════════════════════════════════════════════════════════════
 // Graphique : nombre de terrains par quartier (hors vendus)
 let qtAll = false;
+function qtOpen() {
+  const b = document.getElementById('quartier-body'), btn = document.getElementById('quartier-open');
+  if (!b) return;
+  const open = b.style.display === 'none';
+  b.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '\u2212' : '+';
+}
 function qtToggle() { qtAll = !qtAll; renderQuartierChart(); }
 function renderQuartierChart() {
   const box = document.getElementById('quartier-chart');

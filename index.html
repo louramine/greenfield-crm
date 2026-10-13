@@ -602,6 +602,9 @@ body:not(.role-admin) .admin-only{display:none !important}
 }
 </style>
 <style id="mv-css">
+.terrain-row{-webkit-tap-highlight-color:rgba(45,158,95,.18)}
+.terrain-row:hover td{background:#eef7f2}
+.terrain-row:active td{background:#e3f1ea}
 @media(max-width:900px){
 #modal-terrain-detail .modal{padding-top:0;padding-bottom:0;max-height:92vh;max-height:92dvh;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #modal-terrain-detail .td-head{position:sticky;top:0;z-index:6;background:#fff;margin:0 -16px 14px !important;padding:14px 16px 10px;box-shadow:0 1px 0 #e6efe9}
@@ -1930,7 +1933,7 @@ function filterTerrains() {
       const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
       return String(str).replace(regex, '<mark style="background:#4eca8244;color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
     };
-    return `<tr style="${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
+    return `<tr class="terrain-row" onclick="if(!(window.getSelection&&String(window.getSelection()).length))openTerrainDetail(${t.id})" style="cursor:pointer;${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
       <td><strong style="color:var(--green-mid)">${i+1}</strong></td>
       <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
@@ -1941,7 +1944,7 @@ function filterTerrains() {
       <td><span class="badge badge-gold">${t.usage}</span></td>
       <td style="${dateStyle}">${t.dateSourcing || '—'}${dateBadge}</td>
       <td><span style="display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;background:${sc.bg};color:${sc.color}">${t.statut}</span></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openTerrainDetail(${t.id})" style="font-size:11px;padding:4px 10px;color:#1a5c35;border-color:rgba(45,158,95,0.3)">Modif.</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openTerrainDetail(${t.id})" style="font-size:11px;padding:4px 10px;color:#1a5c35;border-color:rgba(45,158,95,0.3)">Modif.</button></td>
     </tr>`;
   }).join('');
 }

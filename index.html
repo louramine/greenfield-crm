@@ -4287,6 +4287,8 @@ function mvPrint() {
 </script>
 <script>
 // ===== Partage de la fiche terrain par image (WhatsApp) =====
+// Numéro WhatsApp affiché sur l'image de partage (laisser vide pour ne rien afficher)
+const SH_WA = '';
 const SH = { blob: null, url: null, text: '' };
 function shFr(n) { return Math.round(n).toLocaleString('fr-FR'); }
 function shCardHtml(t, withPrice) {
@@ -4304,7 +4306,7 @@ function shCardHtml(t, withPrice) {
   return `<div style="width:640px;background:#fff;font-family:'DM Sans',Arial,sans-serif;color:#0a2e1a">
     <div style="background:#0a2e1a;padding:20px 28px;display:flex;align-items:center;justify-content:space-between">
       ${logo ? `<img src="${logo}" style="height:34px;display:block">` : '<b style="color:#fff;font-size:20px">GREENFIELD</b>'}
-      <div style="color:#4eca82;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700">Fiche terrain</div>
+      <div style="text-align:right;line-height:1.5"><div style="color:#4eca82;font-size:14px;font-weight:700;letter-spacing:.02em">www.greenfield.plus</div>${SH_WA ? `<div style="color:#fff;font-size:13px;font-weight:600">WhatsApp ${e(SH_WA)}</div>` : ''}</div>
     </div>
     <div style="padding:26px 28px 8px">
       ${t.ref ? `<div style="display:inline-block;background:#e8f7ef;color:#1a5c35;font-weight:700;font-size:12px;padding:4px 10px;border-radius:99px;margin-bottom:10px">Réf. ${e(t.ref)}</div>` : ''}

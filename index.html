@@ -1259,7 +1259,14 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="modal-title">Nouveau Deal</div>
     <div class="form-group">
       <label class="form-label">Terrain *</label>
-      <select class="form-select" id="d-terrain"></select>
+      <select class="form-select" id="d-terrain" onchange="dealTerrainToggle()"></select>
+    </div>
+    <div id="d-new-terrain" style="display:none;margin:-4px 0 14px;padding:12px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
+      <div class="form-grid">
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Quartier ou nom du terrain *</label><input class="form-input" id="d-nt-q" list="t-loc-list" placeholder="Ex : Mejjatia"></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Superficie (m²)</label><input class="form-input" id="d-nt-sup" type="number" min="0" placeholder="Ex : 30000"></div>
+      </div>
+      <div style="font-size:11.5px;color:#7a9a88">Ce terrain n'est pas dans le CRM. Le deal est créé avec ce libellé, vous pourrez ajouter le terrain plus tard.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Acheteur *</label>
@@ -2182,10 +2189,16 @@ async function deleteAcheteur(id) {
   showNotif('Acheteur supprimé.');
 }
 
+function dealTerrainToggle() {
+  const on = document.getElementById('d-terrain').value === '__new__';
+  document.getElementById('d-new-terrain').style.display = on ? '' : 'none';
+}
 function openDealModal() {
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
-  tSel.innerHTML = state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
+  tSel.innerHTML = state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('') + '<option value="__new__">+ Nouveau terrain (hors CRM)</option>';
+  document.getElementById('d-nt-q').value = ''; document.getElementById('d-nt-sup').value = '';
+  dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0
     ? state.acheteurs.map(a => `<option value="${a.id}">${a.nom}</option>`).join('')
     : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
@@ -3061,12 +3074,15 @@ saveAcheteur = async function() {
 
 const _origSaveDeal = saveDeal;
 saveDeal = async function() {
-  const terrainId = parseInt(document.getElementById('d-terrain').value);
+  const isNew = document.getElementById('d-terrain').value === '__new__';
+  const terrainId = isNew ? null : parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
-  if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
+  const ntQ = document.getElementById('d-nt-q').value.trim(), ntSup = Number(document.getElementById('d-nt-sup').value) || 0;
+  if (isNew && !ntQ) { showNotif('⚠ Indiquez le quartier ou le nom du terrain', true); return; }
+  if ((!isNew && !terrainId) || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
   if (isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
   if (document.getElementById('dn-titre').value.trim() && !addNewDealTask()) return;
-  const terrain = state.terrains.find(t => t.id === terrainId);
+  const terrain = isNew ? { localisation: normQuartier(ntQ) + (ntSup ? ' (' + Math.round(ntSup).toLocaleString('fr-FR') + ' m²)' : '') + ' [hors CRM]' } : state.terrains.find(t => t.id === terrainId);
   const acheteur = state.acheteurs.find(a => a.id === acheteurId);
   const deal = {
     terrain_id: terrainId, acheteur_id: acheteurId,
@@ -3090,9 +3106,9 @@ saveDeal = async function() {
       }
       newDealTasks = [];
       showNotif('✓ Deal créé dans Supabase !');
-    }
+    } else if (isNew) { showNotif('Échec : la base n\'accepte pas encore les deals hors CRM (voir supabase/deals-terrain-hors-crm.sql).', true); return; }
   } else {
-    state.deals.push({ id: state.nextDealId++, terrainId, acheteurId, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1 });
+    state.deals.push({ id: state.nextDealId++, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1 });
     addActivity(`Deal : ${terrain?.localisation} ↔ ${acheteur?.nom}`);
     saveState(); showNotif('✓ Deal créé (local).');
   }

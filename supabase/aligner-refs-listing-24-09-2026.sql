@@ -4,8 +4,9 @@
 --    25 = ligne deja remplie dans le listing d'avril, 26 = ligne remplie depuis.
 -- 2. Ajoute les terrains du listing qui ne sont pas dans la base (attendu : N° 932 a 935).
 -- 3. Marque Vendu les lignes en couleur du listing (jamais l'inverse).
--- 4. Les terrains crees dans le CRM hors listing prennent GF-26-1001 et suivants,
---    et les prochains terrains saisis dans le CRM continuent a partir de la.
+-- 4. Les terrains crees dans le CRM hors listing prennent GF-26-A001 et suivants,
+--    et les prochains terrains saisis dans le CRM continuent a partir de la (A002, A003...),
+--    sans jamais entrer en collision avec les N° du listing.
 -- Aucun terrain n'est supprime. Les identifiants internes ne changent pas.
 -- Le N° 650 est en double dans le listing : la ligne A6 Gauthier (128 m2, TF 19654/D)
 -- est placee entre le 780 et le 782, elle est donc traitee comme le N° 781.
@@ -1036,19 +1037,20 @@ with maj as (
 )
 insert into gf_report select 50, 'vendus mis a jour', count(*)::text from maj;
 
--- Terrains crees dans le CRM hors listing : GF-26-1001 et suivants
+-- Terrains crees dans le CRM hors listing : GF-26-A001 et suivants
 update public.terrains t
-   set ref = format('GF-26-%s', lpad((1000 + s.rn)::text, 4, '0'))
+   set ref = format('GF-26-A%s', lpad(s.rn::text, 3, '0'))
   from (select id, row_number() over (order by id) as rn
           from public.terrains where ref like 'TMP-%') s
  where t.id = s.id;
 
--- Prochaines references saisies dans le CRM
+-- Prochaines references saisies dans le CRM : GF-aa-A + numero qui continue
 select setval('public.terrains_ref_seq',
-              greatest(1000, (select coalesce(max(substring(ref from 7)::int), 0) from public.terrains where ref ~ '^GF-26-1[0-9]{3}$')),
-              true);
+              greatest(coalesce(max(substring(ref from 'A([0-9]+)$')::int), 0), 1),
+              coalesce(max(substring(ref from 'A([0-9]+)$')::int), 0) > 0)
+  from public.terrains where ref ~ '^GF-[0-9]{2}-A[0-9]+$';
 alter table public.terrains
-  alter column ref set default format('GF-%s-%s', to_char(now(), 'YY'), lpad(nextval('public.terrains_ref_seq')::text, 4, '0'));
+  alter column ref set default format('GF-%s-A%s', to_char(now(), 'YY'), lpad(nextval('public.terrains_ref_seq')::text, 3, '0'));
 create unique index if not exists terrains_ref_uniq on public.terrains (ref);
 grant usage on sequence public.terrains_ref_seq to authenticated;
 
@@ -1056,8 +1058,8 @@ grant usage on sequence public.terrains_ref_seq to authenticated;
 insert into gf_report select 10, 'lignes du listing', count(*)::text from gf_l;
 insert into gf_report select 20, 'terrains rapproches', count(*)::text from gf_m;
 insert into gf_report select 30, 'terrains ajoutes (N°)', coalesce(string_agg(n::text, ', ' order by n), 'aucun') from gf_l where n not in (select n from gf_m);
-insert into gf_report select 40, 'terrains CRM hors listing', count(*)::text from public.terrains where ref ~ '^GF-26-1[0-9]{3}$';
+insert into gf_report select 40, 'terrains CRM hors listing', count(*)::text from public.terrains where ref ~ '^GF-[0-9]{2}-A[0-9]+$';
 insert into gf_report select 60, 'total terrains en base', count(*)::text from public.terrains;
 insert into gf_report select 70, 'refs en double', count(*)::text from (select ref from public.terrains group by ref having count(*) > 1) d;
-insert into gf_report select 80, 'refs au mauvais format', count(*)::text from public.terrains where ref !~ '^GF-[0-9]{2}-[0-9]{4}$';
+insert into gf_report select 80, 'refs au mauvais format', count(*)::text from public.terrains where ref !~ '^GF-[0-9]{2}-[0-9]{4}$' and ref !~ '^GF-[0-9]{2}-A[0-9]{3,}$';
 select libelle, valeur from gf_report order by ord;

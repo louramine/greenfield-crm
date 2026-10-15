@@ -958,6 +958,7 @@ body:not(.role-admin) .admin-only{display:none !important}
         <input id="filter-prix-min" type="number" min="0" placeholder="Forfait min (M MAD)" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
         <input id="filter-prix-max" type="number" min="0" placeholder="Forfait max (M MAD)" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="hide-vendus" onchange="filterTerrains()"> Masquer les vendus</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="only-tfdup" onchange="filterTerrains()"> TF en double <span id="tfdup-count" style="color:var(--gold-light)"></span></label>
         <select id="sort-terrains" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
           <option value="">Tri : par défaut</option>
           <option value="sup-desc">Superficie : la plus grande</option>
@@ -975,6 +976,7 @@ body:not(.role-admin) .admin-only{display:none !important}
               <th>Réf.</th>
               <th>Localisation</th>
               <th>Def. Urba.</th>
+              <th>TF</th>
               <th>Superficie</th>
               <th>Prix/m²</th>
               <th>Prix Forfait</th>
@@ -1884,8 +1886,38 @@ function renderTerrains() {
   filterTerrains();
 }
 
+// ---- Titres fonciers : extraction et detection des doublons ----
+let _tfIdx = null, _tfSrc = null;
+function tfTokens(tf) {
+  const s = String(tf == null ? '' : tf); if (/^https?:/i.test(s.trim())) return [];
+  const out = []; const re = /(\d{1,7})\s*\/\s*([A-Za-z0-9]{1,3})(?![A-Za-z0-9])/g; let m;
+  while ((m = re.exec(s))) out.push(m[1] + '/' + m[2].toUpperCase());
+  return [...new Set(out)];
+}
+function tfIndex() {
+  if (_tfIdx && _tfSrc === state.terrains && _tfIdx.n === state.terrains.length) return _tfIdx;
+  const idx = new Map();
+  (state.terrains || []).forEach(t => tfTokens(t.tf).forEach(k => { if (!idx.has(k)) idx.set(k, []); idx.get(k).push(t); }));
+  idx.n = state.terrains.length; _tfIdx = idx; _tfSrc = state.terrains; return idx;
+}
+function tfDupOf(t) {
+  const idx = tfIndex(), res = [];
+  tfTokens(t.tf).forEach(k => (idx.get(k) || []).forEach(o => { if (o !== t && !res.includes(o)) res.push(o); }));
+  return res;
+}
+function tfDupCount() { const seen = new Set(); tfIndex().forEach(v => { if (v.length > 1) v.forEach(t => seen.add(t)); }); return seen.size; }
+function tfCell(t) {
+  const raw = t.tf && t.tf !== 'nan' && !/^https?:/i.test(String(t.tf)) ? String(t.tf).trim() : '';
+  if (!raw) return '—';
+  const d = tfDupOf(t);
+  const short = raw.length > 22 ? raw.slice(0, 21) + '…' : raw;
+  const badge = d.length ? ` <span title="Meme TF que : ${escH(d.map(o => (o.ref || '') + ' ' + (o.localisation || '') + ' ' + (o.superficie ? Number(o.superficie).toLocaleString('fr-FR') + ' m²' : '')).join(' / '))}" style="display:inline-block;padding:1px 6px;border-radius:9px;background:#fdf2f2;color:#c0392b;font-size:10.5px;font-weight:700">doublon</span>` : '';
+  return `<span title="${escH(raw)}">${escH(short)}</span>${badge}`;
+}
 function filterTerrains() {
   const tbody = document.getElementById('terrains-tbody');
+  _tfIdx = null;
+  { const c = document.getElementById('tfdup-count'); if (c) c.textContent = '(' + tfDupCount() + ')'; }
   const search = (document.getElementById('search-terrains')?.value || '').toLowerCase().trim();
   const pmin = parseFloat(document.getElementById('filter-prix-min')?.value);
   const pmax = parseFloat(document.getElementById('filter-prix-max')?.value);
@@ -1899,6 +1931,7 @@ function filterTerrains() {
     if (msSel.loc.size && !msSel.loc.has((t.localisation || '').trim())) return false;
     if (msSel.urba.size && !msSel.urba.has((t.urba || '').trim())) return false;
     if (document.getElementById('hide-vendus')?.checked && t.statut === 'Vendu') return false;
+    if (document.getElementById('only-tfdup')?.checked && !tfDupOf(t).length) return false;
     const p = Number(t.forfait) || ((Number(t.superficie) || 0) * (Number(t.prix) || 0) / 1e6);
     if (!isNaN(pmin) && p < pmin) return false;
     if (!isNaN(pmax) && p > pmax) return false;
@@ -1913,7 +1946,7 @@ function filterTerrains() {
   if (countEl) countEl.textContent = `${filtered.length} terrain${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}`;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
     return;
   }
 
@@ -1944,6 +1977,7 @@ function filterTerrains() {
       <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
       <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><span class="badge badge-blue">${highlight(t.urba) || '—'}</span></td>
+      <td style="white-space:nowrap;font-size:12px;color:#5d7d6b">${tfCell(t)}</td>
       <td>${Number(t.superficie).toLocaleString('fr-FR')} m²</td>
       <td>${t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD' : '—'}</td>
       <td><strong>${forfait > 0 ? forfait + ' M MAD' : '—'}</strong></td>
@@ -1964,6 +1998,7 @@ function resetFilters() {
   document.getElementById('filter-prix-max').value = '';
   document.getElementById('sort-terrains').value = '';
   const hv = document.getElementById('hide-vendus'); if (hv) hv.checked = false;
+  const td0 = document.getElementById('only-tfdup'); if (td0) td0.checked = false;
   filterTerrains();
 }
 
@@ -4319,6 +4354,7 @@ function shCardHtml(t, withPrice) {
     withPrice && prix ? cell('Prix', shFr(prix) + ' <span style="font-size:13px;font-weight:700">MAD/m²</span>', true) : '',
     withPrice && tot ? cell('Montant total', (tot >= 10 ? shFr(tot) : tot.toLocaleString('fr-FR', { maximumFractionDigits: 1 })) + ' <span style="font-size:13px;font-weight:700">M MAD</span>', true) : '',
     t.urba ? cell('Zonage', e(t.urba)) : '',
+    shTf(t) ? cell('Titre foncier', e(shTf(t))) : '',
     t.statut_juridique && t.statut_juridique !== 'Non renseigné' ? cell('Statut juridique', e(t.statut_juridique)) : ''
   ].filter(Boolean).join('');
   return `<div style="width:640px;background:#fff;font-family:'DM Sans',Arial,sans-serif;color:#0a2e1a">
@@ -4335,11 +4371,13 @@ function shCardHtml(t, withPrice) {
     <div style="padding:18px 28px 22px;font-size:12px;color:#7a9a88;display:flex;justify-content:space-between"><span>Greenfield, transactions immobilières</span><span>${new Date().toLocaleDateString('fr-FR')}</span></div>
   </div>`;
 }
+function shTf(t) { const s = String(t.tf == null ? '' : t.tf).trim(); return (!s || s === 'nan' || /^https?:/i.test(s)) ? '' : s.replace(/\s+/g, ' '); }
 function shText(t, withPrice) {
   const sup = Number(t.superficie) || 0, prix = Number(t.prix) || 0;
   const l = ['Fiche terrain Greenfield', (t.ref ? t.ref + ' - ' : '') + (t.localisation || '')];
   if (sup) l.push('Superficie : ' + shFr(sup) + ' m2');
   if (t.urba) l.push('Zonage : ' + t.urba);
+  if (shTf(t)) l.push('TF : ' + shTf(t));
   if (withPrice && prix) l.push('Prix : ' + shFr(prix) + ' MAD/m2' + (sup ? ' (soit ' + (sup * prix / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M MAD)' : ''));
   if (t.googleMap) l.push('Localisation : ' + t.googleMap);
   return l.join('\n');

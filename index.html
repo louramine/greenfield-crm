@@ -2237,7 +2237,8 @@ function dealTerrainToggle() {
 function openDealModal() {
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
-  tSel.innerHTML = state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('') + '<option value="__new__">+ Nouveau terrain (hors CRM)</option>';
+  tSel.innerHTML = '<option value="__new__">+ Nouveau terrain (hors CRM)</option>' + state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
+  tSel.value = '__new__';
   document.getElementById('d-nt-q').value = ''; document.getElementById('d-nt-sup').value = '';
   dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0

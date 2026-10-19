@@ -979,7 +979,6 @@ body:not(.role-admin) .admin-only{display:none !important}
           <thead>
             <tr>
               <th style="width:34px"></th>
-              <th>#</th>
               <th>Réf.</th>
               <th>Localisation</th>
               <th>Def. Urba.</th>
@@ -987,8 +986,6 @@ body:not(.role-admin) .admin-only{display:none !important}
               <th>Superficie</th>
               <th>Prix/m²</th>
               <th>Prix Forfait</th>
-              <th>Usage</th>
-              <th>Date Sourcing</th>
               <th>Statut</th>
               <th></th>
             </tr>
@@ -1957,7 +1954,7 @@ function filterTerrains() {
   if (countEl) countEl.textContent = `${filtered.length} terrain${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}`;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
     return;
   }
 
@@ -1985,7 +1982,6 @@ function filterTerrains() {
     };
     return `<tr class="terrain-row" onclick="if(!(window.getSelection&&String(window.getSelection()).length))openTerrainDetail(${t.id})" style="cursor:pointer;${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
       <td style="padding-right:0">${favBtn(t.id)}</td>
-      <td><strong style="color:var(--green-mid)">${i+1}</strong></td>
       <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
       <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><span class="badge badge-blue">${highlight(t.urba) || '—'}</span></td>
@@ -1993,8 +1989,6 @@ function filterTerrains() {
       <td>${Number(t.superficie).toLocaleString('fr-FR')} m²</td>
       <td>${t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD' : '—'}</td>
       <td><strong>${forfait > 0 ? forfait + ' M MAD' : '—'}</strong></td>
-      <td><span class="badge badge-gold">${t.usage}</span></td>
-      <td style="${dateStyle}">${t.dateSourcing || '—'}${dateBadge}</td>
       <td><span style="display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;background:${sc.bg};color:${sc.color}">${t.statut}</span></td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openTerrainDetail(${t.id})" style="font-size:11px;padding:4px 10px;color:#1a5c35;border-color:rgba(45,158,95,0.3)">Modif.</button></td>
     </tr>`;

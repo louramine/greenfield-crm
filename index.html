@@ -949,44 +949,28 @@ body:not(.role-admin) .admin-only{display:none !important}
         </div>
         <div class="ms-filter" id="ms-loc"></div>
         <div class="ms-filter" id="ms-urba"></div>
-        <select id="filter-prix" onchange="applyPrixPreset()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;">
-          <option value="">Prix forfaitaire : tranche</option>
-          <option value="0-5">0 à 5 M MAD</option>
-          <option value="5-10">5 à 10 M MAD</option>
-          <option value="10-20">10 à 20 M MAD</option>
-          <option value="20-50">20 à 50 M MAD</option>
-          <option value="50-100">50 à 100 M MAD</option>
-          <option value="100-200">100 à 200 M MAD</option>
-          <option value="200-500">200 à 500 M MAD</option>
-          <option value="500-">500 M MAD et plus</option>
-        </select>
-        <input id="filter-prix-min" type="number" min="0" placeholder="Forfait min (M MAD)" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
-        <input id="filter-prix-max" type="number" min="0" placeholder="Forfait max (M MAD)" oninput="document.getElementById('filter-prix').value='';filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
+        <input id="filter-prix-min" type="number" min="0" placeholder="Forfait min (M MAD)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
+        <input id="filter-prix-max" type="number" min="0" placeholder="Forfait max (M MAD)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:165px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="hide-vendus" onchange="filterTerrains()"> Masquer les vendus</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="only-fav" onchange="filterTerrains()"> ★ Mes favoris <span id="fav-count" style="color:var(--gold-light)"></span></label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="only-tfdup" onchange="filterTerrains()"> TF en double <span id="tfdup-count" style="color:var(--gold-light)"></span></label>
-        <select id="sort-terrains" onchange="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:105px;">
-          <option value="">Tri : par défaut</option>
-          <option value="sup-desc">Superficie : la plus grande</option>
-          <option value="sup-asc">Superficie : la plus petite</option>
-        </select>
         <button onclick="resetFilters()" class="btn btn-ghost btn-sm" style="white-space:nowrap;">✕ Réinitialiser</button>
         <span id="terrains-count" style="font-size:12px;color:var(--gray-mid);white-space:nowrap;"></span>
       </div>
 
       <div class="table-wrap">
         <table>
-          <thead>
+          <thead id="terrains-thead">
             <tr>
               <th style="width:34px"></th>
-              <th>Réf.</th>
-              <th>Localisation</th>
-              <th>Def. Urba.</th>
-              <th>TF</th>
-              <th>Superficie</th>
-              <th>Prix/m²</th>
-              <th>Prix Forfait</th>
-              <th>Statut</th>
+              <th data-sort="ref" onclick="tsortBy('ref')" style="cursor:pointer;user-select:none;white-space:nowrap">Réf.<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="loc" onclick="tsortBy('loc')" style="cursor:pointer;user-select:none;white-space:nowrap">Localisation<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="urba" onclick="tsortBy('urba')" style="cursor:pointer;user-select:none;white-space:nowrap">Def. Urba.<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="tf" onclick="tsortBy('tf')" style="cursor:pointer;user-select:none;white-space:nowrap">TF<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="sup" onclick="tsortBy('sup')" style="cursor:pointer;user-select:none;white-space:nowrap">Superficie<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="prix" onclick="tsortBy('prix')" style="cursor:pointer;user-select:none;white-space:nowrap">Prix/m²<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="forfait" onclick="tsortBy('forfait')" style="cursor:pointer;user-select:none;white-space:nowrap">Prix Forfait<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
+              <th data-sort="statut" onclick="tsortBy('statut')" style="cursor:pointer;user-select:none;white-space:nowrap">Statut<span class="ts-mark" style="opacity:.55;font-size:11px"> ↕</span></th>
               <th></th>
             </tr>
           </thead>
@@ -1866,13 +1850,6 @@ function msToggle(k, ev) {
   document.querySelector('#ms-' + k + ' .ms-panel').classList.toggle('open');
 }
 document.addEventListener('click', () => document.querySelectorAll('.ms-panel.open').forEach(p => p.classList.remove('open')));
-function applyPrixPreset() {
-  const v = document.getElementById('filter-prix').value;
-  const [mn, mx] = v ? v.split('-') : ['', ''];
-  document.getElementById('filter-prix-min').value = mn;
-  document.getElementById('filter-prix-max').value = mx;
-  filterTerrains();
-}
 
 function mkQuartierList() {
   const dl = document.getElementById('t-loc-list'); if (!dl) return;
@@ -1920,6 +1897,30 @@ function tfCell(t) {
   const badge = d.length ? ` <span title="Meme TF que : ${escH(d.map(o => (o.ref || '') + ' ' + (o.localisation || '') + ' ' + (o.superficie ? Number(o.superficie).toLocaleString('fr-FR') + ' m²' : '')).join(' / '))}" style="display:inline-block;padding:1px 6px;border-radius:9px;background:#fdf2f2;color:#c0392b;font-size:10.5px;font-weight:700">doublon</span>` : '';
   return `<span title="${escH(raw)}">${escH(short)}</span>${badge}`;
 }
+
+const TSORT = { key: '', dir: 1 };
+const TSORT_COLS = {
+  ref:  { get: t => t.ref || '' },
+  loc:  { get: t => t.localisation || '' },
+  urba: { get: t => t.urba || '' },
+  tf:   { get: t => (t.tf && t.tf !== 'nan' && !/^https?:/i.test(String(t.tf))) ? String(t.tf).trim() : '' },
+  sup:  { num: true, get: t => Number(t.superficie) || 0 },
+  prix: { num: true, get: t => Number(t.prix) || 0 },
+  forfait: { num: true, get: t => Number(t.forfait) || Math.round((Number(t.superficie) || 0) * (Number(t.prix) || 0) / 1e6) },
+  statut: { get: t => t.statut || '' }
+};
+function tsortMarks() {
+  document.querySelectorAll('#terrains-thead th[data-sort]').forEach(th => {
+    const on = th.dataset.sort === TSORT.key;
+    const m = th.querySelector('.ts-mark');
+    if (m) m.textContent = on ? (TSORT.dir === 1 ? ' ▲' : ' ▼') : ' ↕';
+    th.classList.toggle('ts-on', on);
+  });
+}
+function tsortBy(k) {
+  if (TSORT.key === k) TSORT.dir = -TSORT.dir; else { TSORT.key = k; TSORT.dir = 1; }
+  tsortMarks(); filterTerrains();
+}
 function filterTerrains() {
   const tbody = document.getElementById('terrains-tbody');
   _tfIdx = null;
@@ -1946,8 +1947,12 @@ function filterTerrains() {
     return true;
   });
 
-  const so = document.getElementById('sort-terrains')?.value;
-  if (so) filtered.sort((a, b) => so === 'sup-desc' ? (Number(b.superficie) || 0) - (Number(a.superficie) || 0) : (Number(a.superficie) || 0) - (Number(b.superficie) || 0));
+  if (TSORT.key) { const c = TSORT_COLS[TSORT.key]; filtered.sort((a, b) => {
+      const x = c.get(a), y = c.get(b);
+      if (c.num) return TSORT.dir * (x - y);
+      if (!x && !y) return 0; if (!x) return 1; if (!y) return -1;
+      return TSORT.dir * String(x).localeCompare(String(y), 'fr', { numeric: true, sensitivity: 'base' });
+    }); }
 
   // Update count
   const countEl = document.getElementById('terrains-count');
@@ -1999,10 +2004,9 @@ function resetFilters() {
   document.getElementById('search-terrains').value = '';
   msSel.loc.clear(); msSel.urba.clear(); msSearch.loc = ''; msSearch.urba = '';
   msRender('loc'); msRender('urba');
-  document.getElementById('filter-prix').value = '';
   document.getElementById('filter-prix-min').value = '';
   document.getElementById('filter-prix-max').value = '';
-  document.getElementById('sort-terrains').value = '';
+  TSORT.key = ''; TSORT.dir = 1; tsortMarks();
   const hv = document.getElementById('hide-vendus'); if (hv) hv.checked = false;
   const td0 = document.getElementById('only-tfdup'); if (td0) td0.checked = false;
   const fv0 = document.getElementById('only-fav'); if (fv0) fv0.checked = false;

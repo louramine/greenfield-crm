@@ -1396,6 +1396,14 @@ body:not(.role-admin) .admin-only{display:none !important}
     <!-- Champs éditables -->
     <div class="form-grid">
       <div class="form-group">
+        <label class="form-label">Superficie (m²)</label>
+        <input class="form-input" id="d-sup" type="number" min="0" step="any" inputmode="decimal" oninput="tdPrixPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prix au m² (MAD)</label>
+        <input class="form-input" id="d-prix" type="number" min="0" step="any" inputmode="decimal" oninput="tdPrixPreview()">
+      </div>
+      <div class="form-group">
         <label class="form-label">Titre Foncier (TF)</label>
         <input class="form-input" id="d-tf" placeholder="Ex: 22063/C">
       </div>
@@ -2632,6 +2640,9 @@ function openTerrainDetail(id) {
   document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait + ' M MAD' : '—';
   document.getElementById('d-info-prix').textContent = t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD/m²' : '—';
 
+  document.getElementById('d-sup').value = t.superficie > 0 ? t.superficie : '';
+  document.getElementById('d-prix').value = t.prix > 0 ? t.prix : '';
+
   document.getElementById('d-tf').value = t.tf && t.tf !== 'nan' ? t.tf : '';
   document.getElementById('d-date').value = t.dateSourcing || '';
   { const ds = document.getElementById('d-sourceur'); if (t.sourceur && ![...ds.options].some(o => o.value === t.sourceur)) ds.add(new Option(t.sourceur, t.sourceur)); ds.value = t.sourceur || 'Abderrahim'; ds.disabled = myRole === 'sourceur'; }
@@ -2961,10 +2972,27 @@ saveTerrain = async function() {
   closeModal('modal-terrain'); renderTerrains(); renderDashboard(); renderMatchingSelect();
 }
 
+// Apercu en direct du forfait quand on change superficie ou prix dans la fiche
+function tdPrixPreview() {
+  const t = state.terrains.find(t => t.id === currentDetailId); if (!t) return;
+  const sup = Number(document.getElementById('d-sup').value) || 0;
+  const prix = Number(document.getElementById('d-prix').value) || 0;
+  const changed = sup !== (Number(t.superficie) || 0) || prix !== (Number(t.prix) || 0);
+  const forfait = changed ? Math.round(sup * prix / 1e6) : (t.forfait || Math.round(sup * prix / 1e6));
+  document.getElementById('d-info-sup').textContent = sup ? sup.toLocaleString('fr-FR') + ' m²' : '—';
+  document.getElementById('d-info-prix').textContent = prix ? prix.toLocaleString('fr-FR') + ' MAD/m²' : '—';
+  document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait + ' M MAD' : '—';
+}
+
 const _origSaveTerrainDetail = saveTerrainDetail;
 saveTerrainDetail = async function() {
   const t = state.terrains.find(t => t.id === currentDetailId);
   if (!t) return;
+  const newSup = Number(document.getElementById('d-sup').value);
+  const newPrix = Number(document.getElementById('d-prix').value);
+  if (!(newSup > 0) || !(newPrix > 0)) { showNotif('Superficie et prix au m² doivent être supérieurs à 0.', true); return; }
+  const oldSup = Number(t.superficie) || 0, oldPrix = Number(t.prix) || 0;
+  const prixChange = newSup !== oldSup || newPrix !== oldPrix;
   t.tf = document.getElementById('d-tf').value.trim();
   t.dateSourcing = document.getElementById('d-date').value.trim();
   t.sourceur = document.getElementById('d-sourceur').value;
@@ -2977,10 +3005,22 @@ saveTerrainDetail = async function() {
     if (parts.length === 3) t.daysOld = Math.floor((new Date() - new Date(parts[2], parts[1]-1, parts[0])) / 86400000);
   }
   if (supabaseReady) {
-    const resT = await supaPatch('terrains', t.id, { tf: t.tf, date_sourcing: t.dateSourcing, sourceur: t.sourceur, statut: t.statut, statut_juridique: t.statut_juridique, google_map: t.googleMap, commentaire: t.commentaire, days_old: t.daysOld });
+    const patch = { tf: t.tf, date_sourcing: t.dateSourcing, sourceur: t.sourceur, statut: t.statut, statut_juridique: t.statut_juridique, google_map: t.googleMap, commentaire: t.commentaire, days_old: t.daysOld };
+    // Un forfait saisi a la main n'est plus valable si la superficie ou le prix change : il redevient calcule
+    if (prixChange) Object.assign(patch, { superficie: newSup, prix: newPrix, forfait: null });
+    const resT = await supaPatch('terrains', t.id, patch);
     if (!resT || !resT.length) { showNotif('Modification refusée : vous ne pouvez modifier que vos propres terrains.', true); loadFromSupabase(); return; }
-    await logActivity('Modif terrain', 'terrain', t.id, t.localisation);
+    if (prixChange) {
+      const f = n => Number(n).toLocaleString('fr-FR');
+      const det = [];
+      if (newPrix !== oldPrix) det.push(`prix ${f(oldPrix)} vers ${f(newPrix)} MAD/m²`);
+      if (newSup !== oldSup) det.push(`superficie ${f(oldSup)} vers ${f(newSup)} m²`);
+      await logActivity('Modif prix', 'terrain', t.id, `${t.ref ? t.ref + ' ' : ''}${t.localisation} : ${det.join(', ')}`);
+    } else {
+      await logActivity('Modif terrain', 'terrain', t.id, t.localisation);
+    }
   }
+  if (prixChange) { t.superficie = newSup; t.prix = newPrix; t.forfait = null; }
   saveState(); closeModal('modal-terrain-detail'); filterTerrains(); showNotif('✓ Terrain mis à jour !');
 }
 

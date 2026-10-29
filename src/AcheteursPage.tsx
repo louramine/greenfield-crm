@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { Historique, TerrainsProposes, PreferencesApprises } from "./WhatsAppFiche"
+import { telAffiche, dateCourte } from "./whatsappUtils"
 
 interface Acheteur {
   id: number;
@@ -12,10 +14,14 @@ interface Acheteur {
   usage: string;
   notes: string;
   urbas_cibles?: string[];
+  telephone?: string;
+  whatsapp_stop?: boolean;
+  derniere_interaction?: string;
+  source?: string;
 }
 
 interface Props {
-  state: { acheteurs: Acheteur[] };
+  state: { acheteurs: Acheteur[], waMessages?: any[], waReponses?: any[], terrains?: any[] };
   dispatch: (action: any) => void;
 }
 
@@ -103,12 +109,14 @@ interface FormState {
   nom: string; contact: string; type: string; statut: string;
   zones: string; ticketMin: string; ticketMax: string;
   usage: string; notes: string; urbas_cibles: string[];
+  telephone: string;
 }
 
 const EMPTY: FormState = {
   nom: "", contact: "", type: "Promoteur", statut: "Froid",
   zones: "", ticketMin: "", ticketMax: "",
   usage: "Tertiaire", notes: "", urbas_cibles: [],
+  telephone: "",
 };
 
 function acheteurToForm(a: Acheteur): FormState {
@@ -116,12 +124,14 @@ function acheteurToForm(a: Acheteur): FormState {
     nom: a.nom, contact: a.contact, type: a.type, statut: a.statut,
     zones: a.zones, ticketMin: a.ticketMin, ticketMax: a.ticketMax,
     usage: a.usage, notes: a.notes, urbas_cibles: a.urbas_cibles ?? [],
+    telephone: a.telephone ?? "",
   };
 }
 
 function AcheteurModal({
-  acheteur, onSave, onDelete, onClose,
+  acheteur, onSave, onDelete, onClose, wa,
 }: {
+  wa: { messages: any[], reponses: any[], terrains: any[] };
   acheteur?: Acheteur;
   onSave: (a: any) => void;
   onDelete?: () => void;
@@ -131,6 +141,25 @@ function AcheteurModal({
   const [form, setForm] = useState<FormState>(acheteur ? acheteurToForm(acheteur) : EMPTY);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
+  const [ongletWa, setOngletWa] = useState("historique")
+
+  // Fusionne les préférences apprises sur WhatsApp dans les critères (à valider avec Enregistrer)
+  const appliquerPreferences = (p: any) => {
+    setForm(f => {
+      const zones = f.zones.split(",").map(z => z.trim()).filter(Boolean)
+      for (const z of p.zonesAimees) if (!zones.some(x => x.toLowerCase() === z.toLowerCase())) zones.push(z)
+      const urbas = [...f.urbas_cibles]
+      for (const u of p.urbasAimes) if (!urbas.map(x => x.toUpperCase()).includes(u)) urbas.push(u)
+      return {
+        ...f,
+        zones: zones.join(", "),
+        urbas_cibles: urbas,
+        ticketMin: f.ticketMin ? f.ticketMin : (p.budgetMin !== null ? String(p.budgetMin) : ""),
+        ticketMax: f.ticketMax ? f.ticketMax : (p.budgetMax !== null ? String(p.budgetMax) : ""),
+      }
+    })
+  }
+  const messagesAcheteur = acheteur ? wa.messages.filter(m => m.acheteur_id === acheteur.id).sort((a, b) => a.id - b.id) : []
 
   const set = (k: keyof FormState) => (e: React.ChangeEvent<any>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -154,6 +183,9 @@ function AcheteurModal({
           <div><label style={labelStyle}>Nom / Société *</label><input style={inputStyle} value={form.nom} onChange={set("nom")} placeholder="Redal Group" /></div>
           <div><label style={labelStyle}>Contact</label><input style={inputStyle} value={form.contact} onChange={set("contact")} placeholder="Nom du contact" /></div>
         </div>
+
+        <label style={labelStyle}>Téléphone WhatsApp</label>
+        <input style={inputStyle} value={form.telephone} onChange={set("telephone")} placeholder="06 61 23 45 67 ou +212 6 61 23 45 67" />
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
@@ -183,6 +215,28 @@ function AcheteurModal({
 
         <label style={labelStyle}>Notes</label>
         <textarea style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} value={form.notes} onChange={set("notes")} placeholder="Remarques, conditions..." />
+
+        {isEdit && acheteur && (
+          <div style={{ border: "1px solid rgba(45,158,95,0.2)", borderRadius: 12, padding: 14, marginBottom: 16, background: "rgba(0,0,0,0.12)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: "#4eca82", fontWeight: 600, letterSpacing: "0.05em" }}>
+                WhatsApp {acheteur.whatsapp_stop ? <span style={{ color: "#e57373" }}>· désinscrit</span> : null}
+              </span>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[["historique", "Conversation"], ["terrains", "Terrains proposés"], ["prefs", "Préférences"]].map(([id, label]) => (
+                  <button key={id} type="button" onClick={() => setOngletWa(id)} style={{
+                    padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: "none",
+                    background: ongletWa === id ? "rgba(45,158,95,0.3)" : "rgba(255,255,255,0.05)",
+                    color: ongletWa === id ? "#4eca82" : "#8aab97",
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+            {ongletWa === "historique" && <Historique messages={messagesAcheteur} hauteur={260} />}
+            {ongletWa === "terrains" && <TerrainsProposes acheteurId={acheteur.id} reponses={wa.reponses} terrains={wa.terrains} />}
+            {ongletWa === "prefs" && <PreferencesApprises acheteurId={acheteur.id} reponses={wa.reponses} terrains={wa.terrains} onAppliquer={appliquerPreferences} />}
+          </div>
+        )}
 
         {error && <div style={{ color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>{error}</div>}
 
@@ -223,7 +277,7 @@ export default function AcheteursPage({ state, dispatch }: Props) {
     const q = search.toLowerCase().trim();
     if (!q) return acheteurs;
     return acheteurs.filter(a =>
-      [a.nom, a.contact, a.type, a.zones, a.usage, a.notes]
+      [a.nom, a.contact, a.type, a.zones, a.usage, a.notes, a.telephone]
         .some(v => (v ?? "").toLowerCase().includes(q))
     );
   }, [acheteurs, search]);
@@ -270,14 +324,14 @@ export default function AcheteursPage({ state, dispatch }: Props) {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e8f0ec" }}>
-                {["Nom / Société", "Type", "Zones d'intérêt", "Budget (M MAD)", "Urbas cibles", ""].map(h => (
+                {["Nom / Société", "Type", "Zones d'intérêt", "Budget (M MAD)", "Urbas cibles", "WhatsApp", ""].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "40px 0", color: "#aaa", fontSize: 13 }}>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "40px 0", color: "#aaa", fontSize: 13 }}>
                   {search ? "Aucun résultat." : "Aucun acheteur."}
                 </td></tr>
               ) : filtered.map(a => {
@@ -310,6 +364,17 @@ export default function AcheteursPage({ state, dispatch }: Props) {
                         {urbas.length > 4 && <span style={{ fontSize: 10, color: "#888" }}>+{urbas.length - 4}</span>}
                       </div>
                     </td>
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                      {a.telephone
+                        ? <div>
+                            <div style={{ fontSize: 11.5, color: a.whatsapp_stop ? "#c0392b" : T.dark }}>{telAffiche(a.telephone)}{a.whatsapp_stop ? " · STOP" : ""}</div>
+                            <div style={{ fontSize: 10.5, color: "#999" }}>
+                              {a.derniere_interaction ? `Dernier échange ${dateCourte(a.derniere_interaction)}` : "Aucun échange"}
+                              {a.source === "WhatsApp" ? " · à qualifier" : ""}
+                            </div>
+                          </div>
+                        : <span style={{ color: "#aaa", fontSize: 11 }}>Pas de numéro</span>}
+                    </td>
                     <td style={tdStyle}>
                       <span style={{ fontSize: 11, color: T.grayMid }}>✎</span>
                     </td>
@@ -327,6 +392,7 @@ export default function AcheteursPage({ state, dispatch }: Props) {
           onSave={handleSave}
           onDelete={editAcheteur ? () => handleDelete(editAcheteur.id) : undefined}
           onClose={() => { setShowModal(false); setEditAcheteur(undefined); }}
+          wa={{ messages: state.waMessages ?? [], reponses: state.waReponses ?? [], terrains: state.terrains ?? [] }}
         />
       )}
     </>

@@ -26,6 +26,34 @@ async function post(table: string, body: object, token?: string) {
   if (!r.ok) throw new Error(`insert ${table}: ${r.status} ${r.statusText}`);
 }
 
+async function patch(table: string, id: number, body: object, token?: string) {
+  const r = await fetch(`${URL_BASE}/${table}?id=eq.${id}`, {
+    method: "PATCH", headers: headers(token), body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`update ${table}: ${r.status} ${r.statusText}`)
+}
+
+// Tables WhatsApp : si la migration n'est pas encore passée, le CRM continue de fonctionner
+async function getOptionnel(table: string, token?: string, extra = "") {
+  try {
+    return await get(table, token, extra)
+  } catch {
+    return []
+  }
+}
+
+// Appel des fonctions serveur WhatsApp (/api/whatsapp/...)
+export async function apiWhatsApp(route: string, body: object, token?: string) {
+  const r = await fetch(`/api/whatsapp/${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
+    body: JSON.stringify(body),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.erreur ?? `Erreur ${r.status}`)
+  return data
+}
+
 async function del(table: string, id: number, token?: string) {
   const r = await fetch(`${URL_BASE}/${table}?id=eq.${id}`, {
     method: "DELETE", headers: headers(token),
@@ -38,6 +66,8 @@ export function useSupabase(user: AuthUser | null) {
   const [acheteurs,   setAcheteurs]   = useState<any[]>([]);
   const [deals,       setDeals]       = useState<any[]>([]);
   const [activityLog, setActivityLog] = useState<any[]>([]);
+  const [waMessages,  setWaMessages]  = useState<any[]>([])
+  const [waReponses,  setWaReponses]  = useState<any[]>([])
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
 
@@ -48,12 +78,16 @@ export function useSupabase(user: AuthUser | null) {
     setLoading(true);
     setError(null);
     try {
-      const [t, a, d, logs] = await Promise.all([
+      const [t, a, d, logs, msgs, reps] = await Promise.all([
         get("terrains",    token),
         get("acheteurs",   token),
         get("deals",       token),
         get("activity_log", token, "&order=created_at.desc&limit=50"),
+        getOptionnel("whatsapp_messages", token, "&limit=2000"),
+        getOptionnel("acheteur_terrain_reponses", token),
       ]);
+      setWaMessages(msgs)
+      setWaReponses(reps)
       setTerrains(t);
       setAcheteurs(a);
       setDeals(d);
@@ -100,6 +134,24 @@ export function useSupabase(user: AuthUser | null) {
   // ── Acheteurs ──────────────────────────────────────────────────────────────
   const addAcheteur    = async (a: object)  => { await post("acheteurs", a,  token); await fetchAll(); };
   const deleteAcheteur = async (id: number) => { await del("acheteurs",  id, token); await fetchAll(); };
+  // Modification sur place : l'identifiant ne change pas, l'historique WhatsApp et les deals restent liés
+  const updateAcheteur = async (id: number, a: object) => {
+    await patch("acheteurs", id, a, token)
+    await fetchAll()
+  }
+
+  // Rafraîchit uniquement les données WhatsApp (sans écran de chargement)
+  const refreshWhatsApp = useCallback(async () => {
+    if (!user) return
+    const [msgs, reps, a] = await Promise.all([
+      getOptionnel("whatsapp_messages", token, "&limit=2000"),
+      getOptionnel("acheteur_terrain_reponses", token),
+      getOptionnel("acheteurs", token),
+    ])
+    setWaMessages(msgs)
+    setWaReponses(reps)
+    if (a.length) setAcheteurs(a)
+  }, [user, token])
 
   // ── Deals ──────────────────────────────────────────────────────────────────
   const addDeal = async (d: object) => {
@@ -110,10 +162,11 @@ export function useSupabase(user: AuthUser | null) {
 
   return {
     terrains, acheteurs, deals, activityLog,
+    waMessages, waReponses, refreshWhatsApp, token,
     loading, error, fetchAll,
     logActivity,
     addTerrain,    deleteTerrain,
-    addAcheteur,   deleteAcheteur,
+    addAcheteur,   deleteAcheteur, updateAcheteur,
     addDeal,       deleteDeal,
   };
 }

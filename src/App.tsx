@@ -5,6 +5,8 @@ import PipelinePage from "./PipelinePage";
 import TerrainsPage from "./TerrainsPage";
 import AcheteursPage from "./AcheteursPage";
 import MatchingPage from "./MatchingPage";
+import WhatsAppPage from "./WhatsAppPage"
+import { normaliserTel } from "./whatsappUtils"
 import AuthPage from "./AuthPage";
 import { useAuth } from "./useAuth";
 import { useSupabase } from "./useSupabase";
@@ -52,7 +54,7 @@ function ErrorScreen({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-type Page = "dashboard" | "pipeline" | "terrains" | "acheteurs" | "carte" | "matching";
+type Page = "dashboard" | "pipeline" | "terrains" | "acheteurs" | "carte" | "matching" | "whatsapp";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
@@ -70,10 +72,11 @@ export default function App() {
 
   const {
     terrains, acheteurs, deals, activityLog,
+    waMessages, waReponses, refreshWhatsApp, token,
     loading, error, fetchAll,
     logActivity,
     addTerrain,    deleteTerrain,
-    addAcheteur,   deleteAcheteur,
+    addAcheteur,   deleteAcheteur, updateAcheteur,
     addDeal,       deleteDeal,
   } = useSupabase(user);
 
@@ -94,13 +97,18 @@ export default function App() {
       id: t.id, localisation: t.localisation ?? "", urba: t.urba ?? "",
       superficie: t.superficie ?? 0, prix: t.prix ?? 0,
       usage: "", statut: "Disponible", tf: t.tf ?? "", notes: "",
+      quartier: t.quartier ?? "", forfait: t.forfait ?? null,
     })),
     acheteurs: acheteurs.map(a => ({
       id: a.id, nom: a.nom ?? "", contact: a.contact ?? "", type: a.type ?? "",
       statut: "Froid", zones: a.zones ?? "",
       ticketMin: String(a.ticket_min ?? ""), ticketMax: String(a.ticket_max ?? ""),
-      usage: a.usage ?? "", notes: "",
+      usage: a.usage ?? "", notes: a.notes ?? "",
       urbas_cibles: a.urbas_cibles ?? [],
+      telephone: a.telephone ?? "",
+      whatsapp_stop: a.whatsapp_stop ?? false,
+      derniere_interaction: a.derniere_interaction ?? null,
+      source: a.source ?? "",
     })),
     deals: deals.map(d => ({
       id:               d.id,
@@ -117,6 +125,8 @@ export default function App() {
     })),
     activityLog: activityLog,
     activities:  [],
+    waMessages:  waMessages,
+    waReponses:  waReponses,
   };
 
   const dispatch = async (action: any) => {
@@ -163,6 +173,8 @@ export default function App() {
             ticket_max: parseFloat(action.payload.ticketMax) || null,
             usage: action.payload.usage,
             urbas_cibles: action.payload.urbas_cibles ?? [],
+            telephone: normaliserTel(action.payload.telephone) ? normaliserTel(action.payload.telephone) : null,
+            notes: action.payload.notes ?? "",
           });
           await logActivity("Acheteur ajouté", "acheteur", action.payload.nom);
           break;
@@ -176,8 +188,9 @@ export default function App() {
         }
 
         case "UPDATE_ACHETEUR": {
-          await deleteAcheteur(action.payload.id);
-          await addAcheteur({
+          await updateAcheteur(action.payload.id, {
+            telephone: normaliserTel(action.payload.telephone) ? normaliserTel(action.payload.telephone) : null,
+            notes: action.payload.notes ?? "",
             nom: action.payload.nom, contact: action.payload.contact,
             type: action.payload.type, zones: action.payload.zones,
             ticket_min: parseFloat(action.payload.ticketMin) || null,
@@ -283,6 +296,7 @@ export default function App() {
         {currentPage === "dashboard" && <Dashboard activityLog={stateForPages.activityLog} />}
         {currentPage === "pipeline"  && <PipelinePage state={stateForPages} dispatch={dispatch} currentUser={user} />}
         {currentPage === "matching"  && <MatchingPage  state={stateForPages} dispatch={dispatch} />}
+        {currentPage === "whatsapp"  && <WhatsAppPage state={stateForPages} token={token} onRefresh={refreshWhatsApp} />}
         {currentPage === "terrains"  && <TerrainsPage  state={stateForPages} dispatch={dispatch} />}
         {currentPage === "acheteurs" && <AcheteursPage state={stateForPages} dispatch={dispatch} />}
         {currentPage === "carte"     && <CartePage />}

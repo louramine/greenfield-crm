@@ -6,6 +6,7 @@ const navItems = [
   { id: "dashboard", icon: "◈", label: "Dashboard",      section: "Navigation" },
   { id: "pipeline",  icon: "⇄", label: "Pipeline Deals", section: null },
   { id: "matching",  icon: "◎", label: "Matching",       section: null },
+  { id: "whatsapp",  icon: "✆", label: "WhatsApp",       section: null },
   { id: "carte",     icon: "🗺", label: "Carte Terrains", section: null },
   { id: "terrains",  icon: "▣", label: "Terrains",       section: "Données" },
   { id: "acheteurs", icon: "◉", label: "Acheteurs",      section: null },

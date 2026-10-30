@@ -709,7 +709,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <span class="nav-icon">▣</span> Terrains
   </div>
   <div class="nav-item" onclick="showPage('acheteurs', this)">
-    <span class="nav-icon">◎</span> Acheteurs
+    <span class="nav-icon">◎</span> Promoteurs
   </div>
   <div class="nav-item" onclick="showPage('marketing', this)">
     <span class="nav-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></span> Marketing
@@ -1006,24 +1006,20 @@ body:not(.role-admin) .admin-only{display:none !important}
 
     <!-- ═══════════ ACHETEURS ═══════════ -->
     <div class="page" id="page-acheteurs">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nom / Société</th>
-              <th>Type</th>
-              <th>Associé</th>
-              <th>Villes d'intérêt</th>
-              <th>Ticket (MAD)</th>
-              <th>Usage recherché</th>
-              <th>Statut</th>
-              <th>Score closing ↕</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="acheteurs-tbody"></tbody>
-        </table>
+      <div id="pr-banner"></div>
+      <div class="pr-kpis" id="pr-kpis"></div>
+      <div class="pr-toolbar">
+        <div class="pr-search"><span>🔍</span><input id="pr-search" type="text" placeholder="Nom, société, téléphone, quartier..." oninput="prRenderList()"></div>
+        <select id="pr-resp" class="pr-sel" onchange="prRenderList()"></select>
+        <select id="pr-statut" class="pr-sel" onchange="prRenderList()"></select>
+        <select id="pr-typo" class="pr-sel" onchange="prRenderList()"></select>
+        <label class="pr-chk"><input type="checkbox" id="pr-incomplet" onchange="prRenderList()"> Profil à compléter</label>
+        <label class="pr-chk"><input type="checkbox" id="pr-relance" onchange="prRenderList()"> Relance à faire</label>
+        <label class="pr-chk"><input type="checkbox" id="pr-group" checked onchange="prRenderList()"> Grouper par société</label>
+        <span id="pr-count" class="pr-count"></span>
       </div>
+      <div id="pr-list"></div>
+      <table style="display:none"><tbody id="acheteurs-tbody"></tbody></table>
     </div>
 
 
@@ -1160,16 +1156,39 @@ body:not(.role-admin) .admin-only{display:none !important}
 
 <!-- Modal Acheteur -->
 <div class="modal-overlay" id="modal-acheteur">
-  <div class="modal">
-    <div class="modal-title" id="a-modal-title">Nouvel Acheteur</div>
+  <div class="modal pr-form">
+    <div class="modal-title" id="a-modal-title">Nouveau promoteur</div>
+
+    <div class="pr-sec">Identité</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Nom / Société *</label>
-        <input class="form-input" id="a-nom" placeholder="Ex: Groupe Addoha">
+        <label class="form-label">Nom du contact *</label>
+        <input class="form-input" id="a-nom" placeholder="Prénom Nom">
       </div>
       <div class="form-group">
-        <label class="form-label">Contact direct</label>
-        <input class="form-input" id="a-contact" placeholder="Prénom Nom">
+        <label class="form-label">Société</label>
+        <input class="form-input" id="a-societe" list="pr-soc-list" placeholder="Ex : Groupe Addoha">
+        <datalist id="pr-soc-list"></datalist>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Téléphone WhatsApp</label>
+        <input class="form-input" id="a-telephone" type="tel" placeholder="06 61 23 45 67">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="a-email" type="email" placeholder="nom@societe.ma">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Fonction</label>
+        <input class="form-input" id="a-fonction" placeholder="Gérant, directeur foncier...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Langue préférée</label>
+        <select class="form-select" id="a-langue"></select>
       </div>
     </div>
     <div class="form-grid">
@@ -1177,27 +1196,24 @@ body:not(.role-admin) .admin-only{display:none !important}
         <label class="form-label">Type *</label>
         <select class="form-select" id="a-type">
           <option value="Promoteur">Promoteur immobilier</option>
-          <option value="Fonds">Fonds / REIT</option>
-          <option value="HNWI">Acheteur privé (HNWI)</option>
-          <option value="Entreprise">Entreprise</option>
+          <option value="Fonds">Fonds / OPCI</option>
+          <option value="HNWI">Acheteur privé</option>
+          <option value="Entreprise">Entreprise (usage propre)</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Statut relation</label>
-        <select class="form-select" id="a-statut">
-          <option value="Froid">Froid</option>
-          <option value="Tiède">Tiède</option>
-          <option value="Chaud">Chaud</option>
-          <option value="Client">Client</option>
-        </select>
+        <label class="form-label">Statut de la relation</label>
+        <select class="form-select" id="a-statut"></select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Contact interne (sourceur) *</label>
+      <label class="form-label">Responsable de la relation *</label>
       <select class="form-select" id="a-associe"></select>
     </div>
+
+    <div class="pr-sec">Ce qu'il recherche</div>
     <div class="form-group" style="position:relative">
-      <label class="form-label">Villes d'intérêt</label>
+      <label class="form-label">Villes</label>
       <button type="button" class="form-select" id="a-villes-btn" onclick="toggleVilles(event)" style="text-align:left;cursor:pointer">Sélectionner des villes</button>
       <div id="a-villes-panel" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:#fff;border:1px solid #cfd8d3;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;max-height:260px;overflow:auto" onclick="event.stopPropagation()">
         <div id="a-villes-list" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
@@ -1208,27 +1224,68 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
       <div id="a-villes-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Quartiers ciblés</label>
+      <div style="display:flex;gap:6px">
+        <input class="form-input" id="a-quartier-new" list="pr-q-list" placeholder="Tapez un quartier puis Entrée" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();prAddQuartier();}">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="prAddQuartier()">Ajouter</button>
+      </div>
+      <datalist id="pr-q-list"></datalist>
+      <div id="a-quartiers-chips" class="pr-chips" style="margin-top:8px"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Produits développés</label>
+      <div id="a-typologies" class="pr-chips"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Zonages recherchés</label>
+      <div id="a-zonages" class="pr-chips"></div>
+    </div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Ticket minimum (M MAD)</label>
-        <input class="form-input" id="a-ticket-min" type="number" placeholder="50">
+        <label class="form-label">Superficie min (m²)</label>
+        <input class="form-input" id="a-sup-min" type="number" min="0" placeholder="1 000">
       </div>
       <div class="form-group">
-        <label class="form-label">Ticket maximum (M MAD)</label>
-        <input class="form-input" id="a-ticket-max" type="number" placeholder="300">
+        <label class="form-label">Superficie max (m²)</label>
+        <input class="form-input" id="a-sup-max" type="number" min="0" placeholder="20 000">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Budget min (M MAD)</label>
+        <input class="form-input" id="a-ticket-min" type="number" min="0" placeholder="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget max (M MAD)</label>
+        <input class="form-input" id="a-ticket-max" type="number" min="0" placeholder="80">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Prix max au m² (MAD)</label>
+        <input class="form-input" id="a-prix-m2-max" type="number" min="0" placeholder="8 000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Horizon d'achat</label>
+        <select class="form-select" id="a-horizon"></select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Usage recherché</label>
-      <select class="form-select" id="a-usage">
-        <option value="Tous">Tous usages</option>
-        <option value="Tertiaire">Tertiaire</option>
-        <option value="Résidentiel">Résidentiel</option>
-        <option value="Mixte">Mixte</option>
-        <option value="Hôtellerie">Hôtellerie</option>
-        <option value="Industriel">Industriel</option>
-        <option value="Logistique">Logistique</option>
-      </select>
+      <label class="form-label">Mode d'acquisition</label>
+      <select class="form-select" id="a-mode"></select>
+    </div>
+
+    <div class="pr-sec">Suivi</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Accord pour recevoir des terrains sur WhatsApp</label>
+        <select class="form-select" id="a-consent"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prochaine relance</label>
+        <input class="form-input" id="a-relance" type="date">
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Notes</label>
@@ -1239,6 +1296,15 @@ body:not(.role-admin) .admin-only{display:none !important}
       <button class="btn btn-ghost" onclick="closeModal('modal-acheteur')">Annuler</button>
       <button class="btn btn-primary" onclick="saveAcheteur()">Enregistrer</button>
     </div>
+  </div>
+</div>
+
+<!-- Fiche promoteur -->
+<div class="modal-overlay" id="modal-promoteur">
+  <div class="modal pr-fiche">
+    <div class="pr-fhead" id="pr-fhead"></div>
+    <div class="pr-tabs" id="pr-tabs"></div>
+    <div id="pr-fbody"></div>
   </div>
 </div>
 
@@ -1579,10 +1645,10 @@ function showPage(page, el) {
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
 
-  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Base Acheteurs' };
+  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs et acheteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
 
-  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouvel Acheteur' };
+  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouveau promoteur' };
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
@@ -2897,7 +2963,7 @@ async function loadFromSupabase() {
 
   if (Array.isArray(acheteurs)) {
     state.acheteurs = acheteurs.map(a => ({
-      id: a.id, nom: a.nom || '', contact: a.contact || '', type: a.type || '',
+      ...a, id: a.id, nom: a.nom || '', contact: a.contact || '', type: a.type || '',
       statut: a.statut || '', zones: a.zones || '', associe: a.associe || '', villes: Array.isArray(a.villes) ? a.villes : [],
       ticketMin: a.ticket_min !== undefined ? a.ticket_min : (a.ticketMin || 0),
       ticketMax: a.ticket_max !== undefined ? a.ticket_max : (a.ticketMax || 0),
@@ -4534,6 +4600,735 @@ async function favToggle(id, ev) {
     if (!favWarned) { favWarned = true; showNotif('Favoris enregistrés sur cet appareil seulement (la table n\'est pas encore créée dans Supabase).', true); }
   }
 }
+</script>
+<style id="pr-css">
+#page-acheteurs .pr-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.pr-kpi{background:rgba(255,255,255,0.06);border:1px solid rgba(45,158,95,0.2);border-radius:14px;padding:14px 16px}
+.pr-kpi b{display:block;font-family:'Syne',sans-serif;font-size:24px;color:var(--white);line-height:1.1}
+.pr-kpi span{font-size:11.5px;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.06em}
+.pr-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.pr-search{position:relative;flex:1;min-width:220px}
+.pr-search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-mid);font-size:14px}
+.pr-search input{width:100%;padding:10px 14px 10px 36px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(255,255,255,0.06);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none}
+.pr-sel{padding:10px 12px;border:1.5px solid rgba(45,158,95,0.25);border-radius:10px;background:rgba(10,46,26,0.8);color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;max-width:200px}
+.pr-chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap}
+.pr-count{font-size:12px;color:var(--gray-mid);white-space:nowrap}
+.pr-banner{background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.4);color:var(--gold-light);border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:14px;line-height:1.5}
+.pr-group-h{display:flex;align-items:baseline;gap:10px;margin:18px 2px 10px;color:var(--white);font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.pr-group-h small{font-family:'DM Sans',sans-serif;font-weight:400;color:var(--gray-mid);font-size:12px}
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.pr-card{background:#fff;border-radius:14px;padding:14px 16px;cursor:pointer;color:#1d2b23;border:1px solid transparent;transition:border-color .15s,transform .15s;display:flex;flex-direction:column;gap:8px}
+.pr-card:hover{border-color:var(--green-bright);transform:translateY(-1px)}
+.pr-card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pr-name{font-weight:700;font-size:14.5px;color:var(--green-deep);line-height:1.25}
+.pr-soc{font-size:12px;color:#6b7f73;margin-top:2px}
+.pr-meta{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:#4a5a51}
+.pr-meta a{color:#1a7f4b;text-decoration:none;font-weight:600}
+.pr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pr-chip{background:#eef6f1;color:#1a5c35;border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:600;border:1px solid #d6eadf}
+.pr-chip.off{background:#fff;color:#6b7f73;border-color:#d8e2dc;cursor:pointer}
+.pr-chip.on{background:var(--green-mid);color:#fff;border-color:var(--green-mid);cursor:pointer}
+.pr-chip.x{cursor:pointer}
+.pr-chip.warn{background:#fff4e5;color:#a35a00;border-color:#f3dcb8}
+.pr-chip.bad{background:#fdecea;color:#b3261e;border-color:#f5c6c2}
+.pr-bar{height:5px;background:#e8efeb;border-radius:3px;overflow:hidden;flex:1}
+.pr-bar i{display:block;height:5px;background:var(--green-bright);border-radius:3px}
+.pr-foot{display:flex;align-items:center;gap:10px;font-size:11.5px;color:#6b7f73}
+.pr-b{display:inline-block;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+.pr-b-q{background:#eef1f8;color:#3d4f7a}.pr-b-f{background:#f1f3f2;color:#5f6b65}.pr-b-t{background:#fef6e4;color:#a87b12}.pr-b-c{background:#fff0e6;color:#c2410c}.pr-b-cl{background:#e0f7ec;color:#1a5c35}
+.pr-form{width:720px}
+.pr-sec{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--green-mid);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 12px;padding-top:14px;border-top:1px solid #e6efe9}
+.pr-sec:first-of-type{margin-top:0;padding-top:0;border-top:none}
+.pr-fiche{width:900px;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.pr-fhead,.pr-tabs{flex-shrink:0}
+.pr-fiche .btn-ghost,.pr-form .btn-ghost{color:var(--green-mid);border:1.5px solid #cfe3d7;background:#fff;text-decoration:none}
+.pr-fiche .btn-ghost:hover,.pr-form .btn-ghost:hover{background:#eef6f1;border-color:var(--green-bright)}
+.pr-fhead{padding:24px 28px 0;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.pr-fhead h2{font-family:'Syne',sans-serif;font-size:21px;color:var(--green-deep);margin:0}
+.pr-fhead .pr-soc{font-size:13px}
+.pr-fhead-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.pr-tabs{display:flex;gap:4px;padding:16px 28px 0;border-bottom:1px solid #e6efe9;overflow-x:auto}
+.pr-tab{background:none;border:none;padding:10px 12px;font-size:13px;font-weight:600;color:#6b7f73;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.pr-tab.on{color:var(--green-deep);border-bottom-color:var(--green-bright)}
+.pr-tab em{font-style:normal;background:#eef6f1;color:#1a5c35;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px}
+#pr-fbody{padding:20px 28px 26px;overflow-y:auto;flex:1;min-height:0}
+.pr-kv{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 24px}
+.pr-kv div{font-size:13px;color:#1d2b23}
+.pr-kv label{display:block;font-size:10.5px;font-weight:600;color:#8a9a91;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.pr-empty{color:#9aa8a0;font-size:13px;padding:18px 0;text-align:center}
+.pr-row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #eef3f0}
+.pr-row:last-child{border-bottom:none}
+.pr-score{flex:0 0 44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;background:#b8c4bd}
+.pr-score.h{background:var(--green-bright)}.pr-score.m{background:#c9a84c}
+.pr-row-main{flex:1;min-width:0}
+.pr-row-t{font-weight:700;font-size:13.5px;color:var(--green-deep)}
+.pr-row-s{font-size:12px;color:#5f6f66;margin:2px 0 6px}
+.pr-tl{border-left:3px solid var(--green-bright);padding:8px 12px;margin-bottom:10px;background:#f8faf9;border-radius:0 8px 8px 0}
+.pr-tl.in{border-left-color:#3d7bd9;background:#f3f7fd}
+.pr-tl-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#6b7f73;margin-bottom:3px}
+.pr-tl-h b{color:#1d2b23}
+.pr-tl-c{font-size:13px;color:#26332b;white-space:pre-wrap;word-break:break-word}
+.pr-sendbar{position:sticky;bottom:-26px;background:#fff;padding:12px 0 4px;border-top:1px solid #e6efe9;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pr-note{font-size:12px;color:#7a6320;background:#fbf6e6;border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.45}
+.pr-mini{padding:6px 8px;border:1px solid #d5e0da;border-radius:8px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:#fff}
+.pr-pref h4{font-family:'Syne',sans-serif;font-size:13px;color:var(--green-deep);margin:14px 0 8px}
+.match-card .pr-chips{margin-top:6px}
+@media(max-width:900px){
+  #page-acheteurs .pr-kpis{grid-template-columns:1fr 1fr}
+  .pr-toolbar>*{flex:1 1 45% !important;max-width:none}
+  .pr-toolbar>.pr-search{flex:1 1 100% !important}
+  .pr-form,.pr-fiche{width:100%}
+  .pr-fhead{padding:18px 16px 0}
+  .pr-fhead-act{margin-left:0;width:100%}
+  .pr-fhead-act .btn{flex:1}
+  .pr-tabs{padding:10px 10px 0}
+  #pr-fbody{padding:16px 16px 22px}
+  .pr-kv{grid-template-columns:1fr}
+  .pr-sendbar{bottom:-22px}
+}
+</style>
+<script>
+// ===== Base promoteurs : fiche enrichie, échanges, préférences apprises, matching ciblé =====
+const PR_TYPOS = ['Social et économique', 'Moyen standing', 'Haut standing', 'Villas et lotissements', 'Bureaux', 'Commerce', 'Hôtellerie et tourisme', 'Industriel et logistique', 'Équipements (santé, éducation)'];
+const PR_ZONES = [['A', 'Zones A'], ['B', 'Zones B'], ['C', 'Zones C'], ['D', 'Zones D'], ['E', 'Zones E'], ['I', 'Zones I (industrie)'], ['R', 'Rural (RA)'], ['Autre', 'Autres zonages']];
+const PR_STATUTS = ['À qualifier', 'Froid', 'Tiède', 'Chaud', 'Client'];
+const PR_HORIZONS = ['', 'Immédiat', 'Sous 3 mois', 'Sous 6 mois', 'Plus de 6 mois'];
+const PR_MODES = ['', 'Cash', 'Crédit bancaire', 'Partenariat ou apport', 'Mixte'];
+const PR_LANGUES = ['', 'Français', 'Arabe', 'Darija', 'Anglais'];
+const PR_CONSENT = ['À confirmer', 'Oui', 'Non'];
+const PR_REP = { envoye: 'Envoyé', infos: 'Demande d\'infos', interesse: 'Intéressé', visite_souhaitee: 'Visite souhaitée', visite_demandee: 'Visite demandée', rappel: 'À rappeler', refuse: 'Refusé' };
+const PR_POS = ['infos', 'interesse', 'visite_souhaitee', 'visite_demandee', 'rappel'];
+const PR_RAISONS = ['Prix trop élevé', 'Emplacement', 'Superficie', 'Zonage', 'Déjà vu ailleurs', 'Pas de besoin actuel', 'Autre'];
+const PR_ECH = ['Appel', 'WhatsApp', 'Rendez-vous', 'Visite terrain', 'Email'];
+const PR_USAGE_TYPO = { 'Tertiaire': ['Bureaux', 'Commerce'], 'Résidentiel': ['Social et économique', 'Moyen standing', 'Haut standing', 'Villas et lotissements'], 'Hôtellerie': ['Hôtellerie et tourisme'], 'Balnéaire': ['Hôtellerie et tourisme', 'Haut standing', 'Villas et lotissements'], 'Industriel': ['Industriel et logistique'], 'Logistique': ['Industriel et logistique'] };
+
+const PR = { reponses: [], messages: [], okRep: false, okMsg: false, open: null, tab: 'profil', sel: new Set(), typos: new Set(), zones: new Set(), quartiers: new Set() };
+
+const prE = v => escH(v == null ? '' : v);
+const prN = v => String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const prNum = v => { const n = Number(v); return isFinite(n) && n > 0 ? n : null; };
+const prFr = n => Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+const prArr = v => Array.isArray(v) ? v.filter(Boolean) : [];
+
+function prNormTel(t) {
+  let n = String(t == null ? '' : t).replace(/\D/g, '');
+  if (n.startsWith('00')) n = n.slice(2);
+  if (n.length === 10 && n.startsWith('0')) n = '212' + n.slice(1);
+  if (n.length === 9 && /^[5-7]/.test(n)) n = '212' + n;
+  return n;
+}
+function prTelValide(n) { return /^212[5-7]\d{8}$/.test(n) || /^(33|34|1|44|971|966)\d{8,11}$/.test(n); }
+function prTelAff(n) {
+  if (!n) return '';
+  if (/^212\d{9}$/.test(n)) { const l = '0' + n.slice(3); return l.replace(/(\d{2})(?=\d)/g, '$1 ').trim(); }
+  return '+' + n;
+}
+function prFamille(urba) {
+  const s = String(urba || '').trim().toUpperCase();
+  if (!s) return '';
+  if (s[0] === 'R') return 'R';
+  return 'ABCDEI'.includes(s[0]) ? s[0] : 'Autre';
+}
+const PR_VILLES_EXTRA = ['Marrakech', 'Tanger', 'Rabat', 'Agadir', 'Fès', 'Mohammedia', 'Kénitra', 'El Jadida', 'Tétouan', 'Meknès', 'Benslimane', 'Berrechid', 'Settat'];
+function prVille(t) {
+  const q = prN(t.quartier || t.localisation);
+  if (!q) return '';
+  const all = [...new Set([...(typeof VILLES_BASE !== 'undefined' ? VILLES_BASE : []), ...PR_VILLES_EXTRA])];
+  const hit = all.find(v => prN(v) && (q === prN(v) || q.startsWith(prN(v))));
+  return hit || 'Casablanca';
+}
+function prQuartier(t) { return (typeof normQuartier === 'function' ? normQuartier(t.quartier || '') : t.quartier) || t.localisation || ''; }
+function prForfait(t) { const s = prNum(t.superficie), p = prNum(t.prix); return s && p ? s * p / 1e6 : null; }
+function prRef(t) { return t.ref || ('N° ' + t.id); }
+function prTLabel(t) {
+  if (!t) return 'Terrain retiré';
+  const f = prForfait(t);
+  return [prRef(t), prQuartier(t), t.superficie ? prFr(t.superficie) + ' m²' : '', t.urba || '', t.prix ? prFr(t.prix) + ' DH/m²' : '', f ? f.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M DH' : ''].filter(Boolean).join(', ');
+}
+function prAch(id) { return state.acheteurs.find(a => String(a.id) === String(id)); }
+function prTerrain(id) { return state.terrains.find(t => String(t.id) === String(id)); }
+function prRepsOf(id) { return PR.reponses.filter(r => String(r.acheteur_id) === String(id)); }
+function prJours(d) { if (!d) return null; const x = new Date(d); return isNaN(x) ? null : Math.floor((Date.now() - x.getTime()) / 864e5); }
+function prDepuis(d) {
+  const j = prJours(d);
+  if (j === null) return '';
+  return j <= 0 ? 'aujourd\'hui' : j === 1 ? 'hier' : j < 31 ? 'il y a ' + j + ' j' : new Date(d).toLocaleDateString('fr-FR');
+}
+function prVilles(a) { const v = prArr(a.villes); return v.length ? v : String(a.zones || '').split(',').map(x => x.trim()).filter(Boolean); }
+
+async function prReq(path, opts = {}) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, { ...opts, headers: { ...SUPA_HEADERS, ...(opts.headers || {}) } });
+  if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 160));
+  return r.status === 204 ? null : r.json().catch(() => null);
+}
+
+// ----- Chargement -----
+async function prLoadExtras() {
+  if (typeof supabaseReady !== 'undefined' && !supabaseReady) return;
+  const [rep, msg] = await Promise.all([
+    prReq('acheteur_terrain_reponses?select=*&order=updated_at.desc&limit=5000').then(x => (PR.okRep = true, x)).catch(() => (PR.okRep = false, [])),
+    prReq('whatsapp_messages?select=*&order=created_at.desc&limit=3000').then(x => (PR.okMsg = true, x)).catch(() => (PR.okMsg = false, [])),
+  ]);
+  PR.reponses = Array.isArray(rep) ? rep : [];
+  PR.messages = Array.isArray(msg) ? msg : [];
+}
+function prSchemaOk() {
+  if (!state.acheteurs.length) return PR.okRep;
+  return state.acheteurs.some(a => Object.prototype.hasOwnProperty.call(a, 'telephone')) && PR.okRep;
+}
+function prEnsureExtras() {
+  if (PR.tried || typeof supabaseReady === 'undefined' || !supabaseReady) return;
+  PR.tried = true;
+  prLoadExtras().then(() => { if (currentPage === 'acheteurs') prRenderList(); if (PR.open && document.getElementById('modal-promoteur').classList.contains('open')) prRenderFiche(); }).catch(() => {});
+}
+const _prOrigLoad = loadFromSupabase;
+loadFromSupabase = async function () {
+  const r = await _prOrigLoad.apply(this, arguments);
+  try { PR.tried = true; await prLoadExtras(); } catch (e) { console.warn('Promoteurs', e); }
+  if (currentPage === 'acheteurs') prRenderList();
+  return r;
+};
+
+// ----- Préférences apprises à partir des réponses -----
+function prPrefs(a) {
+  const P = { env: 0, pos: 0, ref: 0, likeQ: {}, likeZ: {}, refQ: {}, refZ: {}, raisons: {}, sups: [], prixPos: [], prixRefus: null, attente: 0 };
+  prRepsOf(a.id).forEach(r => {
+    const t = prTerrain(r.terrain_id);
+    P.env++;
+    if (!t) return;
+    const q = prQuartier(t), z = prFamille(t.urba);
+    if (PR_POS.includes(r.statut)) {
+      P.pos++;
+      if (q) P.likeQ[q] = (P.likeQ[q] || 0) + 1;
+      if (z) P.likeZ[z] = (P.likeZ[z] || 0) + 1;
+      if (prNum(t.superficie)) P.sups.push(Number(t.superficie));
+      if (prNum(t.prix)) P.prixPos.push(Number(t.prix));
+    } else if (r.statut === 'refuse') {
+      P.ref++;
+      const rs = r.raison_refus || 'Non précisé';
+      P.raisons[rs] = (P.raisons[rs] || 0) + 1;
+      if (rs === 'Emplacement' && q) P.refQ[q] = (P.refQ[q] || 0) + 1;
+      if (rs === 'Zonage' && z) P.refZ[z] = (P.refZ[z] || 0) + 1;
+      if (rs === 'Prix trop élevé' && prNum(t.prix)) P.prixRefus = P.prixRefus ? Math.min(P.prixRefus, Number(t.prix)) : Number(t.prix);
+    } else P.attente++;
+  });
+  return P;
+}
+
+// ----- Score de pertinence terrain / promoteur -----
+function prScore(a, t, P) {
+  P = P || prPrefs(a);
+  let s = 0;
+  const ok = [], ko = [];
+  const q = prQuartier(t), qn = prN(q), ville = prVille(t);
+  const qs = prArr(a.quartiers).map(prN), vs = prVilles(a).map(prN);
+  if (qn && qs.includes(qn)) { s += 35; ok.push('Quartier ciblé'); }
+  else if (ville && vs.includes(prN(ville))) { s += 25; ok.push('Ville ciblée (' + ville + ')'); }
+  else if (!qs.length && !vs.length) s += 12;
+  else ko.push('Hors zones ciblées');
+
+  const fam = prFamille(t.urba), zs = prArr(a.zonages);
+  if (zs.length) { if (fam && zs.includes(fam)) { s += 20; ok.push('Zonage ' + t.urba); } else ko.push('Zonage non recherché'); }
+  else s += 8;
+
+  const sup = prNum(t.superficie), smin = prNum(a.sup_min), smax = prNum(a.sup_max);
+  if (sup && (smin || smax)) {
+    const lo = smin || 0, hi = smax || Infinity;
+    if (sup >= lo && sup <= hi) { s += 15; ok.push('Superficie dans la cible'); }
+    else if (sup >= lo * 0.7 && sup <= hi * 1.3) { s += 7; ok.push('Superficie proche'); }
+    else ko.push('Superficie hors cible');
+  } else s += 6;
+
+  const f = prForfait(t), tmin = prNum(a.ticket_min !== undefined ? a.ticket_min : a.ticketMin), tmax = prNum(a.ticket_max !== undefined ? a.ticket_max : a.ticketMax);
+  if (f && (tmin || tmax)) {
+    const lo = tmin || 0, hi = tmax || Infinity;
+    if (f >= lo && f <= hi) { s += 12; ok.push('Dans le budget'); }
+    else if (f >= lo * 0.7 && f <= hi * 1.3) { s += 5; ok.push('Budget proche'); }
+    else ko.push('Hors budget');
+  } else s += 4;
+  const pmax = prNum(a.prix_m2_max), p = prNum(t.prix);
+  if (pmax && p) {
+    if (p <= pmax) { s += 8; ok.push('Prix au m² OK'); }
+    else if (p <= pmax * 1.15) s += 3;
+    else ko.push('Prix au m² élevé');
+  } else s += 4;
+
+  const ty = prArr(a.typologies), conv = PR_USAGE_TYPO[t.usage];
+  if (ty.length && conv) { if (conv.some(x => ty.includes(x))) { s += 5; ok.push('Produit compatible'); } else { s -= 5; ko.push('Usage différent'); } }
+
+  if (q && P.likeQ[q]) { s += 10; ok.push('A déjà aimé ' + q); }
+  if (fam && P.likeZ[fam]) s += 4;
+  if (q && P.refQ[q]) { s -= 15; ko.push('A refusé ce secteur'); }
+  if (fam && P.refZ[fam]) { s -= 8; ko.push('A refusé ce zonage'); }
+  if (P.prixRefus && p && p >= P.prixRefus) { s -= 10; ko.push('Prix au niveau de ses refus'); }
+  if (a.statut === 'Chaud' || a.statut === 'Client') s += 3;
+  return { score: Math.max(0, Math.min(99, Math.round(s))), ok, ko };
+}
+function prCls(sc) { return sc >= 60 ? 'h' : sc >= 40 ? 'm' : ''; }
+function prRecommandes(a, n) {
+  const P = prPrefs(a), deja = new Set(prRepsOf(a.id).map(r => String(r.terrain_id)));
+  return state.terrains
+    .filter(t => t.statut !== 'Vendu' && !deja.has(String(t.id)))
+    .map(t => ({ t, ...prScore(a, t, P) }))
+    .sort((x, y) => y.score - x.score)
+    .slice(0, n || 15);
+}
+
+// ----- Complétude du profil -----
+function prCompletude(a) {
+  const c = [
+    !!a.telephone, !!a.societe, prVilles(a).length + prArr(a.quartiers).length > 0, prArr(a.typologies).length > 0,
+    prArr(a.zonages).length > 0, !!(prNum(a.sup_min) || prNum(a.sup_max)),
+    !!(prNum(a.ticket_min) || prNum(a.ticket_max) || prNum(a.prix_m2_max)), !!a.horizon,
+  ];
+  return Math.round(c.filter(Boolean).length / c.length * 100);
+}
+function prStatutB(s) {
+  const m = { 'À qualifier': 'pr-b-q', 'Froid': 'pr-b-f', 'Tiède': 'pr-b-t', 'Chaud': 'pr-b-c', 'Client': 'pr-b-cl' };
+  return `<span class="pr-b ${m[s] || 'pr-b-f'}">${prE(s || 'À qualifier')}</span>`;
+}
+function prDernier(a) {
+  const ds = [a.derniere_interaction];
+  (state.interactions || []).forEach(i => { if (String(i.acheteur_id) === String(a.id)) ds.push(i.created_at || i.date); });
+  prRepsOf(a.id).forEach(r => ds.push(r.updated_at));
+  const v = ds.filter(Boolean).map(d => new Date(d)).filter(d => !isNaN(d)).sort((x, y) => y - x)[0];
+  return v ? v.toISOString() : null;
+}
+function prRelanceDue(a) { return a.prochaine_relance && new Date(a.prochaine_relance) <= new Date(new Date().toDateString()); }
+
+// ----- Liste -----
+function prFillFilters() {
+  const keep = id => (document.getElementById(id) || {}).value || '';
+  const resp = [...new Set(state.acheteurs.map(a => a.associe).filter(Boolean))].sort();
+  const set = (id, first, vals) => { const el = document.getElementById(id); if (!el) return; const v = keep(id); el.innerHTML = `<option value="">${first}</option>` + vals.map(x => `<option value="${prE(x)}">${prE(x)}</option>`).join(''); el.value = vals.includes(v) ? v : ''; };
+  set('pr-resp', 'Tous les responsables', resp);
+  set('pr-statut', 'Tous les statuts', PR_STATUTS);
+  set('pr-typo', 'Tous les produits', PR_TYPOS);
+}
+function prCard(a) {
+  const comp = prCompletude(a), reps = prRepsOf(a.id), pos = reps.filter(r => PR_POS.includes(r.statut)).length;
+  const crit = [...prVilles(a), ...prArr(a.quartiers)].slice(0, 3).map(v => `<span class="pr-chip">${prE(v)}</span>`).join('') +
+    prArr(a.typologies).slice(0, 2).map(v => `<span class="pr-chip">${prE(v)}</span>`).join('');
+  const dern = prDernier(a);
+  const tel = a.telephone ? `<a href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${prE(prTelAff(a.telephone))}</a>` : '<span style="color:#b3261e">Pas de numéro</span>';
+  const tk = (prNum(a.ticket_min) || prNum(a.ticket_max)) ? `${a.ticket_min || '?'} à ${a.ticket_max || '?'} M DH` : '';
+  return `<div class="pr-card" onclick="prOpen(${a.id})">
+    <div class="pr-card-top"><div><div class="pr-name">${prE(a.nom)}</div>${a.societe ? `<div class="pr-soc">${prE(a.societe)}</div>` : ''}</div>${prStatutB(a.statut)}</div>
+    <div class="pr-meta"><span>${tel}</span>${a.associe ? `<span>Suivi : <b>${prE(a.associe)}</b></span>` : ''}${tk ? `<span>${tk}</span>` : ''}</div>
+    ${crit ? `<div class="pr-chips">${crit}</div>` : '<div class="pr-chips"><span class="pr-chip warn">Critères à renseigner</span></div>'}
+    <div class="pr-foot"><span title="Profil renseigné">${comp} %</span><div class="pr-bar"><i style="width:${comp}%"></i></div>
+      <span>${reps.length ? reps.length + ' proposé' + (reps.length > 1 ? 's' : '') + (pos ? ', ' + pos + ' positif' + (pos > 1 ? 's' : '') : '') : 'Aucun terrain proposé'}</span></div>
+    ${(dern || prRelanceDue(a)) ? `<div class="pr-foot">${dern ? 'Dernier échange ' + prDepuis(dern) : ''}${prRelanceDue(a) ? ' <span class="pr-chip warn">Relance prévue le ' + new Date(a.prochaine_relance).toLocaleDateString('fr-FR') + '</span>' : ''}</div>` : ''}
+  </div>`;
+}
+function prRenderList() {
+  const list = document.getElementById('pr-list');
+  if (!list) return;
+  prEnsureExtras();
+  prFillFilters();
+  const ban = document.getElementById('pr-banner');
+  if (ban) ban.innerHTML = (typeof supabaseReady !== 'undefined' && supabaseReady && !prSchemaOk())
+    ? '<div class="pr-banner"><b>Base promoteurs pas encore installée.</b> Exécutez une fois le script <code>supabase/crm-promoteurs.sql</code> dans Supabase (SQL Editor). Il ajoute les champs de la fiche, l\'historique des échanges et importe les promoteurs du fichier.</div>' : '';
+  const qv = prN(document.getElementById('pr-search').value), qraw = document.getElementById('pr-search').value.replace(/\D/g, '');
+  const fr = document.getElementById('pr-resp').value, fs = document.getElementById('pr-statut').value, ft = document.getElementById('pr-typo').value;
+  const fi = document.getElementById('pr-incomplet').checked, fl = document.getElementById('pr-relance').checked, grp = document.getElementById('pr-group').checked;
+  const all = state.acheteurs;
+  const rows = all.filter(a => {
+    if (fr && a.associe !== fr) return false;
+    if (fs && (a.statut || 'À qualifier') !== fs) return false;
+    if (ft && !prArr(a.typologies).includes(ft)) return false;
+    if (fi && prCompletude(a) >= 75) return false;
+    if (fl && !prRelanceDue(a)) return false;
+    if (qv) {
+      const hay = prN([a.nom, a.societe, a.contact, a.email, ...prVilles(a), ...prArr(a.quartiers)].join(' '));
+      const telHit = qraw.length >= 4 && String(a.telephone || '').includes(qraw.replace(/^0/, ''));
+      if (!hay.includes(qv) && !telHit) return false;
+    }
+    return true;
+  });
+  const soc = new Set(all.map(a => prN(a.societe)).filter(Boolean));
+  const since = Date.now() - 30 * 864e5;
+  const env30 = PR.reponses.filter(r => new Date(r.teaser_envoye_le || r.updated_at) >= since).length;
+  const pos = PR.reponses.filter(r => PR_POS.includes(r.statut)).length;
+  const complets = all.filter(a => prCompletude(a) >= 75).length;
+  document.getElementById('pr-kpis').innerHTML = [
+    [all.length, 'Contacts'], [soc.size, 'Sociétés'], [complets, 'Profils qualifiés'], [env30, 'Terrains proposés (30 j)'], [pos, 'Réponses positives'],
+  ].map(([v, l]) => `<div class="pr-kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+  document.getElementById('pr-count').textContent = rows.length + ' sur ' + all.length;
+  if (!all.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">Aucun promoteur. Cliquez sur « + Nouveau promoteur » ou exécutez le script d\'import.</div></div>'; return; }
+  if (!rows.length) { list.innerHTML = '<div class="pr-empty" style="color:var(--gray-mid)">Aucun promoteur ne correspond à ces filtres.</div>'; return; }
+  const ord = (x, y) => (y.statut === 'Chaud') - (x.statut === 'Chaud') || prCompletude(y) - prCompletude(x) || String(x.nom).localeCompare(String(y.nom), 'fr');
+  if (!grp) { list.innerHTML = `<div class="pr-grid">${rows.sort(ord).map(prCard).join('')}</div>`; return; }
+  const g = {};
+  rows.forEach(a => { const k = (a.societe || '').trim() || '~'; (g[k] = g[k] || []).push(a); });
+  const keys = Object.keys(g).sort((x, y) => (x === '~') - (y === '~') || (g[y].length - g[x].length) || x.localeCompare(y, 'fr'));
+  const multi = keys.filter(k => k !== '~' && g[k].length > 1), solo = keys.filter(k => k !== '~' && g[k].length === 1);
+  let h = multi.map(k => `<div class="pr-group-h">${prE(k)} <small>${g[k].length} contacts</small></div><div class="pr-grid">${g[k].sort(ord).map(prCard).join('')}</div>`).join('');
+  if (solo.length) h += `<div class="pr-group-h">Sociétés <small>${solo.length} contacts</small></div><div class="pr-grid">${solo.map(k => g[k][0]).sort(ord).map(prCard).join('')}</div>`;
+  if (g['~']) h += `<div class="pr-group-h">Société non renseignée <small>${g['~'].length} contacts</small></div><div class="pr-grid">${g['~'].sort(ord).map(prCard).join('')}</div>`;
+  list.innerHTML = h;
+}
+renderAcheteurs = prRenderList;
+
+// ----- Formulaire -----
+function prOpts(id, vals, cur) {
+  const el = document.getElementById(id);
+  el.innerHTML = vals.map(v => `<option value="${prE(v)}">${prE(v || 'Non précisé')}</option>`).join('');
+  el.value = vals.includes(cur || '') ? (cur || '') : vals[0];
+}
+function prRenderChips() {
+  document.getElementById('a-typologies').innerHTML = PR_TYPOS.map(v => `<span class="pr-chip ${PR.typos.has(v) ? 'on' : 'off'}" onclick="prTog('typos', ${prE(JSON.stringify(v))})">${prE(v)}</span>`).join('');
+  document.getElementById('a-zonages').innerHTML = PR_ZONES.map(([k, l]) => `<span class="pr-chip ${PR.zones.has(k) ? 'on' : 'off'}" onclick="prTog('zones', '${k}')">${l}</span>`).join('');
+  document.getElementById('a-quartiers-chips').innerHTML = [...PR.quartiers].map(v => `<span class="pr-chip x" title="Retirer" onclick="prTog('quartiers', ${prE(JSON.stringify(v))})">${prE(v)} ✕</span>`).join('') || '<span style="font-size:12px;color:#9aa8a0">Aucun quartier précis</span>';
+}
+function prTog(k, v) { PR[k].has(v) ? PR[k].delete(v) : PR[k].add(v); prRenderChips(); }
+function prAddQuartier() {
+  const inp = document.getElementById('a-quartier-new');
+  const v = (typeof normQuartier === 'function' ? normQuartier(inp.value.trim()) : inp.value.trim());
+  if (v) PR.quartiers.add(v);
+  inp.value = ''; prRenderChips();
+}
+function prFormLists() {
+  const cnt = {};
+  state.terrains.forEach(t => { const q = prQuartier(t); if (q) cnt[q] = (cnt[q] || 0) + 1; });
+  document.getElementById('pr-q-list').innerHTML = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x]).map(q => `<option value="${prE(q)}">`).join('');
+  document.getElementById('pr-soc-list').innerHTML = [...new Set(state.acheteurs.map(a => a.societe).filter(Boolean))].sort().map(s => `<option value="${prE(s)}">`).join('');
+}
+function prFillForm(a) {
+  a = a || {};
+  const set = (id, v) => { document.getElementById(id).value = v == null ? '' : v; };
+  set('a-nom', a.nom); set('a-societe', a.societe); set('a-telephone', prTelAff(a.telephone)); set('a-email', a.email); set('a-fonction', a.fonction);
+  set('a-sup-min', a.sup_min); set('a-sup-max', a.sup_max); set('a-ticket-min', a.ticket_min !== undefined ? a.ticket_min : a.ticketMin);
+  set('a-ticket-max', a.ticket_max !== undefined ? a.ticket_max : a.ticketMax); set('a-prix-m2-max', a.prix_m2_max); set('a-relance', a.prochaine_relance); set('a-notes', a.notes);
+  document.getElementById('a-type').value = a.type || 'Promoteur';
+  prOpts('a-statut', PR_STATUTS, a.statut || 'À qualifier');
+  prOpts('a-horizon', PR_HORIZONS, a.horizon); prOpts('a-mode', PR_MODES, a.mode_acquisition); prOpts('a-langue', PR_LANGUES, a.langue);
+  prOpts('a-consent', PR_CONSENT, a.whatsapp_consentement || 'À confirmer');
+  PR.typos = new Set(prArr(a.typologies)); PR.zones = new Set(prArr(a.zonages)); PR.quartiers = new Set(prArr(a.quartiers));
+  villesSel = new Set(prVilles(a)); renderVilles();
+  document.getElementById('a-villes-panel').style.display = 'none';
+  prFormLists(); prRenderChips();
+}
+resetAcheteurForm = function () { prFillForm({}); };
+openAcheteurNew = function () {
+  editingAcheteurId = null; prFillForm({});
+  document.getElementById('a-modal-title').textContent = 'Nouveau promoteur';
+  document.getElementById('a-associe').innerHTML = contactOptions(myRole === 'sourceur' ? currentAssocie : (currentAssocie || ''));
+  document.getElementById('a-delete-btn').style.display = 'none';
+  openModal('modal-acheteur');
+};
+openAcheteurEdit = function (id) {
+  const a = prAch(id);
+  if (!a) return;
+  editingAcheteurId = a.id; prFillForm(a);
+  document.getElementById('a-modal-title').textContent = 'Modifier ' + a.nom;
+  document.getElementById('a-associe').innerHTML = contactOptions(a.associe || '');
+  document.getElementById('a-delete-btn').style.display = myRole === 'sourceur' ? 'none' : '';
+  openModal('modal-acheteur');
+};
+function prLocalRow(base, data) {
+  const r = { ...base, ...data };
+  r.ticketMin = data.ticket_min; r.ticketMax = data.ticket_max;
+  return r;
+}
+saveAcheteur = async function () {
+  const v = id => document.getElementById(id).value.trim();
+  const nom = v('a-nom');
+  if (!nom) { showNotif('Le nom du contact est obligatoire.', true); return; }
+  const associe = document.getElementById('a-associe').value;
+  if (!associe) { showNotif('Choisissez le responsable de la relation.', true); return; }
+  const telRaw = v('a-telephone'), tel = telRaw ? prNormTel(telRaw) : '';
+  if (telRaw && !prTelValide(tel)) { showNotif('Numéro de téléphone non reconnu. Exemple : 06 61 23 45 67', true); return; }
+  if (tel) {
+    const dbl = state.acheteurs.find(a => a.telephone === tel && String(a.id) !== String(editingAcheteurId));
+    if (dbl) { showNotif('Ce numéro existe déjà : ' + dbl.nom + (dbl.societe ? ' (' + dbl.societe + ')' : ''), true); return; }
+  }
+  const villes = [...villesSel];
+  const consent = document.getElementById('a-consent').value;
+  const data = {
+    nom, societe: v('a-societe') || null, telephone: tel || null, email: v('a-email') || null, fonction: v('a-fonction') || null,
+    langue: document.getElementById('a-langue').value || null,
+    type: document.getElementById('a-type').value, statut: document.getElementById('a-statut').value,
+    associe, villes, zones: villes.join(', '),
+    quartiers: [...PR.quartiers], typologies: [...PR.typos], zonages: [...PR.zones],
+    sup_min: prNum(v('a-sup-min')), sup_max: prNum(v('a-sup-max')),
+    ticket_min: prNum(v('a-ticket-min')), ticket_max: prNum(v('a-ticket-max')), prix_m2_max: prNum(v('a-prix-m2-max')),
+    horizon: document.getElementById('a-horizon').value || null, mode_acquisition: document.getElementById('a-mode').value || null,
+    whatsapp_consentement: consent, whatsapp_stop: consent === 'Non',
+    prochaine_relance: v('a-relance') || null, notes: v('a-notes'),
+  };
+  const id = editingAcheteurId;
+  if (supabaseReady) {
+    try {
+      if (id) {
+        const res = await prReq(`acheteurs?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(data) });
+        if (!res || !res.length) throw new Error('aucune ligne modifiée (droits)');
+        const i = state.acheteurs.findIndex(x => String(x.id) === String(id));
+        if (i >= 0) state.acheteurs[i] = prLocalRow(state.acheteurs[i], res[0]);
+        logActivity('Modif promoteur', 'acheteur', id, nom);
+      } else {
+        const res = await prReq('acheteurs', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ ...data, score: 0, usage: 'Tous', source: 'Saisie CRM' }) });
+        state.acheteurs.push(prLocalRow({}, res[0]));
+        logActivity('Ajout promoteur', 'acheteur', res[0].id, nom);
+      }
+    } catch (e) {
+      const m = String(e.message);
+      showNotif(/column|schema cache|PGRST204/i.test(m) ? 'Enregistrement impossible : exécutez d\'abord le script crm-promoteurs.sql dans Supabase.' : /duplicate|unique/i.test(m) ? 'Ce numéro est déjà utilisé par un autre promoteur.' : 'Échec de l\'enregistrement : ' + m.slice(0, 90), true);
+      return;
+    }
+  } else {
+    if (id) { const i = state.acheteurs.findIndex(x => String(x.id) === String(id)); if (i >= 0) state.acheteurs[i] = prLocalRow(state.acheteurs[i], data); }
+    else state.acheteurs.push(prLocalRow({ id: state.nextAcheteurId++, score: 0 }, data));
+  }
+  showNotif(id ? 'Fiche mise à jour.' : 'Promoteur ajouté.');
+  editingAcheteurId = null;
+  closeModal('modal-acheteur');
+  prRenderList(); if (typeof renderDashboard === 'function') renderDashboard();
+  if (PR.open && String(PR.open) === String(id)) prRenderFiche();
+};
+
+// ----- Fiche promoteur -----
+function prOpen(id) { PR.open = id; PR.tab = 'profil'; PR.sel = new Set(); prRenderFiche(); openModal('modal-promoteur'); }
+function prTabGo(t) { PR.tab = t; PR.sel = new Set(); prRenderFiche(); }
+function prEchanges(a) {
+  const nomN = prN(a.nom);
+  const it = (state.interactions || []).filter(i => String(i.acheteur_id) === String(a.id) || (!i.acheteur_id && nomN && prN(i.acheteur_nom) === nomN))
+    .map(i => ({ d: i.created_at || i.date, k: 'int', i }));
+  const ms = PR.messages.filter(m => String(m.acheteur_id) === String(a.id) || (a.telephone && m.telephone === a.telephone)).map(m => ({ d: m.created_at, k: 'msg', m }));
+  return [...it, ...ms].sort((x, y) => new Date(y.d) - new Date(x.d));
+}
+function prRenderFiche() {
+  const a = prAch(PR.open);
+  if (!a) { closeModal('modal-promoteur'); return; }
+  const reps = prRepsOf(a.id), ech = prEchanges(a), wa = a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+  document.getElementById('pr-fhead').innerHTML = `
+    <div style="min-width:0"><h2>${prE(a.nom)}</h2><div class="pr-soc">${prE([a.fonction, a.societe].filter(Boolean).join(', ') || 'Société non renseignée')}</div>
+      <div class="pr-meta" style="margin-top:8px">${prStatutB(a.statut)}${a.associe ? `<span>Suivi par <b>${prE(a.associe)}</b></span>` : ''}${a.telephone ? `<span>${prE(prTelAff(a.telephone))}</span>` : ''}${a.email ? `<span>${prE(a.email)}</span>` : ''}</div></div>
+    <div class="pr-fhead-act">
+      ${a.telephone ? `<a class="btn btn-ghost btn-sm" href="tel:+${prE(a.telephone)}">Appeler</a>` : ''}
+      ${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur');openAcheteurEdit(${a.id})">Modifier</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur')">Fermer</button>
+    </div>`;
+  const tabs = [['profil', 'Profil'], ['reco', 'Terrains à proposer'], ['ech', 'Échanges', ech.length], ['prop', 'Terrains proposés', reps.length], ['pref', 'Préférences']];
+  document.getElementById('pr-tabs').innerHTML = tabs.map(([k, l, n]) => `<button class="pr-tab ${PR.tab === k ? 'on' : ''}" onclick="prTabGo('${k}')">${l}${n ? `<em>${n}</em>` : ''}</button>`).join('');
+  const body = document.getElementById('pr-fbody');
+  body.innerHTML = PR.tab === 'profil' ? prTabProfil(a) : PR.tab === 'reco' ? prTabReco(a) : PR.tab === 'ech' ? prTabEch(a, ech) : PR.tab === 'prop' ? prTabProp(a, reps) : prTabPref(a);
+  body.scrollTop = 0;
+}
+function prTabProfil(a) {
+  const kv = (l, v) => `<div><label>${l}</label>${v || '<span style="color:#aab6af">Non renseigné</span>'}</div>`;
+  const chips = arr => arr.length ? `<div class="pr-chips">${arr.map(x => `<span class="pr-chip">${prE(x)}</span>`).join('')}</div>` : '';
+  const zl = prArr(a.zonages).map(z => (PR_ZONES.find(x => x[0] === z) || [z, z])[1]);
+  const sup = (prNum(a.sup_min) || prNum(a.sup_max)) ? `${a.sup_min ? prFr(a.sup_min) : '0'} à ${a.sup_max ? prFr(a.sup_max) : 'plus'} m²` : '';
+  const bud = (prNum(a.ticket_min) || prNum(a.ticket_max)) ? `${a.ticket_min || '0'} à ${a.ticket_max || 'plus'} M DH` : '';
+  const comp = prCompletude(a);
+  return `${comp < 75 ? `<div class="pr-note">Profil renseigné à ${comp} %. Plus les critères sont précis, plus les terrains proposés seront pertinents. <a href="#" onclick="event.preventDefault();closeModal('modal-promoteur');openAcheteurEdit(${a.id})">Compléter la fiche</a></div>` : ''}
+    <div class="pr-kv">
+      ${kv('Villes', chips(prVilles(a)))}${kv('Quartiers ciblés', chips(prArr(a.quartiers)))}
+      ${kv('Produits développés', chips(prArr(a.typologies)))}${kv('Zonages recherchés', chips(zl))}
+      ${kv('Superficie', sup)}${kv('Budget', bud)}
+      ${kv('Prix max au m²', prNum(a.prix_m2_max) ? prFr(a.prix_m2_max) + ' DH/m²' : '')}${kv('Horizon d\'achat', prE(a.horizon))}
+      ${kv('Mode d\'acquisition', prE(a.mode_acquisition))}${kv('Langue', prE(a.langue))}
+      ${kv('Accord WhatsApp', prE(a.whatsapp_consentement || 'À confirmer'))}${kv('Prochaine relance', a.prochaine_relance ? new Date(a.prochaine_relance).toLocaleDateString('fr-FR') : '')}
+      ${kv('Source', prE(a.source))}${kv('Type', prE(a.type))}
+    </div>
+    ${a.notes ? `<div style="margin-top:16px"><label class="form-label">Notes</label><div class="pr-tl-c">${prE(a.notes)}</div></div>` : ''}`;
+}
+function prTabReco(a) {
+  if (!state.terrains.length) return '<div class="pr-empty">Aucun terrain chargé.</div>';
+  const reco = prRecommandes(a, 15);
+  const block = !a.telephone ? 'Ajoutez un numéro de téléphone pour envoyer des terrains.' : (a.whatsapp_consentement === 'Non' || a.whatsapp_stop) ? 'Ce promoteur a demandé à ne plus recevoir de terrains sur WhatsApp.' : '';
+  const note = (prCompletude(a) < 50 ? `<div class="pr-note">Les critères de ce promoteur sont peu renseignés : le classement repose surtout sur ses réponses passées. Complétez la fiche pour un ciblage fiable.</div>` : '') +
+    (!block && a.whatsapp_consentement !== 'Oui' ? `<div class="pr-note">Accord WhatsApp à confirmer : présentez Greenfield et demandez-lui s'il souhaite recevoir des opportunités avant d'envoyer une sélection.</div>` : '');
+  const rows = reco.map(r => `<div class="pr-row">
+      <input type="checkbox" style="margin-top:14px" ${PR.sel.has(String(r.t.id)) ? 'checked' : ''} ${block ? 'disabled' : ''} onchange="prSelT('${r.t.id}', this.checked)">
+      <div class="pr-score ${prCls(r.score)}">${r.score}</div>
+      <div class="pr-row-main"><div class="pr-row-t">${prE(prTLabel(r.t))}</div>
+        <div class="pr-chips" style="margin-top:6px">${r.ok.map(x => `<span class="pr-chip">${prE(x)}</span>`).join('')}${r.ko.map(x => `<span class="pr-chip bad">${prE(x)}</span>`).join('')}</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur');openTerrainDetail(${JSON.stringify(r.t.id)})">Fiche</button>
+    </div>`).join('');
+  return note + (block ? `<div class="pr-note">${block}</div>` : '') + (rows || '<div class="pr-empty">Tous les terrains disponibles lui ont déjà été proposés.</div>') +
+    (block ? '' : `<div class="pr-sendbar"><button class="btn btn-primary" id="pr-send-btn" onclick="prEnvoyer(${a.id})" ${PR.sel.size ? '' : 'disabled'}>Envoyer sur WhatsApp (${PR.sel.size})</button>
+      <span style="font-size:12px;color:#6b7f73">Le message s'ouvre dans WhatsApp, prêt à envoyer. L'envoi est enregistré dans la fiche.</span></div>`);
+}
+function prSelT(id, on) {
+  on ? PR.sel.add(String(id)) : PR.sel.delete(String(id));
+  const b = document.getElementById('pr-send-btn');
+  if (b) { b.disabled = !PR.sel.size; b.textContent = 'Envoyer sur WhatsApp (' + PR.sel.size + ')'; }
+}
+function prMessage(a, ts) {
+  const civ = a.nom && a.nom !== 'Contact à identifier' && a.nom !== a.societe ? 'Bonjour ' + a.nom : 'Bonjour';
+  const lignes = ts.map((t, i) => {
+    const f = prForfait(t);
+    return `${i + 1}. ${prQuartier(t)}${t.ref ? ' (réf. ' + t.ref + ')' : ''} : ${t.superficie ? prFr(t.superficie) + ' m²' : 'superficie à confirmer'}${t.urba ? ', zonage ' + t.urba : ''}${t.prix ? ', ' + prFr(t.prix) + ' DH/m²' : ''}${f ? ' (' + f.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M DH)' : ''}`;
+  });
+  return `${civ},\n\nGREENFIELD vous propose ${ts.length > 1 ? ts.length + ' terrains qui correspondent' : 'un terrain qui correspond'} à vos critères :\n\n${lignes.join('\n')}\n\nSouhaitez-vous recevoir ${ts.length > 1 ? 'les fiches complètes' : 'la fiche complète'} ou organiser une visite ?`;
+}
+async function prEnvoyer(id) {
+  const a = prAch(id);
+  const ts = [...PR.sel].map(prTerrain).filter(Boolean);
+  if (!a || !ts.length) return;
+  const txt = prMessage(a, ts);
+  window.open('https://wa.me/' + a.telephone + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+  const now = new Date().toISOString(), qui = currentAssocie || 'Équipe';
+  const rows = ts.map(t => ({ acheteur_id: a.id, terrain_id: t.id, statut: 'envoye', teaser_envoye_le: now, updated_at: now, canal: 'WhatsApp (CRM)', envoye_par: qui }));
+  try {
+    const res = await prReq('acheteur_terrain_reponses?on_conflict=acheteur_id,terrain_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(rows) });
+    (res || rows).forEach(r => { PR.reponses = PR.reponses.filter(x => !(String(x.acheteur_id) === String(r.acheteur_id) && String(x.terrain_id) === String(r.terrain_id))); PR.reponses.unshift(r); });
+    const m = await prReq('whatsapp_messages', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ acheteur_id: a.id, telephone: a.telephone, direction: 'sortant', type: 'texte', contenu: txt, action: 'teaser', terrain_id: ts.length === 1 ? ts[0].id : null, auteur: qui }) }).catch(() => null);
+    if (m && m[0]) PR.messages.unshift(m[0]);
+    await prReq(`acheteurs?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ derniere_interaction: now }) }).catch(() => null);
+    a.derniere_interaction = now;
+    logActivity('Terrains proposés', 'acheteur', a.id, a.nom, ts.map(prRef).join(', '));
+    showNotif(ts.length + ' terrain' + (ts.length > 1 ? 's' : '') + ' enregistré' + (ts.length > 1 ? 's' : '') + ' comme proposé' + (ts.length > 1 ? 's' : '') + '.');
+  } catch (e) {
+    showNotif(/relation|schema cache|PGRST/i.test(e.message) ? 'Message ouvert, mais l\'envoi n\'est pas enregistré : exécutez le script crm-promoteurs.sql dans Supabase.' : 'Message ouvert, mais l\'enregistrement a échoué : ' + e.message.slice(0, 80), true);
+    return;
+  }
+  PR.sel = new Set(); PR.tab = 'prop'; prRenderFiche(); prRenderList();
+}
+function prTabEch(a, ech) {
+  const today = new Date().toISOString().slice(0, 10);
+  const form = `<div style="background:#f6f9f7;border-radius:12px;padding:14px;margin-bottom:16px">
+    <div class="form-grid" style="margin-bottom:0">
+      <div class="form-group"><label class="form-label">Type d'échange</label><select class="form-select" id="pe-type">${PR_ECH.map(x => `<option>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="pe-date" value="${today}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Ce qui s'est dit</label><textarea class="form-textarea" id="pe-retour" placeholder="Besoins exprimés, terrains évoqués, objections, prochaines étapes..."></textarea></div>
+    <div class="form-grid" style="margin-bottom:0;align-items:end">
+      <div class="form-group"><label class="form-label">Prochaine relance</label><input class="form-input" type="date" id="pe-relance" value="${prE(a.prochaine_relance || '')}"></div>
+      <div class="form-group" style="text-align:right"><button class="btn btn-primary" onclick="prSaveEchange(${a.id})">Enregistrer l'échange</button></div>
+    </div></div>`;
+  const tl = ech.map(e => {
+    if (e.k === 'int') {
+      const i = e.i;
+      return `<div class="pr-tl"><div class="pr-tl-h"><b>${prE(i.type || 'Échange')}</b><span>${prE(new Date(i.date || i.created_at).toLocaleDateString('fr-FR'))}${i.associe ? ' · ' + prE(i.associe) : ''}</span></div>
+        ${i.terrain_id ? `<div class="pr-tl-h">${prE(prTLabel(prTerrain(i.terrain_id)))}</div>` : ''}<div class="pr-tl-c">${prE(i.retour || '')}${i.notes ? '\n' + prE(i.notes) : ''}</div></div>`;
+    }
+    const m = e.m, inb = m.direction === 'entrant';
+    return `<div class="pr-tl ${inb ? 'in' : ''}"><div class="pr-tl-h"><b>WhatsApp ${inb ? 'reçu' : 'envoyé'}${m.auteur && !inb ? ' par ' + prE(m.auteur) : ''}</b><span>${new Date(m.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span></div><div class="pr-tl-c">${prE(m.contenu || '[' + (m.type || 'média') + ']')}</div></div>`;
+  }).join('');
+  return form + (tl || '<div class="pr-empty">Aucun échange enregistré. Les conversations du chatbot WhatsApp apparaîtront ici automatiquement.</div>');
+}
+async function prSaveEchange(id) {
+  const a = prAch(id);
+  const retour = document.getElementById('pe-retour').value.trim();
+  if (!retour) { showNotif('Décrivez l\'échange en quelques mots.', true); return; }
+  const type = document.getElementById('pe-type').value, date = document.getElementById('pe-date').value, relance = document.getElementById('pe-relance').value || null;
+  const it = { acheteur_id: a.id, acheteur_nom: a.nom, associe: currentAssocie || '', type, canal: type, date, retour, notes: '' };
+  try {
+    const res = await prReq('interactions', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(it) });
+    (state.interactions = state.interactions || []).unshift(res && res[0] ? res[0] : { ...it, created_at: new Date().toISOString() });
+    const patch = { derniere_interaction: new Date().toISOString(), prochaine_relance: relance };
+    await prReq(`acheteurs?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    Object.assign(a, patch);
+    logActivity('Échange promoteur', 'acheteur', a.id, a.nom, type);
+    showNotif('Échange enregistré.');
+  } catch (e) {
+    showNotif(/column|schema cache|PGRST204/i.test(e.message) ? 'Exécutez d\'abord le script crm-promoteurs.sql dans Supabase.' : 'Échec : ' + e.message.slice(0, 90), true);
+    return;
+  }
+  prRenderFiche(); prRenderList();
+}
+function prTabProp(a, reps) {
+  if (!reps.length) return '<div class="pr-empty">Aucun terrain proposé pour l\'instant. Utilisez l\'onglet « Terrains à proposer ».</div>';
+  return reps.slice().sort((x, y) => new Date(y.teaser_envoye_le || y.updated_at) - new Date(x.teaser_envoye_le || x.updated_at)).map(r => {
+    const t = prTerrain(r.terrain_id), k = `${r.acheteur_id}_${r.terrain_id}`;
+    return `<div class="pr-row"><div class="pr-row-main">
+      <div class="pr-row-t">${prE(prTLabel(t))}</div>
+      <div class="pr-row-s">Proposé ${prDepuis(r.teaser_envoye_le || r.updated_at)}${r.envoye_par ? ' par ' + prE(r.envoye_par) : ''}${r.canal ? ' (' + prE(r.canal) + ')' : ''}${r.creneau_visite ? ', visite : ' + prE(r.creneau_visite) : ''}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="pr-mini" id="ps-${k}" onchange="prRepChange(${a.id}, ${JSON.stringify(r.terrain_id)})">${Object.entries(PR_REP).map(([v, l]) => `<option value="${v}" ${r.statut === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <select class="pr-mini" id="pr-${k}" style="${r.statut === 'refuse' ? '' : 'display:none'}" onchange="prRepChange(${a.id}, ${JSON.stringify(r.terrain_id)})"><option value="">Raison du refus</option>${PR_RAISONS.map(x => `<option ${r.raison_refus === x ? 'selected' : ''}>${x}</option>`).join('')}</select>
+        ${t ? `<button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur');openTerrainDetail(${JSON.stringify(t.id)})">Fiche</button>` : ''}
+      </div></div></div>`;
+  }).join('');
+}
+async function prRepChange(aid, tid) {
+  const k = `${aid}_${tid}`, statut = document.getElementById('ps-' + k).value, rs = document.getElementById('pr-' + k);
+  rs.style.display = statut === 'refuse' ? '' : 'none';
+  const patch = { statut, raison_refus: statut === 'refuse' ? (rs.value || null) : null, updated_at: new Date().toISOString() };
+  try {
+    await prReq(`acheteur_terrain_reponses?acheteur_id=eq.${aid}&terrain_id=eq.${tid}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    const r = PR.reponses.find(x => String(x.acheteur_id) === String(aid) && String(x.terrain_id) === String(tid));
+    if (r) Object.assign(r, patch);
+    const a = prAch(aid);
+    if (PR_POS.includes(statut) && a && (a.statut === 'À qualifier' || a.statut === 'Froid')) {
+      await prReq(`acheteurs?id=eq.${aid}`, { method: 'PATCH', body: JSON.stringify({ statut: 'Tiède' }) }).catch(() => null);
+      a.statut = 'Tiède';
+    }
+    logActivity('Réponse promoteur', 'acheteur', aid, a ? a.nom : '', `${prRef(prTerrain(tid) || { id: tid })} : ${PR_REP[statut]}${patch.raison_refus ? ' (' + patch.raison_refus + ')' : ''}`);
+    showNotif('Réponse enregistrée.');
+    prRenderList();
+  } catch (e) { showNotif('Échec : ' + e.message.slice(0, 90), true); }
+}
+function prTabPref(a) {
+  const P = prPrefs(a);
+  if (!P.env) return '<div class="pr-empty">Pas encore de réponses. Les préférences se construisent automatiquement à partir des terrains proposés et de ses réactions (dans le CRM ou via le chatbot WhatsApp).</div>';
+  const top = o => Object.entries(o).sort((x, y) => y[1] - x[1]);
+  const chips = (arr, cls) => arr.length ? `<div class="pr-chips">${arr.map(([k, n]) => `<span class="pr-chip ${cls || ''}">${prE(k)} (${n})</span>`).join('')}</div>` : '<span style="font-size:12.5px;color:#9aa8a0">Rien de net pour l\'instant</span>';
+  const zl = o => top(o).map(([k, n]) => [(PR_ZONES.find(x => x[0] === k) || [k, k])[1], n]);
+  const min = P.sups.length ? Math.min(...P.sups) : null, max = P.sups.length ? Math.max(...P.sups) : null;
+  const pmoy = P.prixPos.length ? P.prixPos.reduce((s, x) => s + x, 0) / P.prixPos.length : null;
+  const newQ = top(P.likeQ).map(x => x[0]).filter(q => !prArr(a.quartiers).includes(q));
+  const newZ = top(P.likeZ).map(x => x[0]).filter(z => !prArr(a.zonages).includes(z));
+  return `<div class="pr-pref">
+    <div class="pr-kv"><div><label>Terrains proposés</label>${P.env}</div><div><label>Réponses positives</label>${P.pos} (${Math.round(P.pos / P.env * 100)} %)</div><div><label>Refus</label>${P.ref}</div><div><label>Sans réponse</label>${P.attente}</div></div>
+    <h4>Secteurs qui l'intéressent</h4>${chips(top(P.likeQ))}
+    <h4>Zonages qui l'intéressent</h4>${chips(zl(P.likeZ))}
+    <h4>Taille et prix des terrains qui l'intéressent</h4><div style="font-size:13px">${min ? `De ${prFr(min)} à ${prFr(max)} m²` : 'Pas encore assez de réponses positives'}${pmoy ? `, prix moyen ${prFr(pmoy)} DH/m²` : ''}</div>
+    <h4>Motifs de refus</h4>${chips(top(P.raisons), 'bad')}
+    ${P.prixRefus ? `<div class="pr-note" style="margin-top:10px">A refusé pour le prix à partir de ${prFr(P.prixRefus)} DH/m² : les terrains à ce niveau de prix sont pénalisés dans ses recommandations.</div>` : ''}
+    ${(newQ.length || newZ.length) ? `<div style="margin-top:16px"><button class="btn btn-primary btn-sm" onclick="prAppliquerPrefs(${a.id})">Ajouter ${[newQ.length ? newQ.length + ' secteur' + (newQ.length > 1 ? 's' : '') : '', newZ.length ? newZ.length + ' zonage' + (newZ.length > 1 ? 's' : '') : ''].filter(Boolean).join(' et ')} à ses critères</button></div>` : ''}
+  </div>`;
+}
+async function prAppliquerPrefs(id) {
+  const a = prAch(id), P = prPrefs(a);
+  const patch = { quartiers: [...new Set([...prArr(a.quartiers), ...Object.keys(P.likeQ)])], zonages: [...new Set([...prArr(a.zonages), ...Object.keys(P.likeZ)])] };
+  try {
+    await prReq(`acheteurs?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    Object.assign(a, patch);
+    showNotif('Critères mis à jour à partir de ses réponses.');
+    prRenderFiche(); prRenderList();
+  } catch (e) { showNotif('Échec : ' + e.message.slice(0, 90), true); }
+}
+
+// ----- Matching depuis un terrain -----
+runMatching = function (adhoc) {
+  const isAd = !!(adhoc && adhoc.adhoc);
+  const terrainId = isAd ? null : document.getElementById('matching-terrain-select').value;
+  const el = document.getElementById('matching-results');
+  const t = isAd ? adhoc : prTerrain(terrainId);
+  if (!t) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⟳</div><div class="empty-state-text">Sélectionnez un terrain pour lancer le matching</div></div>'; return; }
+  if (!state.acheteurs.length) { el.innerHTML = '<div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:30px;text-align:center;color:rgba(255,255,255,0.5)">Aucun promoteur dans la base.</div>'; return; }
+  const sc = state.acheteurs.map(a => {
+    const r = prScore(a, t), rep = isAd ? null : PR.reponses.find(x => String(x.acheteur_id) === String(a.id) && String(x.terrain_id) === String(t.id));
+    return { a, ...r, rep };
+  }).sort((x, y) => (!!x.rep) - (!!y.rep) || y.score - x.score);
+  const cards = sc.slice(0, 60).map(({ a, score, ok, ko, rep }) => {
+    const canWa = !isAd && !rep && a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+    return `<div class="match-card" style="background:rgba(255,255,255,0.97)">
+      <div class="match-score ${score >= 60 ? 'score-high' : score >= 40 ? 'score-mid' : 'score-low'}">${score}</div>
+      <div class="match-info">
+        <div class="match-title" style="color:var(--green-deep);cursor:pointer" onclick="prOpen(${a.id})">${prE(a.nom)}${a.societe ? `<span style="font-weight:400;color:#6b7f73">, ${prE(a.societe)}</span>` : ''}</div>
+        <div class="match-sub">${prE(a.statut || 'À qualifier')}${a.associe ? ' · suivi ' + prE(a.associe) : ''}${rep ? ' · déjà proposé : ' + prE(PR_REP[rep.statut] || rep.statut) : ''}</div>
+        <div class="pr-chips">${ok.map(x => `<span class="pr-chip">${prE(x)}</span>`).join('')}${ko.map(x => `<span class="pr-chip bad">${prE(x)}</span>`).join('')}${!ok.length && !ko.length ? '<span class="pr-chip warn">Critères non renseignés</span>' : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${canWa ? `<button class="btn btn-primary btn-sm" onclick="prProposerUn(${a.id}, ${JSON.stringify(t.id)})">Proposer</button>` : ''}
+        ${isAd ? '' : `<button class="btn btn-ghost btn-sm" onclick="createDealFromMatch(${JSON.stringify(t.id)}, ${a.id})">Créer deal</button>`}
+      </div>
+    </div>`;
+  }).join('');
+  const f = prForfait(t);
+  const ban = isAd ? `<div style="margin-bottom:12px;padding:12px 14px;border-radius:10px;background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.35);color:var(--gold-light);font-size:13px">Terrain analysé : <strong>${prE(t.localisation)}</strong>, ${t.superficie ? prFr(t.superficie) + ' m²' : ''}${f ? ', ' + f.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M MAD' : ''}. Ce terrain n'est pas dans le CRM, ajoutez-le pour le proposer ou créer un deal.</div>` : '';
+  const nH = sc.filter(x => !x.rep && x.score >= 60).length, nM = sc.filter(x => !x.rep && x.score >= 40 && x.score < 60).length, nD = sc.filter(x => x.rep).length;
+  el.innerHTML = ban + `<div style="margin-bottom:14px;color:rgba(255,255,255,0.65);font-size:13px"><strong style="color:var(--green-light)">${nH}</strong> promoteurs très ciblés · <strong style="color:var(--gold-light)">${nM}</strong> compatibles${nD ? ` · ${nD} l'ont déjà reçu` : ''}${sc.length > 60 ? ' · 60 premiers affichés' : ''}</div>` + cards;
+};
+function prProposerUn(aid, tid) { PR.open = aid; PR.sel = new Set([String(tid)]); prEnvoyer(aid).then(() => runMatching()); }
+
+if (currentPage === 'acheteurs') prRenderList();
 </script>
 </body>
 </html>

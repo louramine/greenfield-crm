@@ -1015,7 +1015,6 @@ body:not(.role-admin) .admin-only{display:none !important}
         <select id="pr-typo" class="pr-sel" onchange="prRenderList()"></select>
         <label class="pr-chk"><input type="checkbox" id="pr-incomplet" onchange="prRenderList()"> Profil à compléter</label>
         <label class="pr-chk"><input type="checkbox" id="pr-relance" onchange="prRenderList()"> Relance à faire</label>
-        <label class="pr-chk"><input type="checkbox" id="pr-group" checked onchange="prRenderList()"> Grouper par société</label>
         <span id="pr-count" class="pr-count"></span>
       </div>
       <div id="pr-list"></div>
@@ -4614,9 +4613,7 @@ async function favToggle(id, ev) {
 .pr-chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap}
 .pr-count{font-size:12px;color:var(--gray-mid);white-space:nowrap}
 .pr-banner{background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.4);color:var(--gold-light);border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:14px;line-height:1.5}
-.pr-group-h{display:flex;align-items:baseline;gap:10px;margin:18px 2px 10px;color:var(--white);font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
-.pr-group-h small{font-family:'DM Sans',sans-serif;font-weight:400;color:var(--gray-mid);font-size:12px}
-.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;align-items:start}
 .pr-card{background:#fff;border-radius:14px;padding:14px 16px;cursor:pointer;color:#1d2b23;border:1px solid transparent;transition:border-color .15s,transform .15s;display:flex;flex-direction:column;gap:8px}
 .pr-card:hover{border-color:var(--green-bright);transform:translateY(-1px)}
 .pr-card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
@@ -4931,7 +4928,7 @@ function prRenderList() {
     ? '<div class="pr-banner"><b>Base promoteurs pas encore installée.</b> Exécutez une fois le script <code>supabase/crm-promoteurs.sql</code> dans Supabase (SQL Editor). Il ajoute les champs de la fiche, l\'historique des échanges et importe les promoteurs du fichier.</div>' : '';
   const qv = prN(document.getElementById('pr-search').value), qraw = document.getElementById('pr-search').value.replace(/\D/g, '');
   const fr = document.getElementById('pr-resp').value, fs = document.getElementById('pr-statut').value, ft = document.getElementById('pr-typo').value;
-  const fi = document.getElementById('pr-incomplet').checked, fl = document.getElementById('pr-relance').checked, grp = document.getElementById('pr-group').checked;
+  const fi = document.getElementById('pr-incomplet').checked, fl = document.getElementById('pr-relance').checked;
   const all = state.acheteurs;
   const rows = all.filter(a => {
     if (fr && a.associe !== fr) return false;
@@ -4958,15 +4955,7 @@ function prRenderList() {
   if (!all.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">Aucun promoteur. Cliquez sur « + Nouveau promoteur » ou exécutez le script d\'import.</div></div>'; return; }
   if (!rows.length) { list.innerHTML = '<div class="pr-empty" style="color:var(--gray-mid)">Aucun promoteur ne correspond à ces filtres.</div>'; return; }
   const ord = (x, y) => (y.statut === 'Chaud') - (x.statut === 'Chaud') || prCompletude(y) - prCompletude(x) || String(x.nom).localeCompare(String(y.nom), 'fr');
-  if (!grp) { list.innerHTML = `<div class="pr-grid">${rows.sort(ord).map(prCard).join('')}</div>`; return; }
-  const g = {};
-  rows.forEach(a => { const k = (a.societe || '').trim() || '~'; (g[k] = g[k] || []).push(a); });
-  const keys = Object.keys(g).sort((x, y) => (x === '~') - (y === '~') || (g[y].length - g[x].length) || x.localeCompare(y, 'fr'));
-  const multi = keys.filter(k => k !== '~' && g[k].length > 1), solo = keys.filter(k => k !== '~' && g[k].length === 1);
-  let h = multi.map(k => `<div class="pr-group-h">${prE(k)} <small>${g[k].length} contacts</small></div><div class="pr-grid">${g[k].sort(ord).map(prCard).join('')}</div>`).join('');
-  if (solo.length) h += `<div class="pr-group-h">Sociétés <small>${solo.length} contacts</small></div><div class="pr-grid">${solo.map(k => g[k][0]).sort(ord).map(prCard).join('')}</div>`;
-  if (g['~']) h += `<div class="pr-group-h">Société non renseignée <small>${g['~'].length} contacts</small></div><div class="pr-grid">${g['~'].sort(ord).map(prCard).join('')}</div>`;
-  list.innerHTML = h;
+  list.innerHTML = `<div class="pr-grid">${rows.sort(ord).map(prCard).join('')}</div>`;
 }
 renderAcheteurs = prRenderList;
 

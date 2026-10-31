@@ -1147,6 +1147,18 @@ body:not(.role-admin) .admin-only{display:none !important}
       <input class="form-input" id="t-tf" placeholder="Ex: 23106/38">
     </div>
     <div class="form-group">
+      <label class="form-label">Localisation Google Maps</label>
+      <div class="tg-row">
+        <input class="form-input" id="t-gmap" type="url" inputmode="url" autocomplete="off" placeholder="Collez le lien Google Maps du terrain" oninput="tgCheck()">
+        <button type="button" class="btn btn-ghost btn-sm" id="t-gmap-open" onclick="tgOpen()" disabled>Ouvrir</button>
+      </div>
+      <div class="tg-acts">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="tgHere()">Utiliser ma position</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="tgSearch()">Chercher sur Maps</button>
+      </div>
+      <div class="tg-msg" id="t-gmap-msg"></div>
+    </div>
+    <div class="form-group">
       <label class="form-label">Notes / Potentiel</label>
       <textarea class="form-textarea" id="t-notes" placeholder="Description du potentiel, points forts..."></textarea>
     </div>
@@ -2244,6 +2256,7 @@ function openTerrainModal() {
   document.getElementById('t-statut').value = 'Disponible';
   document.getElementById('modal-terrain-title').textContent = 'Nouveau Terrain';
   TN = {}; tnRender();
+  document.getElementById('t-gmap').value = ''; tgCheck();
   openModal('modal-terrain');
 }
 
@@ -3030,13 +3043,14 @@ saveTerrain = async function() {
     prix: prix, usage: document.getElementById('t-usage').value,
     statut: document.getElementById('t-statut').value, tf: document.getElementById('t-tf').value,
     notes: document.getElementById('t-notes').value, statut_juridique: 'Non renseigné',
+    google_map: tgValue(),
     sourceur: currentAssocie || 'Équipe', date_sourcing: new Date().toLocaleDateString('fr-FR'),
   };
   if (supabaseReady) {
     const res = await supaPost('terrains', terrain);
     if (res && res[0]) {
       terrain.id = res[0].id;
-      state.terrains.push({ ...terrain, id: res[0].id, ref: res[0].ref || '', dateSourcing: terrain.date_sourcing });
+      state.terrains.push({ ...terrain, id: res[0].id, ref: res[0].ref || '', dateSourcing: terrain.date_sourcing, googleMap: terrain.google_map || '' });
       await logActivity('Ajout terrain', 'terrain', res[0].id, loc);
       const up = await tnUploadAll(res[0].id);
       if (up.fail.length) showNotif('Terrain ajouté, mais ' + up.fail.length + ' document' + (up.fail.length > 1 ? 's' : '') + ' non envoyé' + (up.fail.length > 1 ? 's' : '') + ' : ' + up.fail.join(', ') + '. Ajoutez-les depuis la fiche du terrain.', true);
@@ -3047,7 +3061,7 @@ saveTerrain = async function() {
     }
   } else {
     terrain.id = state.nextTerrainId++;
-    state.terrains.push({ ...terrain, dateSourcing: terrain.date_sourcing });
+    state.terrains.push({ ...terrain, dateSourcing: terrain.date_sourcing, googleMap: terrain.google_map || '' });
     addActivity(`Nouveau terrain : ${loc}`);
     saveState();
     showNotif(Object.keys(TN).length ? 'Terrain ajouté (local). Les documents ne sont enregistrés qu\'avec la base en ligne.' : '✓ Terrain ajouté (local).', !!Object.keys(TN).length);
@@ -6321,6 +6335,56 @@ async function tnUploadAll(tid) {
   return out;
 }
 tnRender();
+</script>
+<style id="tg-css">
+.tg-row{display:flex;gap:8px;align-items:center}
+.tg-row .form-input{flex:1;min-width:0}
+.tg-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tg-msg{font-size:12px;color:#4f6a5c;margin-top:6px;min-height:0}
+.tg-msg.bad{color:#c0392b}
+.tg-msg.ok{color:#1f7a4d}
+</style>
+<script>
+// ===== Localisation Google Maps du nouveau terrain =====
+function tgValue() {
+  const v = document.getElementById('t-gmap').value.trim();
+  if (!v) return '';
+  const m = v.match(/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+  if (m) return 'https://www.google.com/maps?q=' + m[1] + ',' + m[2];
+  return /^https?:\/\//i.test(v) ? v : '';
+}
+function tgCheck() {
+  const raw = document.getElementById('t-gmap').value.trim(), v = tgValue(), msg = document.getElementById('t-gmap-msg');
+  document.getElementById('t-gmap-open').disabled = !v;
+  if (!raw) { msg.textContent = ''; msg.className = 'tg-msg'; return; }
+  if (!v) { msg.textContent = 'Collez un lien commençant par https:// ou des coordonnées (ex. 33.5731, -7.5898).'; msg.className = 'tg-msg bad'; return; }
+  const ok = /google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(v);
+  msg.textContent = ok ? 'Lien Google Maps reconnu.' : 'Lien enregistré tel quel (ce n’est pas une adresse Google Maps).';
+  msg.className = 'tg-msg ' + (ok ? 'ok' : '');
+}
+function tgOpen() { const v = tgValue(); if (v) window.open(v, '_blank', 'noopener'); }
+function tgSearch() {
+  const q = [document.getElementById('t-localisation').value.trim(), 'Maroc'].filter(Boolean).join(', ');
+  window.open('https://www.google.com/maps/search/' + encodeURIComponent(q), '_blank', 'noopener');
+  const msg = document.getElementById('t-gmap-msg');
+  msg.textContent = 'Placez le repère sur le terrain dans Google Maps, touchez Partager, copiez le lien et collez-le ici.';
+  msg.className = 'tg-msg';
+}
+function tgHere() {
+  const msg = document.getElementById('t-gmap-msg');
+  if (!navigator.geolocation) { msg.textContent = 'La position n’est pas disponible sur cet appareil.'; msg.className = 'tg-msg bad'; return; }
+  msg.textContent = 'Recherche de votre position...'; msg.className = 'tg-msg';
+  navigator.geolocation.getCurrentPosition(p => {
+    const lat = p.coords.latitude.toFixed(6), lng = p.coords.longitude.toFixed(6);
+    document.getElementById('t-gmap').value = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+    tgCheck();
+    msg.textContent = 'Position enregistrée (précision environ ' + Math.round(p.coords.accuracy) + ' m). Utilisez-la seulement si vous êtes sur le terrain.';
+    msg.className = 'tg-msg ok';
+  }, e => {
+    msg.textContent = e.code === 1 ? 'Accès à la position refusé : autorisez-le dans les réglages du navigateur.' : 'Position introuvable, réessayez ou collez un lien.';
+    msg.className = 'tg-msg bad';
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
 </script>
 </body>
 </html>

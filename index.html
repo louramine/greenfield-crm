@@ -6153,5 +6153,76 @@ const _acTRow = mTRow;
 mTRow = function (t) { return _acTRow(t).replace(/<i>([^<]*)<\/i>/, (m, z) => zoneChip(z)); };
 acRender();
 </script>
+<style id="de-css">
+.de-ctx{display:none}
+.de-steps{display:none}
+@media(max-width:900px){
+  #modal-deal-edit,#modal-deal{align-items:stretch !important}
+  #modal-deal-edit .modal,#modal-deal .modal{width:100% !important;max-width:100% !important;height:100vh;height:100dvh;max-height:100dvh !important;border-radius:0 !important;padding:0 16px !important;padding-top:env(safe-area-inset-top) !important;overflow-x:hidden !important}
+  #modal-deal-edit .modal *,#modal-deal .modal *{max-width:100%}
+  #modal-deal-edit .modal-title,#modal-deal .modal-title{position:sticky;top:0;z-index:6;background:#fff;margin:0 -16px 12px;padding:14px 56px 10px 16px;box-shadow:0 1px 0 #e6efe9;font-size:18px;overflow-wrap:anywhere}
+  .de-x{position:absolute;right:10px;top:calc(8px + env(safe-area-inset-top));z-index:7;width:38px;height:38px;border-radius:12px;border:none;background:#f0f5f2;color:#4a5a51;display:flex !important;align-items:center;justify-content:center;padding:0}
+  .de-x svg{width:18px;height:18px}
+  #modal-deal-edit .modal-actions,#modal-deal .modal-actions{position:sticky;bottom:0;z-index:6;background:#fff;margin:14px -16px 0;padding:10px 16px max(10px, env(safe-area-inset-bottom));box-shadow:0 -1px 0 #e6efe9;flex-wrap:nowrap;gap:8px}
+  #modal-deal-edit .modal-actions .btn,#modal-deal .modal-actions .btn{flex:1;padding:12px 8px}
+  #modal-deal-edit .modal-actions .btn:first-child{flex:0 0 auto}
+  #modal-deal-edit .modal-actions button[onclick^="closeModal"],#modal-deal .modal-actions button[onclick^="closeModal"]{display:none}
+  #modal-deal-edit .form-group:has(#de-etape){display:none}
+  .de-ctx{display:block;background:#f4f9f5;border-radius:14px;padding:12px 14px;margin-bottom:14px}
+  .de-ctx-r{display:flex;align-items:center;gap:8px;min-width:0}
+  .de-ctx-r+.de-ctx-r{margin-top:10px;padding-top:10px;border-top:1px solid #e1ece5}
+  .de-ctx-m{flex:1;min-width:0}
+  .de-ctx-m b{display:block;font-size:14px;color:#0a1410;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .de-ctx-m small{display:block;font-size:12px;color:#4f6a5c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .de-ctx a,.de-ctx button{flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;border:1px solid #cfe0d6;background:#fff;color:#1f7a4d;text-decoration:none}
+  .de-ctx a.wa{background:#25D366;border-color:#25D366;color:#fff}
+  .de-ctx svg{width:18px;height:18px}
+  .de-steps{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 14px;padding:0 16px;scrollbar-width:none}
+  .de-steps::-webkit-scrollbar{display:none}
+  .de-steps button{flex:none;border:1.5px solid #cfe0d6;background:#fff;color:#1f7a4d;border-radius:999px;padding:9px 14px;font:600 13.5px var(--gf-body)}
+  .de-steps button.on{background:#0a1410;border-color:#0a1410;color:#7ee0a4}
+  #modal-deal-edit .form-grid,#modal-deal .form-grid{grid-template-columns:1fr !important}
+  #de-taches-wrap div[style*="1fr 1fr auto"],#modal-deal div[style*="1fr 1fr auto"]{grid-template-columns:1fr 1fr !important}
+  #de-taches-wrap div[style*="1fr 1fr auto"] button,#modal-deal div[style*="1fr 1fr auto"] button{grid-column:1 / -1;padding:11px}
+}
+</style>
+<script>
+// ===== Fiche deal : contexte, étapes en un geste, plein écran mobile =====
+(function () {
+  ['modal-deal-edit', 'modal-deal'].forEach(id => {
+    const m = document.querySelector('#' + id + ' .modal');
+    if (!m) return;
+    m.insertAdjacentHTML('afterbegin', `<button type="button" class="de-x m-only" aria-label="Fermer" onclick="closeModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`);
+  });
+  const t = document.getElementById('de-title');
+  if (t) t.insertAdjacentHTML('afterend', '<div class="de-ctx" id="de-ctx"></div><div class="de-steps" id="de-steps"></div>');
+  const etLab = document.querySelector('#de-etape') && document.querySelector('#de-etape').closest('.form-group').querySelector('.form-label');
+  if (etLab) etLab.setAttribute('for', 'de-etape');
+})();
+function deSteps() {
+  const sel = document.getElementById('de-etape'), box = document.getElementById('de-steps');
+  if (!sel || !box) return;
+  box.innerHTML = [...sel.options].map(o => `<button type="button" class="${o.value === sel.value ? 'on' : ''}" onclick="document.getElementById('de-etape').value='${o.value}';deSteps()">${escH(o.text)}</button>`).join('');
+}
+const _deOpen = openDealEdit;
+openDealEdit = function (id) {
+  _deOpen(id);
+  const d = state.deals.find(x => String(x.id) === String(id));
+  const box = document.getElementById('de-ctx');
+  if (!d || !box) return;
+  const t = state.terrains.find(x => String(x.id) === String(d.terrainId));
+  const a = state.acheteurs.find(x => String(x.id) === String(d.acheteurId));
+  const ic = k => (typeof M_ICO !== 'undefined' ? M_ICO[k] : '');
+  const f = t ? (Number(t.forfait) || (Number(t.superficie) || 0) * (Number(t.prix) || 0) / 1e6) : 0;
+  let h = '';
+  if (t || d.terrainLabel) h += `<div class="de-ctx-r"><div class="de-ctx-m"><b>${escH(t ? (t.ref ? t.ref + ' ' : '') + (t.localisation || '') : d.terrainLabel)}</b><small>${t ? [t.superficie ? mFr(t.superficie) + ' m²' : '', t.prix > 0 ? mFr(t.prix) + ' DH/m²' : '', f > 0 ? mFr(f, f < 10 ? 1 : 0) + ' M DH' : ''].filter(Boolean).join(' · ') : 'Terrain hors CRM'}</small></div>${t && t.urba ? zoneChip(t.urba) : ''}${t ? `<button type="button" aria-label="Fiche terrain" onclick="closeModal('modal-deal-edit');openTerrainDetail(${JSON.stringify(t.id)})">${ic('grid')}</button>` : ''}</div>`;
+  if (a || d.acheteurLabel) {
+    const wa = a && a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+    h += `<div class="de-ctx-r"><div class="de-ctx-m"><b>${escH(a ? a.nom : d.acheteurLabel)}</b><small>${escH(a ? [a.societe, a.telephone ? prTelAff(a.telephone) : ''].filter(Boolean).join(' · ') : '')}</small></div>${a && a.telephone ? `<a href="tel:+${escH(a.telephone)}" aria-label="Appeler">${ic('phone')}</a>` : ''}${wa ? `<a class="wa" href="https://wa.me/${escH(a.telephone)}" target="_blank" rel="noopener" aria-label="WhatsApp">${ic('wa')}</a>` : ''}${a ? `<button type="button" aria-label="Fiche promoteur" onclick="closeModal('modal-deal-edit');prOpen(${a.id})">${ic('users')}</button>` : ''}</div>`;
+  }
+  box.innerHTML = h;
+  deSteps();
+};
+</script>
 </body>
 </html>

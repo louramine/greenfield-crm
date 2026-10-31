@@ -1147,6 +1147,11 @@ body:not(.role-admin) .admin-only{display:none !important}
       <label class="form-label">Notes / Potentiel</label>
       <textarea class="form-textarea" id="t-notes" placeholder="Description du potentiel, points forts..."></textarea>
     </div>
+    <div class="form-group">
+      <label class="form-label">Documents du terrain <span style="color:#4f6a5c;font-weight:400;text-transform:none;letter-spacing:0">(PDF ou photo, 10 Mo max)</span></label>
+      <div id="tn-docs" class="tn-docs"></div>
+      <input type="file" id="tn-file" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="tnChosen(this)">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-terrain')">Annuler</button>
       <button class="btn btn-primary" onclick="saveTerrain()">Enregistrer</button>
@@ -2233,6 +2238,7 @@ function openTerrainModal() {
   document.getElementById('t-usage').value = 'Tertiaire';
   document.getElementById('t-statut').value = 'Disponible';
   document.getElementById('modal-terrain-title').textContent = 'Nouveau Terrain';
+  TN = {}; tnRender();
   openModal('modal-terrain');
 }
 
@@ -3027,7 +3033,9 @@ saveTerrain = async function() {
       terrain.id = res[0].id;
       state.terrains.push({ ...terrain, id: res[0].id, ref: res[0].ref || '', dateSourcing: terrain.date_sourcing });
       await logActivity('Ajout terrain', 'terrain', res[0].id, loc);
-      showNotif('✓ Terrain ajouté dans Supabase !');
+      const up = await tnUploadAll(res[0].id);
+      if (up.fail.length) showNotif('Terrain ajouté, mais ' + up.fail.length + ' document' + (up.fail.length > 1 ? 's' : '') + ' non envoyé' + (up.fail.length > 1 ? 's' : '') + ' : ' + up.fail.join(', ') + '. Ajoutez-les depuis la fiche du terrain.', true);
+      else showNotif('✓ Terrain ajouté' + (up.ok ? ' avec ' + up.ok + ' document' + (up.ok > 1 ? 's' : '') : '') + ' !');
     } else {
       showNotif("Échec : le terrain n'a pas été enregistré dans la base. Vérifiez votre connexion ou vos droits.", true);
       return;
@@ -3037,7 +3045,7 @@ saveTerrain = async function() {
     state.terrains.push({ ...terrain, dateSourcing: terrain.date_sourcing });
     addActivity(`Nouveau terrain : ${loc}`);
     saveState();
-    showNotif('✓ Terrain ajouté (local).');
+    showNotif(Object.keys(TN).length ? 'Terrain ajouté (local). Les documents ne sont enregistrés qu\'avec la base en ligne.' : '✓ Terrain ajouté (local).', !!Object.keys(TN).length);
   }
   closeModal('modal-terrain'); renderTerrains(); renderDashboard(); renderMatchingSelect();
 }
@@ -6255,6 +6263,59 @@ openTerrainDetail = function () {
   document.querySelectorAll('.td-iform,.td-inote').forEach(e => e.classList.remove('open'));
   return r;
 };
+</script>
+<style id="tn-css">
+.tn-docs{border:1px solid #dfe9e3;border-radius:12px;overflow:hidden;background:#fff}
+.tn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px}
+.tn-row+.tn-row{border-top:1px solid #eef3f0}
+.tn-l{flex:0 0 170px;font-weight:600;color:var(--gf-ink)}
+.tn-l small{display:block;font-weight:400;color:#4f6a5c;font-size:11.5px}
+.tn-f{flex:1;min-width:0;color:#4f6a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn-f b{color:var(--gf-mint-deep);font-weight:600}
+.tn-a{display:flex;gap:6px;flex:none}
+@media(max-width:900px){
+  .tn-row{flex-wrap:wrap;gap:6px 10px}
+  .tn-l{flex:1 1 auto}
+  .tn-f{flex:1 1 100%;order:3}
+}
+</style>
+<script>
+// ===== Documents joints à la création d'un terrain (CP, plan cadastral, note de renseignement) =====
+let TN = {}, tnKey = null;
+const TN_TYPES = [
+  { k: 'certificat_propriete', l: 'Certificat de propriété', s: 'CP' },
+  { k: 'plan_cadastral', l: 'Plan cadastral', s: '' },
+  { k: 'note_renseignement', l: 'Note de renseignement', s: '' },
+];
+function tnRender() {
+  const box = document.getElementById('tn-docs');
+  if (!box) return;
+  box.innerHTML = TN_TYPES.map(t => {
+    const f = TN[t.k];
+    return `<div class="tn-row"><div class="tn-l">${t.l}${t.s ? ' <small>' + t.s + '</small>' : ''}</div>
+      <div class="tn-f">${f ? `<b>${escH(f.name)}</b> ${tdSize(f.size)}` : 'Aucun fichier'}</div>
+      <div class="tn-a"><button type="button" class="btn btn-ghost btn-sm" onclick="tnPick('${t.k}')">${f ? 'Changer' : 'Ajouter'}</button>${f ? `<button type="button" class="btn btn-ghost btn-sm" onclick="delete TN['${t.k}'];tnRender()" aria-label="Retirer">Retirer</button>` : ''}</div></div>`;
+  }).join('');
+}
+function tnPick(k) { tnKey = k; const i = document.getElementById('tn-file'); i.value = ''; i.click(); }
+function tnChosen(inp) {
+  const f = inp.files && inp.files[0];
+  if (!f || !tnKey) return;
+  if (f.size > 10485760) { showNotif('Fichier trop lourd (10 Mo maximum).', true); return; }
+  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { showNotif('Format accepté : PDF, JPG, PNG ou WebP.', true); return; }
+  TN[tnKey] = f; tnRender();
+}
+async function tnUploadAll(tid) {
+  const out = { ok: 0, fail: [] };
+  for (const t of TN_TYPES) {
+    const f = TN[t.k];
+    if (!f) continue;
+    try { await tdUploadFile(tid, t.k, f); out.ok++; } catch (e) { out.fail.push(t.s || t.l); }
+  }
+  TN = {};
+  return out;
+}
+tnRender();
 </script>
 </body>
 </html>

@@ -1,3 +1,10 @@
-PRODUCT.md
-DESIGN.md
-.impeccable
+# Seuls les fichiers de l'application sont publiés sur crm.greenfield.plus.
+# Tout le reste (scripts SQL avec données, archives, sources, documentation) reste privé.
+/*
+!/index.html
+!/favicon.svg
+!/favicon-32.png
+!/apple-touch-icon.png
+!/valo-data.json
+!/vercel.json
+!/maps

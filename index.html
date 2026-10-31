@@ -1304,6 +1304,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="pr-fhead" id="pr-fhead"></div>
     <div class="pr-tabs" id="pr-tabs"></div>
     <div id="pr-fbody"></div>
+    <div class="pr-ffoot" id="pr-ffoot"></div>
   </div>
 </div>
 
@@ -2030,6 +2031,8 @@ function filterTerrains() {
   // Update count
   const countEl = document.getElementById('terrains-count');
   if (countEl) countEl.textContent = `${filtered.length} terrain${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}`;
+
+  if (typeof mTerrains === 'function') mTerrains(filtered);
 
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
@@ -4912,6 +4915,7 @@ function prCard(a) {
   return `<div class="pr-card" onclick="prOpen(${a.id})">
     <div class="pr-card-top"><div><div class="pr-name">${prE(a.nom)}</div>${a.societe ? `<div class="pr-soc">${prE(a.societe)}</div>` : ''}</div>${prStatutB(a.statut)}</div>
     <div class="pr-meta"><span>${tel}</span>${a.associe ? `<span>Suivi : <b>${prE(a.associe)}</b></span>` : ''}${tk ? `<span>${tk}</span>` : ''}</div>
+    ${a.telephone ? `<div class="pr-qa"><a href="tel:+${prE(a.telephone)}" onclick="event.stopPropagation()">${typeof M_ICO !== 'undefined' ? M_ICO.phone : ''}Appeler</a>${a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop ? `<a class="wa" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${typeof M_ICO !== 'undefined' ? M_ICO.wa : ''}WhatsApp</a>` : ''}</div>` : ''}
     ${crit ? `<div class="pr-chips">${crit}</div>` : '<div class="pr-chips"><span class="pr-chip warn">Critères à renseigner</span></div>'}
     <div class="pr-foot"><span title="Profil renseigné">${comp} %</span><div class="pr-bar"><i style="width:${comp}%"></i></div>
       <span>${reps.length ? reps.length + ' proposé' + (reps.length > 1 ? 's' : '') + (pos ? ', ' + pos + ' positif' + (pos > 1 ? 's' : '') : '') : 'Aucun terrain proposé'}</span></div>
@@ -5098,7 +5102,15 @@ function prRenderFiche() {
       ${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur');openAcheteurEdit(${a.id})">Modifier</button>
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-promoteur')">Fermer</button>
-    </div>`;
+    </div>
+    <button type="button" class="pr-x" aria-label="Fermer" onclick="closeModal('modal-promoteur')">✕</button>`;
+  const ic = k => (typeof M_ICO !== 'undefined' ? M_ICO[k] : '');
+  document.getElementById('pr-ffoot').innerHTML =
+    (a.telephone ? `<a href="tel:+${prE(a.telephone)}">${ic('phone')}Appeler</a>` : '') +
+    (wa ? `<a class="wa" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener">${ic('wa')}WhatsApp</a>` : '') +
+    `<button type="button" onclick="prTabGo('ech')">${ic('note')}Échange</button>` +
+    `<button type="button" onclick="prTabGo('reco')">${ic('grid')}Proposer</button>` +
+    `<button type="button" onclick="closeModal('modal-promoteur');openAcheteurEdit(${a.id})">${ic('edit')}Modifier</button>`;
   const tabs = [['profil', 'Profil'], ['reco', 'Terrains à proposer'], ['ech', 'Échanges', ech.length], ['prop', 'Terrains proposés', reps.length], ['pref', 'Préférences']];
   document.getElementById('pr-tabs').innerHTML = tabs.map(([k, l, n]) => `<button class="pr-tab ${PR.tab === k ? 'on' : ''}" onclick="prTabGo('${k}')">${l}${n ? `<em>${n}</em>` : ''}</button>`).join('');
   const body = document.getElementById('pr-fbody');
@@ -5318,6 +5330,523 @@ runMatching = function (adhoc) {
 function prProposerUn(aid, tid) { PR.open = aid; PR.sel = new Set([String(tid)]); prEnvoyer(aid).then(() => runMatching()); }
 
 if (currentPage === 'acheteurs') prRenderList();
+</script>
+<style id="m-css">
+/* ===== Expérience mobile : navigation basse, listes compactes, fiches plein écran ===== */
+.m-top,.m-nav,.m-fab,.m-only,.m-handle,#m-tlist,.m-ptabs,.m-map-btn,.m-fbtn,.pr-qa,.pr-x,.pr-ffoot,.m-sort{display:none}
+.m-sheet-bg{position:fixed;inset:0;background:rgba(4,18,10,.62);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
+.m-sheet-bg.open{opacity:1;pointer-events:auto}
+.m-sheet{position:fixed;left:0;right:0;bottom:0;z-index:901;background:#0f2e1d;color:var(--white);border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.45);max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .24s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+.m-sheet.open{transform:none;visibility:visible}
+.m-sh-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0}
+.m-sh-h b{font-family:'Syne',sans-serif;font-size:16px}
+.m-sh-h button{background:var(--green-bright);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-weight:700;font-size:13px;font-family:'DM Sans',sans-serif}
+.m-sh-b{padding:4px 16px calc(18px + env(safe-area-inset-bottom));overflow-y:auto;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.m-sh-b>*{flex:1 1 100%;min-width:0}
+.m-sh-b input[type=number]{width:auto !important;flex:1 1 40% !important;font-size:16px !important}
+.m-sh-b .ms-btn{width:100%;text-align:left;font-size:15px}
+.m-sh-b .ms-panel{position:static;width:auto;margin-top:8px;box-shadow:none}
+.m-sh-b .pr-sel{max-width:none;font-size:15px}
+.m-sh-b label{font-size:14px !important;color:#cfe3d7 !important;padding:4px 0}
+.m-sh-b>button{padding:11px !important}
+.m-sh-b .m-sort{display:block;width:100%;padding:11px 12px;border:1.5px solid rgba(45,158,95,.3);border-radius:10px;background:rgba(10,46,26,.8);color:var(--white);font-size:15px;font-family:'DM Sans',sans-serif}
+.m-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.m-tile{background:rgba(255,255,255,.06);border:1px solid rgba(45,158,95,.22);border-radius:14px;padding:14px 6px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--white);font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;text-decoration:none;cursor:pointer}
+.m-tile svg{width:22px;height:22px;color:var(--green-light)}
+.m-tile.danger svg{color:#ff8a80}
+.m-act{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(45,158,95,.22);color:var(--white);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;text-align:left}
+.m-act span{width:38px;height:38px;border-radius:12px;background:rgba(45,158,95,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.m-act span svg{width:20px;height:20px;color:var(--green-light)}
+.m-act small{display:block;font-weight:400;font-size:12px;color:var(--gray-mid);margin-top:2px}
+.m-who{flex:1 1 100%;font-size:12.5px;color:var(--gray-mid);margin-bottom:2px}
+.m-search{position:fixed;inset:0;z-index:950;background:#0a2518;display:none;flex-direction:column}
+.m-search.open{display:flex}
+.m-se-h{display:flex;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid rgba(45,158,95,.18)}
+.m-se-h input{flex:1;min-width:0;padding:11px 14px;border-radius:12px;border:1.5px solid rgba(45,158,95,.35);background:rgba(255,255,255,.07);color:var(--white);font-size:16px;font-family:'DM Sans',sans-serif;outline:none}
+.m-se-h button{background:none;border:none;color:var(--green-light);font-size:15px;font-weight:600;padding:8px 4px;font-family:'DM Sans',sans-serif}
+.m-se-r{flex:1;overflow-y:auto;padding:8px 12px calc(20px + env(safe-area-inset-bottom))}
+.m-se-sec{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-mid);font-weight:700;margin:14px 4px 8px}
+.m-se-hint{color:var(--gray-mid);font-size:14px;text-align:center;padding:30px 10px}
+.m-se-more{display:block;width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1.5px solid rgba(45,158,95,.35);background:none;color:var(--green-light);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif}
+.m-tl{background:#fff;border-radius:14px;overflow:hidden}
+.m-tr{display:flex;align-items:center;gap:6px;padding:9px 12px 9px 4px;border-bottom:1px solid #edf3ef;color:#1d2b23;cursor:pointer;-webkit-tap-highlight-color:rgba(45,158,95,.15)}
+.m-tr:last-child{border-bottom:none}
+.m-tr.sold{opacity:.55}
+.m-tr .fav-btn{padding:6px 6px;font-size:18px}
+.m-tr-main{flex:1;min-width:0}
+.m-tr-1{font-size:14px;color:var(--green-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-tr-1 b{font-size:11.5px;color:#6b8a78;font-weight:700;margin-right:5px}
+.m-tr-2{font-size:12px;color:#5f6f66;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-tr-2 i{font-style:normal;background:#e3f2fd;color:#1565c0;border-radius:6px;padding:0 5px;font-weight:700;font-size:11px}
+.m-tr-r{text-align:right;flex-shrink:0}
+.m-tr-f{font-weight:800;font-size:14px;color:var(--green-mid);white-space:nowrap}
+.m-tr-s{font-size:10.5px;font-weight:700;color:#7a6320;margin-top:2px;white-space:nowrap}
+.m-tl-more{display:block;width:100%;margin:10px 0 0;padding:12px;border-radius:12px;border:1.5px solid rgba(45,158,95,.35);background:rgba(255,255,255,.05);color:var(--green-light);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif}
+.m-pr{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #edf3ef;color:#1d2b23;cursor:pointer}
+.m-pr:last-child{border-bottom:none}
+.m-pr-av{width:36px;height:36px;border-radius:50%;background:#e3f1ea;color:var(--green-mid);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+.m-pr-m{flex:1;min-width:0}
+.m-pr-m b{display:block;font-size:14px;color:var(--green-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-pr-m small{display:block;font-size:12px;color:#6b7f73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media(max-width:900px){
+  input,select,textarea{font-size:16px !important}
+  html,body{overflow-x:clip !important;overflow-y:visible !important}
+  .topbar{flex-wrap:nowrap !important;height:54px;padding:0 8px 0 16px !important;gap:6px !important}
+  .topbar .page-title{font-size:20px !important}
+  .topbar-actions,#gf-burger{display:none !important}
+  .m-top{display:flex;gap:4px;flex-shrink:0}
+  .m-top button{width:42px;height:42px;border-radius:12px;border:none;background:transparent;color:var(--green-light);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .m-top button:active{background:rgba(45,158,95,.18)}
+  .m-top svg{width:21px;height:21px}
+  .content{padding:12px 14px calc(96px + env(safe-area-inset-bottom)) !important}
+  .notif{left:16px !important;right:16px !important;bottom:calc(84px + env(safe-area-inset-bottom)) !important;text-align:center}
+  .m-only{display:inline-flex}
+  .m-hide{display:none !important}
+
+  .m-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(8,30,18,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(45,158,95,.2);padding:4px 4px env(safe-area-inset-bottom)}
+  .m-nav button{flex:1;background:none;border:none;color:#7f9c8b;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;font-size:10.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .m-nav svg{width:23px;height:23px}
+  .m-nav button.on{color:var(--green-light)}
+  .m-nav button.on svg{filter:drop-shadow(0 0 6px rgba(78,202,130,.45))}
+  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:linear-gradient(135deg,#2d9e5f,#4eca82);color:#fff;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,90,50,.55);cursor:pointer}
+  .m-fab svg{width:26px;height:26px}
+  .m-fab.off{display:none}
+  body.m-locked .m-nav,body.m-locked .m-fab{display:none}
+
+  /* Terrains */
+  #page-terrains>div:first-child{position:sticky;top:54px;z-index:20;margin:-12px -14px 10px !important;padding:10px 14px 8px;background:rgba(9,34,20,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);gap:8px !important}
+  #page-terrains>div:first-child>.m-search-w{flex:1 1 0 !important;min-width:0 !important}
+  #page-terrains>div:first-child>.m-fbtn{flex:0 0 auto !important}
+  #page-terrains>div:first-child>#terrains-count{flex:1 1 100% !important}
+  #page-terrains .table-wrap{display:none}
+  #m-tlist{display:block}
+  .m-fbtn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:42px;border-radius:12px;border:1.5px solid rgba(45,158,95,.35);background:rgba(255,255,255,.06);color:var(--white);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap}
+  .m-fbtn svg{width:17px;height:17px}
+  .m-fbtn em{font-style:normal;background:var(--green-bright);color:#fff;border-radius:10px;min-width:20px;height:20px;padding:0 6px;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+  .m-fbtn.on{border-color:var(--green-light)}
+
+  /* Promoteurs */
+  #page-acheteurs .pr-toolbar{position:sticky;top:54px;z-index:20;margin:-12px -14px 8px;padding:10px 14px 8px;background:rgba(9,34,20,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);gap:8px}
+  #page-acheteurs .pr-toolbar>.pr-search{flex:1 1 0 !important}
+  #page-acheteurs .pr-toolbar>.m-fbtn{flex:0 0 auto !important}
+  #page-acheteurs .pr-toolbar>.pr-count{flex:1 1 100% !important}
+  .pr-search input{height:42px}
+  #page-acheteurs .pr-kpis{display:flex !important;overflow-x:auto;gap:8px;margin:0 -14px 10px;padding:0 14px;scrollbar-width:none}
+  #page-acheteurs .pr-kpis::-webkit-scrollbar{display:none}
+  #page-acheteurs .pr-kpi{flex:0 0 auto;padding:8px 12px;border-radius:12px;display:flex;align-items:baseline;gap:6px}
+  #page-acheteurs .pr-kpi b{display:inline;font-size:17px}
+  #page-acheteurs .pr-kpi span{font-size:10.5px;letter-spacing:.03em;white-space:nowrap}
+  .pr-grid{gap:8px}
+  .pr-card{padding:12px 14px;gap:7px;border-radius:14px}
+  .pr-card:hover{transform:none}
+  .pr-card .pr-foot{font-size:11px}
+  .pr-qa{display:flex;gap:8px;margin-top:2px}
+  .pr-qa a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;border:1.5px solid #cfe3d7;color:var(--green-mid);background:#fff}
+  .pr-qa a.wa{background:#25D366;border-color:#25D366;color:#fff}
+  .pr-qa svg{width:15px;height:15px}
+
+  /* Dashboard */
+  #my-tasks-card{padding:14px 16px;margin-bottom:12px !important}
+  #my-tasks-card.m-empty{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px}
+  #my-tasks-card.m-empty[style*="none"]{display:none}
+  #my-tasks-card.m-empty .card-title{margin:0}
+  #my-tasks-card.m-empty #my-tasks-list>div{padding:0 !important;font-size:12.5px !important}
+  #page-dashboard .kpi-grid{gap:8px;margin-bottom:12px}
+  #page-dashboard .kpi-card{padding:11px 13px;border-radius:14px}
+  #page-dashboard .kpi-icon{display:none}
+  #page-dashboard .kpi-label{font-size:9.5px;margin-bottom:5px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #page-dashboard .kpi-label span{display:none}
+  #page-dashboard .kpi-value{font-size:23px !important}
+  #page-dashboard .kpi-sub{font-size:10.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #page-dashboard .kpi-grid.m-zon .kpi-value{font-size:20px !important}
+  #page-dashboard .card{padding:14px 16px;margin-bottom:12px}
+  #page-dashboard .dashboard-grid{gap:12px}
+
+  /* Pipeline */
+  #page-pipeline>.admin-only{margin-bottom:10px !important}
+  #page-pipeline>.admin-only .form-label{display:none}
+  #page-pipeline>.admin-only select{max-width:none !important;padding:9px 12px}
+  .m-ptabs{display:flex;gap:6px;overflow-x:auto;margin:0 -14px 12px;padding:2px 14px;scrollbar-width:none}
+  .m-ptabs::-webkit-scrollbar{display:none}
+  .m-ptab{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:20px;border:1.5px solid rgba(45,158,95,.3);background:rgba(255,255,255,.05);color:#a9c2b4;font-size:13.5px;font-weight:600;font-family:'DM Sans',sans-serif}
+  .m-ptab b{background:rgba(255,255,255,.12);border-radius:10px;padding:0 7px;font-size:12px;line-height:19px}
+  .m-ptab.on{background:var(--green-bright);border-color:var(--green-bright);color:#fff}
+  .m-ptab.on b{background:rgba(255,255,255,.25)}
+  #page-pipeline .pipeline-board{display:block !important;margin:0 !important;padding:0 !important;overflow:visible !important}
+  #page-pipeline .pipeline-col{display:none;background:none;border:none;padding:0;min-height:0 !important}
+  #page-pipeline .pipeline-col.m-on{display:block}
+  #page-pipeline .col-header{display:none}
+  #page-pipeline .pipeline-col>div{min-height:0 !important}
+  #page-pipeline .deal-card{margin-bottom:8px;cursor:pointer !important}
+
+  /* Carte */
+  #page-carte>div:first-child{display:none !important}
+  #page-carte>div:last-child{border-radius:14px !important}
+  #page-carte iframe{height:calc(100vh - 54px - 66px - 26px) !important;height:calc(100dvh - 54px - 66px - 26px - env(safe-area-inset-bottom)) !important;min-height:300px !important}
+  #page-carte .content-fix{padding-bottom:0}
+  .m-map-btn{display:flex;position:absolute;right:10px;bottom:10px;z-index:5;align-items:center;gap:6px;padding:9px 13px;border-radius:12px;background:rgba(10,37,24,.9);color:var(--green-light);font-size:13px;font-weight:700;text-decoration:none;border:1px solid rgba(78,202,130,.4)}
+
+  /* Marketing */
+  #page-marketing .card{padding:14px;overflow:visible !important}
+  #page-marketing .mk-grid,#page-marketing .mk-grid>*{overflow:visible !important}
+  #page-marketing label:has(.mk-net){display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;border:1.5px solid #d6eadf;background:#fff}
+  #page-marketing button[onclick="mkGenerate(true)"]{position:sticky;bottom:calc(78px + env(safe-area-inset-bottom));z-index:5;padding:14px;font-size:15px;box-shadow:0 8px 24px rgba(20,90,50,.45)}
+  #page-matching .mv-tabs{gap:6px}
+
+  /* Fiches plein écran */
+  #modal-terrain-detail,#modal-promoteur,#modal-acheteur{align-items:stretch !important}
+  #modal-terrain-detail .modal,#modal-promoteur .modal,#modal-acheteur .modal{width:100vw !important;max-width:100vw !important;height:100vh;height:100dvh;max-height:100vh !important;max-height:100dvh !important;border-radius:0 !important;padding-top:env(safe-area-inset-top) !important}
+  .m-handle{display:block;width:40px;height:5px;border-radius:3px;background:#d3ded8;margin:8px auto 2px;flex-shrink:0}
+  #modal-terrain-detail .m-handle{position:sticky;top:0;z-index:7;margin:0 auto;border-top:8px solid #fff;border-bottom:4px solid #fff;box-sizing:content-box;background-clip:padding-box}
+  #modal-terrain-detail .td-head{top:17px !important;margin-bottom:12px !important}
+  #modal-terrain-detail .td-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom)) !important}
+  #modal-terrain-detail .td-foot>div .btn{font-size:13px}
+  #modal-terrain-detail .td-foot .btn-ghost{justify-content:center;color:var(--green-mid);border:1.5px solid #cfe3d7;background:#fff}
+  #modal-terrain-detail .modal>div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr 1fr !important;gap:10px 14px !important;padding:12px 14px !important;margin-bottom:14px !important}
+  .pr-fiche{padding:0 !important}
+  .pr-fhead{padding:6px 16px 0 !important;position:relative}
+  .pr-fhead h2{font-size:19px;padding-right:44px}
+  .pr-fhead-act{display:none !important}
+  .pr-x{display:flex;position:absolute;right:10px;top:4px;width:38px;height:38px;border-radius:12px;border:none;background:#f0f5f2;color:#4a5a51;font-size:17px;align-items:center;justify-content:center}
+  .pr-tabs{padding:8px 8px 0 !important;scrollbar-width:none}
+  .pr-tabs::-webkit-scrollbar{display:none}
+  .pr-tab{padding:10px 10px}
+  .pr-ffoot{display:flex;flex-shrink:0;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #e6efe9;background:#fff}
+  .pr-ffoot a,.pr-ffoot button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:12px;border:1.5px solid #d6eadf;background:#fff;color:var(--green-mid);font-size:11.5px;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif}
+  .pr-ffoot a.wa{background:#25D366;border-color:#25D366;color:#fff}
+  .pr-ffoot svg{width:19px;height:19px}
+  .pr-sendbar{bottom:-22px}
+  #modal-acheteur .modal{padding:0 16px !important;padding-top:env(safe-area-inset-top) !important}
+  #modal-acheteur .modal-title{position:sticky;top:0;z-index:6;background:#fff;margin:0 -16px 10px;padding:14px 16px 10px;box-shadow:0 1px 0 #e6efe9}
+  #modal-acheteur .modal-actions{position:sticky;bottom:0;z-index:6;background:#fff;margin:14px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 #e6efe9;flex-wrap:nowrap}
+  #modal-acheteur .m-handle{display:none}
+}
+</style>
+<script>
+// ===== Expérience mobile =====
+const mMQ = window.matchMedia('(max-width:900px)');
+const M = { stage: null, moved: [], pick: false, tl: [], tlMax: 120 };
+const M_ICO = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.6 2.9-6.4 6.5-6.4s6.5 2.8 6.5 6.4"/><circle cx="17.5" cy="9" r="2.6"/><path d="M17.5 14c2.4 0 4 1.9 4 4.6"/></svg>',
+  pipe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>',
+  sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>',
+  filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>',
+  match: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M21 3 13 11"/><path d="M8 21H3v-5"/><path d="m3 21 8-8"/></svg>',
+  mega: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>',
+  team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>',
+  out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H4"/></svg>',
+  terrain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="m3 20 6-9 4 5 3-4 5 8"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6.5 6.5-6.5"/><path d="M18 14v6M15 17h6"/></svg>',
+  deal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3"/><path d="M17 17H6l3 3"/></svg>',
+  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h3.2l1.6 4.3-2.1 1.4a11 11 0 0 0 5.1 5.1l1.4-2.1 4.3 1.6V17a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3.5 5.5 2 2 0 0 1 5 3.5z"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.5-.3z"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
+};
+const M_SHORT = { dashboard: 'Accueil', pipeline: 'Pipeline', matching: 'Matching', carte: 'Carte', equipe: 'Équipe', marketing: 'Marketing', terrains: 'Terrains', acheteurs: 'Promoteurs' };
+const M_TABS = [['dashboard', 'Accueil', 'home'], ['terrains', 'Terrains', 'grid'], ['acheteurs', 'Promoteurs', 'users'], ['pipeline', 'Pipeline', 'pipe']];
+const M_NOFAB = ['carte', 'marketing', 'matching', 'equipe'];
+const mE = v => escH(v == null ? '' : v);
+const mFr = (n, d) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: d || 0 }).replace(/[  ]/g, ' ');
+
+function mGo(page) {
+  const el = document.querySelector(`.sidebar .nav-item[onclick*="'${page}'"]`);
+  if (!el) return;
+  mClose();
+  showPage(page, el);
+  if (page === 'carte' && typeof initMap === 'function') initMap();
+  window.scrollTo(0, 0);
+}
+function mSync() {
+  const t = document.getElementById('pageTitle');
+  if (t) {
+    if (!t.dataset.mShort || t.textContent !== t.dataset.mShort) t.dataset.long = t.textContent;
+    const s = M_SHORT[currentPage] || t.dataset.long;
+    t.dataset.mShort = s;
+    t.textContent = mMQ.matches ? s : t.dataset.long;
+  }
+  document.querySelectorAll('.m-nav button').forEach(b => b.classList.toggle('on', b.dataset.p === currentPage || (b.dataset.p === 'plus' && !M_TABS.some(x => x[0] === currentPage))));
+  const fab = document.querySelector('.m-fab');
+  if (fab) fab.classList.toggle('off', M_NOFAB.includes(currentPage));
+  const login = document.getElementById('gf-login');
+  document.body.classList.toggle('m-locked', !!login && getComputedStyle(login).display !== 'none');
+}
+
+// ----- Feuilles (panneaux par le bas) -----
+function mOpen(id) {
+  mClose(true);
+  document.getElementById('m-bg').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function mClose(keepBg) {
+  document.querySelectorAll('.m-sheet.open').forEach(s => s.classList.remove('open'));
+  if (!keepBg) document.getElementById('m-bg').classList.remove('open');
+  const s = document.getElementById('m-search');
+  if (s && !keepBg) s.classList.remove('open');
+}
+function mSheet(title, html) {
+  document.getElementById('m-sheet-t').textContent = title;
+  document.getElementById('m-sheet-b').innerHTML = html;
+  mOpen('m-sheet');
+}
+function mPlus() {
+  const adm = typeof myRole === 'undefined' || myRole !== 'sourceur';
+  const tile = (ic, l, fn, cls) => `<button type="button" class="m-tile ${cls || ''}" onclick="${fn}">${M_ICO[ic]}${l}</button>`;
+  mSheet('Plus', `<div class="m-who">Connecté : <b style="color:#fff">${mE(currentAssocie || 'Équipe')}</b>${typeof myRole !== 'undefined' ? ' (' + mE(myRole) + ')' : ''}</div>
+    <div class="m-grid3" style="flex:1 1 100%">
+      ${tile('map', 'Carte', "mGo('carte')")}${tile('match', 'Matching', "mGo('matching')")}${tile('mega', 'Marketing', "mGo('marketing')")}
+      ${adm ? tile('team', 'Équipe', "mGo('equipe')") : ''}${tile('sync', 'Synchroniser', 'mRefresh()')}${adm ? tile('dl', 'Exporter', 'mClose();exportData()') : ''}
+      ${tile('out', 'Déconnexion', 'gfLogout()', 'danger')}
+    </div>`);
+}
+function mActions() {
+  const a = (ic, l, sub, fn) => `<button type="button" class="m-act" onclick="${fn}"><span>${M_ICO[ic]}</span><div>${l}<small>${sub}</small></div></button>`;
+  mSheet('Ajouter', a('terrain', 'Nouveau terrain', 'Saisir un terrain dans le portefeuille', 'mClose();openTerrainModal()') +
+    a('person', 'Nouveau promoteur', 'Créer une fiche promoteur ou acheteur', 'mClose();openAcheteurNew()') +
+    a('deal', 'Nouveau deal', 'Associer un terrain et un acheteur', 'mClose();openDealModal()') +
+    a('note', 'Noter un échange', 'Appel, rendez-vous ou visite avec un promoteur', "mSearchOpen(true)"));
+}
+async function mRefresh() {
+  mClose();
+  try { await loadFromSupabase(); if (typeof loadTaches === 'function') await loadTaches(); } catch (e) {}
+  renderPage(currentPage);
+}
+
+// ----- Recherche globale -----
+function mSearchOpen(pick) {
+  mClose(true);
+  document.getElementById('m-bg').classList.remove('open');
+  M.pick = !!pick;
+  const s = document.getElementById('m-search'), q = document.getElementById('m-se-q');
+  q.value = ''; q.placeholder = M.pick ? 'Nom, société ou téléphone du promoteur' : 'Réf, quartier, TF, nom, téléphone...';
+  s.classList.add('open');
+  mSearchRun();
+  setTimeout(() => q.focus(), 60);
+}
+function mTRow(t) {
+  const f = Number(t.forfait) || ((Number(t.superficie) || 0) * (Number(t.prix) || 0) / 1e6);
+  const st = t.statut && !['Disponible', 'À qualifier'].includes(t.statut) ? t.statut : '';
+  return `<div class="m-tr ${t.statut === 'Vendu' ? 'sold' : ''}" onclick="mClose();openTerrainDetail(${JSON.stringify(t.id)})">
+    ${favBtn(t.id)}
+    <div class="m-tr-main"><div class="m-tr-1"><b>${mE(t.ref || ('N° ' + t.id))}</b>${mE(t.localisation || t.quartier || 'Sans localisation')}</div>
+      <div class="m-tr-2">${t.superficie ? mFr(t.superficie) + ' m²' : 'Superficie ?'}${t.prix > 0 ? ' · ' + mFr(t.prix) + ' DH/m²' : ''}${t.urba ? ' · <i>' + mE(t.urba) + '</i>' : ''}</div></div>
+    <div class="m-tr-r"><div class="m-tr-f">${f > 0 ? mFr(f, f < 10 ? 1 : 0) + ' M' : ''}</div>${st ? `<div class="m-tr-s">${mE(st)}</div>` : ''}</div>
+  </div>`;
+}
+function mPRow(a, fn) {
+  const ini = String(a.nom || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+  return `<div class="m-pr" onclick="${fn || `mClose();prOpen(${a.id})`}"><div class="m-pr-av">${mE(ini)}</div>
+    <div class="m-pr-m"><b>${mE(a.nom)}</b><small>${mE([a.societe, a.telephone ? prTelAff(a.telephone) : ''].filter(Boolean).join(' · ') || a.statut || '')}</small></div></div>`;
+}
+function mSearchRun() {
+  const raw = document.getElementById('m-se-q').value.trim(), q = prN(raw), dig = raw.replace(/\D/g, '').replace(/^0/, '');
+  const box = document.getElementById('m-se-r');
+  const pickFn = a => `mClose();prOpen(${a.id});PR.tab='ech';prRenderFiche()`;
+  if (q.length < 2 && dig.length < 3) {
+    if (M.pick) {
+      const rec = state.acheteurs.slice().sort((x, y) => new Date(prDernier(y) || 0) - new Date(prDernier(x) || 0) || String(x.nom).localeCompare(String(y.nom), 'fr')).slice(0, 12);
+      box.innerHTML = `<div class="m-se-sec">Promoteurs récents</div><div class="m-tl">${rec.map(a => mPRow(a, pickFn(a))).join('')}</div>`;
+    } else box.innerHTML = '<div class="m-se-hint">Cherchez un terrain par référence, quartier, zonage ou TF, ou un promoteur par nom, société ou téléphone.</div>';
+    return;
+  }
+  const ps = state.acheteurs.filter(a => (q.length >= 2 && prN([a.nom, a.societe, a.email].join(' ')).includes(q)) || (dig.length >= 3 && String(a.telephone || '').includes(dig)));
+  let h = '';
+  if (!M.pick) {
+    const ts = state.terrains.filter(t => q.length >= 2 && prN([t.ref, t.localisation, t.quartier, t.urba, t.tf].join(' ')).includes(q));
+    if (ts.length) h += `<div class="m-se-sec">Terrains (${ts.length})</div><div class="m-tl">${ts.slice(0, 8).map(mTRow).join('')}</div>` +
+      (ts.length > 8 ? `<button class="m-se-more" onclick="mSeeTerrains()">Voir les ${ts.length} terrains</button>` : '');
+  }
+  if (ps.length) h += `<div class="m-se-sec">Promoteurs (${ps.length})</div><div class="m-tl">${ps.slice(0, M.pick ? 30 : 8).map(a => mPRow(a, M.pick ? pickFn(a) : null)).join('')}</div>` +
+    (!M.pick && ps.length > 8 ? `<button class="m-se-more" onclick="mSeePromoteurs()">Voir les ${ps.length} promoteurs</button>` : '');
+  box.innerHTML = h || '<div class="m-se-hint">Aucun résultat.</div>';
+}
+function mSeeTerrains() { const v = document.getElementById('m-se-q').value; mGo('terrains'); document.getElementById('search-terrains').value = v; filterTerrains(); }
+function mSeePromoteurs() { const v = document.getElementById('m-se-q').value; mGo('acheteurs'); document.getElementById('pr-search').value = v; prRenderList(); }
+
+// ----- Terrains : liste compacte -----
+function mTerrains(list) {
+  M.tl = list; M.tlMax = 120;
+  mTBadge();
+  if (mMQ.matches) mTRender();
+}
+function mTRender() {
+  const el = document.getElementById('m-tlist');
+  if (!el) return;
+  const l = M.tl || [];
+  el.innerHTML = l.length ? `<div class="m-tl">${l.slice(0, M.tlMax).map(mTRow).join('')}</div>` +
+    (l.length > M.tlMax ? `<button class="m-tl-more" onclick="M.tlMax+=150;mTRender()">Afficher plus (${l.length - M.tlMax} restants)</button>` : '')
+    : '<div class="m-se-hint">Aucun terrain correspondant.</div>';
+}
+function mTBadge() {
+  const b = document.getElementById('m-tf-btn');
+  if (!b) return;
+  let n = (msSel.loc.size ? 1 : 0) + (msSel.urba.size ? 1 : 0);
+  ['filter-prix-min', 'filter-prix-max'].forEach(id => { const e = document.getElementById(id); if (e && e.value !== '') n++; });
+  ['hide-vendus', 'only-fav', 'only-tfdup'].forEach(id => { const e = document.getElementById(id); if (e && e.checked) n++; });
+  b.classList.toggle('on', n > 0);
+  b.innerHTML = M_ICO.filter + 'Filtres' + (n ? `<em>${n}</em>` : '');
+  const s = document.getElementById('m-tsort');
+  if (s) s.value = TSORT.key ? TSORT.key + ':' + TSORT.dir : '';
+}
+function mTSort(v) {
+  const [k, d] = v.split(':');
+  TSORT.key = k || ''; TSORT.dir = Number(d) || 1;
+  if (typeof tsortMarks === 'function') tsortMarks();
+  filterTerrains();
+}
+function mPBadge() {
+  const b = document.getElementById('m-pf-btn');
+  if (!b) return;
+  let n = 0;
+  ['pr-resp', 'pr-statut', 'pr-typo'].forEach(id => { const e = document.getElementById(id); if (e && e.value) n++; });
+  ['pr-incomplet', 'pr-relance'].forEach(id => { const e = document.getElementById(id); if (e && e.checked) n++; });
+  b.classList.toggle('on', n > 0);
+  b.innerHTML = M_ICO.filter + 'Filtres' + (n ? `<em>${n}</em>` : '');
+}
+
+// ----- Pipeline en onglets -----
+function mPipe() {
+  const box = document.getElementById('m-ptabs');
+  if (!box) return;
+  const cnt = st => Number((document.getElementById('cnt-' + st) || {}).textContent) || 0;
+  if (!M.stagePicked) M.stage = PIPE_STAGES.find(st => cnt(st) > 0) || PIPE_STAGES[0];
+  const lab = { teaser: 'Teaser', nda: 'NDA', visite: 'Visite', offre: 'Offre', closing: 'Closing' };
+  box.innerHTML = PIPE_STAGES.map(st => `<button type="button" class="m-ptab ${st === M.stage ? 'on' : ''}" onclick="M.stage='${st}';M.stagePicked=true;mPipe()">${lab[st] || st}<b>${cnt(st)}</b></button>`).join('');
+  PIPE_STAGES.forEach(st => { const c = document.getElementById('col-' + st); if (c) c.closest('.pipeline-col').classList.toggle('m-on', st === M.stage); });
+}
+
+// ----- Fiches -----
+function mPropose(id) {
+  closeModal('modal-terrain-detail');
+  mGo('matching');
+  if (typeof mvTab === 'function') mvTab('match');
+  const s = document.getElementById('matching-terrain-select');
+  if (s) { s.value = String(id); runMatching(); }
+}
+let mDrag = null;
+document.addEventListener('touchstart', e => {
+  if (!mMQ.matches) return;
+  const h = e.target.closest('.m-handle, #modal-terrain-detail .td-head, .pr-fhead, #modal-acheteur .modal-title');
+  if (!h || e.target.closest('button, a, input, select, textarea')) return;
+  const ov = h.closest('.modal-overlay'), m = ov && ov.querySelector('.modal');
+  if (!m || m.scrollTop > 2) return;
+  mDrag = { ov, m, y: e.touches[0].clientY, dy: 0 };
+  m.style.transition = 'none';
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!mDrag) return;
+  mDrag.dy = Math.max(0, e.touches[0].clientY - mDrag.y);
+  mDrag.m.style.transform = `translateY(${mDrag.dy}px)`;
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  if (!mDrag) return;
+  const d = mDrag; mDrag = null;
+  d.m.style.transition = 'transform .2s ease';
+  if (d.dy > 110) { d.m.style.transform = 'translateY(100%)'; setTimeout(() => { closeModal(d.ov.id); d.m.style.transform = ''; d.m.style.transition = ''; }, 180); }
+  else { d.m.style.transform = ''; setTimeout(() => { d.m.style.transition = ''; }, 220); }
+});
+
+// ----- Déplacement des filtres dans les panneaux (mobile) et retour (ordinateur) -----
+function mStash(n, dest) { const mk = document.createComment('m'); n.parentNode.insertBefore(mk, n); dest.appendChild(n); M.moved.push([n, mk]); }
+function mLayout() {
+  const mob = mMQ.matches;
+  if (mob && !M.moved.length) {
+    const tf = document.querySelector('#page-terrains > div:first-child'), tb = document.getElementById('m-tf-body');
+    if (tf && tb) [...tf.children].forEach(ch => { if (!ch.classList.contains('m-search-w') && !ch.classList.contains('m-fbtn') && ch.id !== 'terrains-count') mStash(ch, tb); });
+    const pt = document.querySelector('#page-acheteurs .pr-toolbar'), pb = document.getElementById('m-pf-body');
+    if (pt && pb) [...pt.children].forEach(ch => { if (!ch.classList.contains('pr-search') && !ch.classList.contains('m-fbtn') && ch.id !== 'pr-count') mStash(ch, pb); });
+    const ph = { 'filter-prix-min': 'Forfait min (M DH)', 'filter-prix-max': 'Forfait max (M DH)' };
+    Object.keys(ph).forEach(id => { const e = document.getElementById(id); if (e) { e.dataset.ph = e.placeholder; e.placeholder = ph[id]; } });
+  } else if (!mob && M.moved.length) {
+    ['filter-prix-min', 'filter-prix-max'].forEach(id => { const e = document.getElementById(id); if (e && e.dataset.ph) e.placeholder = e.dataset.ph; });
+    M.moved.forEach(([n, mk]) => { mk.parentNode.insertBefore(n, mk); mk.remove(); });
+    M.moved = [];
+    mClose();
+  }
+  mSync();
+  if (mob && currentPage === 'terrains') mTRender();
+}
+
+function mBuild() {
+  const top = document.querySelector('.topbar');
+  top.insertAdjacentHTML('beforeend', `<div class="m-top"><button type="button" aria-label="Rechercher" onclick="mSearchOpen()">${M_ICO.search}</button><button type="button" aria-label="Synchroniser" onclick="mRefresh()">${M_ICO.sync}</button></div>`);
+  document.body.insertAdjacentHTML('beforeend', `
+    <nav class="m-nav">${M_TABS.map(([p, l, i]) => `<button type="button" data-p="${p}" onclick="mGo('${p}')">${M_ICO[i]}${l}</button>`).join('')}<button type="button" data-p="plus" onclick="mPlus()">${M_ICO.more}Plus</button></nav>
+    <button type="button" class="m-fab" aria-label="Ajouter" onclick="mActions()">${M_ICO.plus}</button>
+    <div class="m-sheet-bg" id="m-bg" onclick="mClose()"></div>
+    <div class="m-sheet" id="m-sheet"><div class="m-sh-h"><b id="m-sheet-t"></b><button type="button" onclick="mClose()">Fermer</button></div><div class="m-sh-b" id="m-sheet-b"></div></div>
+    <div class="m-sheet" id="m-sheet-tf"><div class="m-sh-h"><b>Filtrer les terrains</b><button type="button" onclick="mClose()">Voir les résultats</button></div><div class="m-sh-b" id="m-tf-body">
+      <select class="m-sort" id="m-tsort" onchange="mTSort(this.value)"><option value="">Tri : ordre du listing</option><option value="ref:1">Référence</option><option value="loc:1">Localisation (A à Z)</option><option value="sup:-1">Superficie (plus grande)</option><option value="sup:1">Superficie (plus petite)</option><option value="prix:1">Prix au m² (moins cher)</option><option value="prix:-1">Prix au m² (plus cher)</option><option value="forfait:1">Forfait (moins cher)</option><option value="forfait:-1">Forfait (plus cher)</option></select>
+    </div></div>
+    <div class="m-sheet" id="m-sheet-pf"><div class="m-sh-h"><b>Filtrer les promoteurs</b><button type="button" onclick="mClose()">Voir les résultats</button></div><div class="m-sh-b" id="m-pf-body"></div></div>
+    <div class="m-search" id="m-search"><div class="m-se-h"><input id="m-se-q" type="search" autocomplete="off" oninput="mSearchRun()"><button type="button" onclick="mClose()">Annuler</button></div><div class="m-se-r" id="m-se-r"></div></div>`);
+  // Terrains
+  const tf = document.querySelector('#page-terrains > div:first-child');
+  if (tf) {
+    tf.firstElementChild.classList.add('m-search-w');
+    tf.firstElementChild.insertAdjacentHTML('afterend', `<button type="button" class="m-fbtn" id="m-tf-btn" onclick="mOpen('m-sheet-tf')"></button>`);
+    document.querySelector('#page-terrains .table-wrap').insertAdjacentHTML('afterend', '<div id="m-tlist"></div>');
+  }
+  // Promoteurs
+  const ps = document.querySelector('#page-acheteurs .pr-search');
+  if (ps) ps.insertAdjacentHTML('afterend', `<button type="button" class="m-fbtn" id="m-pf-btn" onclick="mOpen('m-sheet-pf')"></button>`);
+  // Pipeline
+  const pb = document.querySelector('#page-pipeline .pipeline-board');
+  if (pb) pb.insertAdjacentHTML('beforebegin', '<div class="m-ptabs" id="m-ptabs"></div>');
+  // Dashboard : second bloc d'indicateurs (zonages)
+  const kg = document.querySelectorAll('#page-dashboard .kpi-grid');
+  if (kg[1]) kg[1].classList.add('m-zon');
+  // Carte
+  const mapBox = document.querySelector('#page-carte > div:last-child');
+  if (mapBox) mapBox.insertAdjacentHTML('beforeend', '<a class="m-map-btn" href="https://www.google.com/maps/d/viewer?mid=1ezG_VEhXTLGrUeRAY5epdo1ggJ1pk9A" target="_blank" rel="noopener">Google Maps ↗</a>');
+  // Fiche terrain : barre d'actions
+  const foot = document.querySelector('#modal-terrain-detail .td-foot');
+  if (foot) {
+    const del = foot.querySelector('button[onclick="confirmDeleteTerrain()"]');
+    if (del) del.innerHTML = '🗑<span class="m-hide"> Supprimer</span>';
+    const cancel = [...foot.querySelectorAll('button')].find(b => /closeModal/.test(b.getAttribute('onclick') || ''));
+    if (cancel) cancel.classList.add('m-hide');
+    const an = foot.querySelector('button[onclick^="mvFromTerrain"]');
+    if (an) an.insertAdjacentHTML('beforebegin', '<button class="btn btn-ghost m-only" onclick="mPropose(currentDetailId)">Proposer</button>');
+  }
+  ['modal-terrain-detail', 'modal-promoteur', 'modal-acheteur'].forEach(id => {
+    const m = document.querySelector('#' + id + ' .modal');
+    if (m) m.insertAdjacentHTML('afterbegin', '<div class="m-handle"></div>');
+  });
+  mTBadge(); mPBadge();
+}
+
+// ----- Branchements sur les fonctions existantes -----
+const _mShowPage = showPage;
+showPage = function (page, el) { _mShowPage(page, el); mSync(); };
+const _mRenderPipeline = renderPipeline;
+renderPipeline = function () { const r = _mRenderPipeline.apply(this, arguments); mPipe(); return r; };
+const _mRenderMyTasks = renderMyTasks;
+renderMyTasks = function () {
+  const r = _mRenderMyTasks.apply(this, arguments);
+  const c = document.getElementById('my-tasks-card');
+  if (c) c.classList.toggle('m-empty', !c.querySelector('input[type=checkbox]'));
+  return r;
+};
+const _mPrList = prRenderList;
+prRenderList = function () { const r = _mPrList.apply(this, arguments); mPBadge(); return r; };
+renderAcheteurs = prRenderList;
+
+mBuild();
+mLayout();
+mPipe();
+if (mMQ.addEventListener) mMQ.addEventListener('change', () => { mLayout(); if (!mMQ.matches) filterTerrains(); });
+else if (mMQ.addListener) mMQ.addListener(() => mLayout());
+const _mLoginObs = document.getElementById('gf-login');
+if (_mLoginObs && window.MutationObserver) new MutationObserver(mSync).observe(_mLoginObs, { attributes: true, attributeFilter: ['style'] });
 </script>
 </body>
 </html>

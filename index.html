@@ -5394,7 +5394,7 @@ tbody tr:hover{background:#eaf6ef}
 </style>
 <style id="m-css">
 /* ===== Expérience mobile : navigation basse, listes compactes, fiches plein écran ===== */
-.m-top,.m-nav,.m-fab,.m-only,.m-handle,#m-tlist,.m-ptabs,.m-map-btn,.m-fbtn,.pr-qa,.pr-x,.pr-ffoot,.m-sort{display:none}
+.m-logo,.m-top,.m-nav,.m-fab,.m-only,.m-handle,#m-tlist,.m-ptabs,.m-map-btn,.m-fbtn,.pr-qa,.pr-x,.pr-ffoot,.m-sort{display:none}
 .m-sheet-bg{position:fixed;inset:0;background:rgba(4,18,10,.62);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
 .m-sheet-bg.open{opacity:1;pointer-events:auto}
 .m-sheet{position:fixed;left:0;right:0;bottom:0;z-index:901;background:#122a1f;color:var(--white);border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.45);max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .24s cubic-bezier(.2,.8,.2,1);visibility:hidden}
@@ -5456,6 +5456,8 @@ tbody tr:hover{background:#eaf6ef}
   .topbar{flex-wrap:nowrap !important;height:54px;padding:0 8px 0 16px !important;gap:6px !important}
   .topbar .page-title{font-size:20px !important}
   .topbar-actions,#gf-burger{display:none !important}
+  body.m-home .m-logo{display:block;height:24px;width:auto;margin-right:auto}
+  body.m-home #pageTitle{display:none}
   .m-top{display:flex;gap:4px;flex-shrink:0}
   .m-top button{width:42px;height:42px;border-radius:12px;border:none;background:transparent;color:var(--green-light);display:flex;align-items:center;justify-content:center;cursor:pointer}
   .m-top button:active{background:rgba(126,224,164,.18)}
@@ -5635,6 +5637,7 @@ function mSync() {
     t.textContent = mMQ.matches ? s : t.dataset.long;
   }
   document.querySelectorAll('.m-nav button').forEach(b => b.classList.toggle('on', b.dataset.p === currentPage || (b.dataset.p === 'plus' && !M_TABS.some(x => x[0] === currentPage))));
+  document.body.classList.toggle('m-home', currentPage === 'dashboard');
   const fab = document.querySelector('.m-fab');
   if (fab) fab.classList.toggle('off', M_NOFAB.includes(currentPage));
   const login = document.getElementById('gf-login');
@@ -5838,6 +5841,8 @@ function mLayout() {
 
 function mBuild() {
   const top = document.querySelector('.topbar');
+  const lg = document.getElementById('gf-side-logo');
+  if (lg) document.getElementById('pageTitle').insertAdjacentHTML('beforebegin', `<img class="m-logo" src="${lg.src}" alt="GREENFIELD">`);
   top.insertAdjacentHTML('beforeend', `<div class="m-top"><button type="button" aria-label="Rechercher" onclick="mSearchOpen()">${M_ICO.search}</button><button type="button" aria-label="Synchroniser" onclick="mRefresh()">${M_ICO.sync}</button></div>`);
   document.body.insertAdjacentHTML('beforeend', `
     <nav class="m-nav">${M_TABS.map(([p, l, i]) => `<button type="button" data-p="${p}" onclick="mGo('${p}')">${M_ICO[i]}${l}</button>`).join('')}<button type="button" data-p="plus" onclick="mPlus()">${M_ICO.more}Plus</button></nav>

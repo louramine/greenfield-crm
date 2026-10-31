@@ -17,7 +17,7 @@
     --gold-light: #f0d080;
     --white: #f8faf9;
     --gray-light: #e2ece7;
-    --gray-mid: #8aab97;
+    --gray-mid: #4f6a5c;
     --dark: #071a0f;
     --card-bg: rgba(255,255,255,0.97);
     --shadow: 0 4px 24px rgba(14,31,23,0.10);
@@ -284,7 +284,7 @@
     box-shadow: 0 2px 8px rgba(14,31,23,0.08);
     cursor: pointer;
     transition: all 0.2s;
-    border-left: 3px solid var(--green-bright);
+    border-left: none;
   }
   .deal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14,31,23,0.14); }
 
@@ -534,7 +534,7 @@
 .mk-text{width:100%;min-height:280px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical}
 .mk-cv{width:100%;height:auto;border-radius:8px;border:1px solid #cfe0d6;background:#0a1410;display:block}
 .mk-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
-.mk-tip{font-size:12px;color:#5d7d6b;margin-top:8px;line-height:1.45}
+.mk-tip{font-size:12px;color:#4f6a5c;margin-top:8px;line-height:1.45}
 @media(max-width:1100px){.mk-grid{grid-template-columns:1fr !important}.mk-cols{grid-template-columns:1fr}}
 
 .ms-filter{position:relative}
@@ -717,7 +717,7 @@ body:not(.role-admin) .admin-only{display:none !important}
   <div class="nav-item" onclick="showPage('equipe', this)">
     <span class="nav-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4 1.8 4 4.5"/></svg></span> Équipe
   </div>
-  <div class="sidebar-footer">© 2026 GREENFIELD — Confidentiel</div>
+  <div class="sidebar-footer">© 2026 GREENFIELD, confidentiel</div>
 </aside>
 
 <!-- MAIN -->
@@ -734,7 +734,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           👤 Choisir associé
         </button>
         <div id="associe-selector" style="display:none;position:absolute;top:110%;right:0;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:8px;z-index:9999;flex-direction:column;gap:4px;min-width:160px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:700;padding:4px 10px 6px;">Qui êtes-vous ?</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:700;padding:4px 10px 6px;">Qui êtes-vous ?</div>
           <button onclick="setAssocie('Ayoub');document.getElementById('associe-selector').style.display='none';" style="display:block;width:100%;padding:9px 14px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;text-align:left;color:#1f7a4d;" onmouseover="this.style.background='#e8f7ef'" onmouseout="this.style.background='transparent'">🟢 Ayoub</button>
           <button onclick="setAssocie('Hachim');document.getElementById('associe-selector').style.display='none';" style="display:block;width:100%;padding:9px 14px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;text-align:left;color:#1f7a4d;" onmouseover="this.style.background='#e8f7ef'" onmouseout="this.style.background='transparent'">🟣 Hachim</button>
           <button onclick="setAssocie('Amine');document.getElementById('associe-selector').style.display='none';" style="display:block;width:100%;padding:9px 14px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;text-align:left;color:#1f7a4d;" onmouseover="this.style.background='#e8f7ef'" onmouseout="this.style.background='transparent'">🔵 Amine</button>
@@ -784,29 +784,29 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
 
       <!-- Ligne 2 : Top Déf. Urba -->
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--gray-mid);font-weight:600;margin-bottom:8px;margin-top:4px;">Top 4 — Déf. Urbanistiques</div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--gray-mid);font-weight:600;margin-bottom:8px;margin-top:4px;">Zonages les plus représentés</div>
       <div class="kpi-grid">
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">🥇</div>
-          <div class="kpi-label">B5 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Résidentiel standing</span></div>
+          <div class="kpi-label">B5 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">, résidentiel standing</span></div>
           <div class="kpi-value" id="kpi-b5">58</div>
           <div class="kpi-sub">terrains · moy. <strong id="kpi-b5-avg">26 134 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">🥈</div>
-          <div class="kpi-label">I2S1 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Industriel logistique</span></div>
+          <div class="kpi-label">I2S1 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">, industriel logistique</span></div>
           <div class="kpi-value" id="kpi-i2s1">26</div>
           <div class="kpi-sub">terrains · moy. <strong id="kpi-i2s1-avg">1 824 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">🥉</div>
-          <div class="kpi-label">E3 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Équipement 3</span></div>
+          <div class="kpi-label">E3 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">, équipement</span></div>
           <div class="kpi-value" id="kpi-e3">26</div>
           <div class="kpi-sub">terrains · moy. <strong id="kpi-e3-avg">1 853 MAD/m²</strong></div>
         </div>
         <div class="kpi-card kpi-highlight">
           <div class="kpi-icon">④</div>
-          <div class="kpi-label">B4 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">— Résidentiel collectif</span></div>
+          <div class="kpi-label">B4 <span style="font-size:10px;color:var(--gray-mid);font-weight:400">, résidentiel collectif</span></div>
           <div class="kpi-value" id="kpi-b4">25</div>
           <div class="kpi-sub">terrains · moy. <strong id="kpi-b4-avg">10 887 MAD/m²</strong></div>
         </div>
@@ -828,7 +828,7 @@ body:not(.role-admin) .admin-only{display:none !important}
         <div class="card">
           <div class="card-title">Pipeline par Étape <span style="font-size:11px;color:var(--gray-mid);font-weight:400;text-transform:none;letter-spacing:0" id="pipeline-total-label">0 deals actifs</span></div>
           <div id="pipeline-summary">
-            <div style="color:#aaa;font-size:13px;text-align:center;padding:30px 0;">Aucun deal pour le moment.<br>Ajoutez des deals dans Pipeline.</div>
+            <div style="color:#4f6a5c;font-size:13px;text-align:center;padding:30px 0;">Aucun deal pour le moment.<br>Ajoutez des deals dans Pipeline.</div>
           </div>
           <div style="margin-top:20px">
             <div class="stat-row">
@@ -844,9 +844,9 @@ body:not(.role-admin) .admin-only{display:none !important}
 
         <!-- Journal d'activité partagé (Feature F) -->
         <div class="card">
-          <div class="card-title">Journal d'activité — Équipe</div>
+          <div class="card-title">Journal d'activité de l'équipe</div>
           <div id="activity-log-list">
-            <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Chargement...</div>
+            <div style="color:#4f6a5c;font-size:13px;text-align:center;padding:20px 0;">Chargement...</div>
           </div>
         </div>
       </div>
@@ -1036,7 +1036,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <div id="mk-propale-wrap" style="display:none;border:1px solid #cfe0d6;border-radius:10px;padding:12px;margin-bottom:14px;background:#f4faf7">
             <div class="card-title" style="margin-bottom:8px">Propale PDF</div>
             <div class="form-group"><label class="form-label">Nom du client (page de présentation)</label><input class="form-input" id="mk-client" placeholder="Ex: Groupe Atlas Invest"></div>
-            <div class="form-group"><label class="form-label">Terrains à inclure <span id="mk-pl-count" style="color:#5d7d6b;font-weight:400"></span></label>
+            <div class="form-group"><label class="form-label">Terrains à inclure <span id="mk-pl-count" style="color:#4f6a5c;font-weight:400"></span></label>
               <input class="form-input" id="mk-pl-search" placeholder="Rechercher un terrain" oninput="mkPlList()" style="margin-bottom:6px">
               <div id="mk-pl-list" style="max-height:220px;overflow:auto;border:1px solid #cfe0d6;border-radius:8px;background:#fff;padding:6px 10px;font-size:13px"></div></div>
             <button class="btn btn-primary" style="width:100%" onclick="mkPropale()">Générer la propale PDF</button>
@@ -1077,7 +1077,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           <button class="btn btn-primary" style="width:100%" onclick="mkGenerate(true)">Générer les posts</button>
           </div>
         </div>
-        <div><div id="mk-pdf-out"></div><div id="mk-out"><div class="card" style="color:#8aab97;font-size:13px">Choisissez un terrain ou saisissez les informations, puis cliquez sur Générer les posts. Un texte et un visuel au bon format seront proposés pour chaque réseau.</div></div></div>
+        <div><div id="mk-pdf-out"></div><div id="mk-out"><div class="card" style="color:#4f6a5c;font-size:13px">Choisissez un terrain ou saisissez les informations, puis cliquez sur Générer les posts. Un texte et un visuel au bon format seront proposés pour chaque réseau.</div></div></div>
       </div>
     </div>
 
@@ -1384,7 +1384,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div class="form-group"><label class="form-label">Spécialité</label><input class="form-input" id="m-specialite" placeholder="Sourcing foncier"></div>
     </div>
     <div class="form-group"><label class="form-label">Zones</label><input class="form-input" id="m-zones" placeholder="Casablanca Sud, Bouskoura"></div>
-    <div style="font-size:12px;color:#8aab97;margin-bottom:8px">Le compte de connexion doit aussi être créé dans Supabase (Authentication, Users) avec le même email.</div>
+    <div style="font-size:12px;color:#4f6a5c;margin-bottom:8px">Le compte de connexion doit aussi être créé dans Supabase (Authentication, Users) avec le même email.</div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-membre')">Annuler</button>
       <button class="btn btn-primary" onclick="saveMembre()">Enregistrer</button>
@@ -1447,16 +1447,16 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div class="modal-title" id="detail-title" style="margin-bottom:0">Détail Terrain</div>
       <button type="button" id="fav-detail-btn" class="fav-detail" onclick="favToggle(currentDetailId, event)" title="Ajouter aux favoris">☆</button>
       <button type="button" class="btn btn-sm" onclick="shOpen()" style="margin-left:8px;margin-right:12px;background:#25D366;color:#fff;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12 0C5.4 0 .1 5.3.1 11.9c0 2.1.6 4.1 1.6 5.9L0 24l6.4-1.7a12 12 0 0 0 5.6 1.4c6.6 0 11.9-5.3 11.9-11.9 0-3.2-1.2-6.200-3.4-8.300zM12 21.700c-1.800 0-3.500-.5-5-1.400l-.4-.2-3.800 1 1-3.700-.2-.4A9.800 9.800 0 0 1 2.200 12C2.200 6.600 6.600 2.200 12 2.200c2.600 0 5.100 1 6.900 2.900A9.700 9.700 0 0 1 21.800 12c0 5.400-4.400 9.700-9.800 9.700zm5.400-7.300c-.3-.1-1.700-.8-2-.9-.3-.1-.5-.1-.7.1l-.9 1.100c-.2.200-.3.200-.6.100-1.700-.8-2.800-1.500-3.900-3.400-.3-.5.300-.5.900-1.600.1-.2.100-.4 0-.5l-.9-2.100c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.100-.8.400-.3.300-1 1-1 2.500s1.100 2.900 1.200 3.100c.1.200 2.100 3.200 5.100 4.500 1.900.8 2.600.9 3.500.7.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.2-.3-.3-.6-.4z"/></svg><span class="td-wa-l">Partager sur WhatsApp</span></button>
-      <button onclick="closeModal('modal-terrain-detail')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#aaa;line-height:1">✕</button>
+      <button onclick="closeModal('modal-terrain-detail')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#4f6a5c;line-height:1">✕</button>
     </div>
 
     <!-- Info fixes -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8faf9;border-radius:12px;padding:16px;margin-bottom:18px;">
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-bottom:3px">Localisation</div><div style="font-size:13.5px;font-weight:700;color:#0e1f17" id="d-info-loc">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-bottom:3px">Def. Urba.</div><div style="font-size:13.5px;font-weight:700;color:#1f7a4d" id="d-info-urba">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-bottom:3px">Superficie</div><div style="font-size:13.5px;font-weight:600;color:#0e1f17" id="d-info-sup">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-bottom:3px">Prix forfaitaire</div><div style="font-size:13.5px;font-weight:700;color:#2d9e5f" id="d-info-forfait">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#8aab97;font-weight:600;margin-bottom:3px">Prix au m²</div><div style="font-size:13.5px;color:#0e1f17" id="d-info-prix">—</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Localisation</div><div style="font-size:13.5px;font-weight:700;color:#0e1f17" id="d-info-loc">—</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Def. Urba.</div><div style="font-size:13.5px;font-weight:700;color:#1f7a4d" id="d-info-urba">—</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Superficie</div><div style="font-size:13.5px;font-weight:600;color:#0e1f17" id="d-info-sup">—</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Prix forfaitaire</div><div style="font-size:13.5px;font-weight:700;color:#2d9e5f" id="d-info-forfait">—</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Prix au m²</div><div style="font-size:13.5px;color:#0e1f17" id="d-info-prix">—</div></div>
     </div>
 
     <!-- Champs éditables -->
@@ -1513,7 +1513,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     </div>
 
     <div class="form-group">
-      <label class="form-label">Documents du terrain <span style="color:#8aab97;font-weight:400">(PDF ou image, 10 Mo max)</span></label>
+      <label class="form-label">Documents du terrain <span style="color:#4f6a5c;font-weight:400">(PDF ou image, 10 Mo max)</span></label>
       <div id="td-docs" style="border:1px solid #dfe9e3;border-radius:10px;overflow:hidden"></div>
       <input type="file" id="td-file" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="tdUploadChosen(this)">
     </div>
@@ -1645,7 +1645,7 @@ function showPage(page, el) {
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
 
-  const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte Interactive — Terrains par Secteur', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs et acheteurs' };
+  const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Pipeline Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs et acheteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
 
   const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouveau promoteur' };
@@ -1722,7 +1722,7 @@ function renderDashboard() {
   const pipelineSummaryEl = document.getElementById('pipeline-summary');
 
   if (state.deals.length === 0) {
-    pipelineSummaryEl.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:30px 0;">Aucun deal pour le moment.<br>Ajoutez des deals dans Pipeline.</div>';
+    pipelineSummaryEl.innerHTML = '<div style="color:#4f6a5c;font-size:13px;text-align:center;padding:30px 0;">Aucun deal pour le moment.<br>Ajoutez des deals dans Pipeline.</div>';
   } else {
     let html = '';
     steps.forEach(s => {
@@ -1749,7 +1749,7 @@ function renderDashboard() {
   const actEl = document.getElementById('activity-feed');
   if (!actEl) return;
   if (state.activities.length === 0) {
-    actEl.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Aucune activité récente.</div>';
+    actEl.innerHTML = '<div style="color:#4f6a5c;font-size:13px;text-align:center;padding:20px 0;">Aucune activité récente.</div>';
   } else {
     actEl.innerHTML = state.activities.slice(-6).reverse().map(a =>
       `<div class="activity-item"><div class="activity-dot"></div><div><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div></div>`
@@ -1800,7 +1800,7 @@ function renderPipeline() {
         <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '-'}</div>
         ${acheteur ? `<span class="deal-tag ${tagClass}">${acheteur.type}</span>` : ''}
         ${taskBadge(d.id)}
-        ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#8aab97;margin-top:6px">👤 ${d.associe}</div>` : ''}
+        ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#4f6a5c;margin-top:6px">Suivi : ${d.associe}</div>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
   });
@@ -1906,7 +1906,7 @@ function msList(k) {
   const el = document.getElementById('ms-list-' + k);
   if (!el) return;
   el.innerHTML = opts.length ? opts.map(([v, c]) =>
-    `<label><input type="checkbox" ${msSel[k].has(v) ? 'checked' : ''} data-v="${v.replace(/"/g, '&quot;')}" onchange="msPick('${k}', this.dataset.v, this.checked)"> <span style="flex:1">${v.replace(/</g, '&lt;')}</span><span style="color:#8aab97;font-size:11px">${c}</span></label>`).join('')
+    `<label><input type="checkbox" ${msSel[k].has(v) ? 'checked' : ''} data-v="${v.replace(/"/g, '&quot;')}" onchange="msPick('${k}', this.dataset.v, this.checked)"> <span style="flex:1">${v.replace(/</g, '&lt;')}</span><span style="color:#4f6a5c;font-size:11px">${c}</span></label>`).join('')
     : '<div style="color:#999;font-size:12px;padding:6px">Aucun résultat</div>';
 }
 function msPick(k, v, on) {
@@ -2035,14 +2035,14 @@ function filterTerrains() {
   if (typeof mTerrains === 'function') mTerrains(filtered);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#4f6a5c;padding:30px">Aucun terrain correspondant à votre recherche.</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map((t, i) => {
     const forfait = t.forfait || Math.round(t.superficie * t.prix / 1000000);
     const isOld = (t.daysOld || 0) > 30;
-    const dateStyle = isOld ? 'color:#aaa;font-style:italic;' : 'color:#2a3d33;font-weight:500;';
+    const dateStyle = isOld ? 'color:#4f6a5c;font-style:italic;' : 'color:#2a3d33;font-weight:500;';
     const dateBadge = '';
     const statutColors = {
       'À qualifier':     { bg:'#f5f5f5', color:'#999' },
@@ -2063,10 +2063,10 @@ function filterTerrains() {
     };
     return `<tr class="terrain-row" onclick="if(!(window.getSelection&&String(window.getSelection()).length))openTerrainDetail(${t.id})" style="cursor:pointer;${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
       <td style="padding-right:0">${favBtn(t.id)}</td>
-      <td style="white-space:nowrap;font-size:12px;color:#5d7d6b;font-weight:600">${highlight(t.ref) || '—'}</td>
+      <td style="white-space:nowrap;font-size:12px;color:#4f6a5c;font-weight:600">${highlight(t.ref) || '—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
-      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><span class="badge badge-blue">${highlight(t.urba) || '—'}</span></td>
-      <td style="white-space:nowrap;font-size:12px;color:#5d7d6b">${tfCell(t)}</td>
+      <td style="max-width:96px;white-space:nowrap;">${t.urba ? zoneChip(t.urba) : '—'}</td>
+      <td style="white-space:nowrap;font-size:12px;color:#4f6a5c">${tfCell(t)}</td>
       <td>${Number(t.superficie).toLocaleString('fr-FR')} m²</td>
       <td>${t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD' : '—'}</td>
       <td><strong>${forfait > 0 ? forfait + ' M MAD' : '—'}</strong></td>
@@ -2092,7 +2092,7 @@ function resetFilters() {
 function renderAcheteurs() {
   const tbody = document.getElementById('acheteurs-tbody');
   if (state.acheteurs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:30px">Aucun acheteur. Cliquez sur "+ Nouvel Acheteur" pour commencer.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#4f6a5c;padding:30px">Aucun acheteur. Cliquez sur "+ Nouvel Acheteur" pour commencer.</td></tr>';
     return;
   }
   // Sort by score desc
@@ -2465,7 +2465,7 @@ function buildMap() {
       const color = s.count >= 50 ? '#ef4444' : s.count >= 20 ? '#f97316' : s.count >= 10 ? '#7ee0a4' : '#60a5fa';
       const barW = Math.round(s.count / maxCount * 100);
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;cursor:pointer" onclick="map.setView([${s.lat},${s.lng}],14)">
-        <span style="font-size:11px;color:#aaa;width:18px;text-align:right">${i+1}</span>
+        <span style="font-size:11px;color:#4f6a5c;width:18px;text-align:right">${i+1}</span>
         <div style="flex:1">
           <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${s.name}</div>
           <div style="height:4px;background:#eee;border-radius:2px;margin-top:3px">
@@ -2495,7 +2495,7 @@ function taskBadge(dealId) {
   if (!ts.length) return '';
   const open = ts.filter(t => t.statut !== 'fait').length;
   const late = ts.some(isLate);
-  return `<div style="font-size:11px;margin-top:6px;font-weight:600;color:${late ? '#c0392b' : '#1f7a4d'}">☑ ${ts.length - open}/${ts.length} tâche${ts.length > 1 ? 's' : ''}${late ? ' (en retard)' : ''}</div>`;
+  return `<div style="font-size:11px;margin-top:6px;font-weight:600;color:${late ? '#c0392b' : '#1f7a4d'}">Tâches ${ts.length - open}/${ts.length} tâche${ts.length > 1 ? 's' : ''}${late ? ' (en retard)' : ''}</div>`;
 }
 function renderDealTaches() {
   const wrap = document.getElementById('de-taches-wrap');
@@ -2509,10 +2509,10 @@ function renderDealTaches() {
       <input type="checkbox" ${t.statut === 'fait' ? 'checked' : ''} onchange="toggleTache(${t.id}, this.checked)">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;${t.statut === 'fait' ? 'text-decoration:line-through;color:#999' : ''}">${escH(t.titre)}</div>
-        <div style="font-size:11px;color:${isLate(t) ? '#c0392b' : '#8aab97'}">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div>
+        <div style="font-size:11px;color:${isLate(t) ? '#c0392b' : '#4f6a5c'}">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div>
       </div>
       ${canDelete ? `<button type="button" class="btn btn-ghost btn-sm" style="color:#c0392b;padding:2px 8px" onclick="deleteTache(${t.id})">✕</button>` : ''}
-    </div>`).join('') : '<div style="font-size:12px;color:#aaa;padding:4px 0">Aucune tâche</div>';
+    </div>`).join('') : '<div style="font-size:12px;color:#4f6a5c;padding:4px 0">Aucune tâche</div>';
 }
 async function addTache() {
   const titre = document.getElementById('te-titre').value.trim();
@@ -2559,10 +2559,10 @@ function renderMyTasks() {
       <input type="checkbox" onchange="toggleTache(${t.id}, this.checked)">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${escH(t.titre)}</div>
-        <div style="font-size:11.5px;color:#8aab97;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(t.deal_label || '')}</div>
+        <div style="font-size:11.5px;color:#4f6a5c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(t.deal_label || '')}</div>
       </div>
-      ${t.echeance ? `<div style="font-size:11.5px;font-weight:600;color:${isLate(t) ? '#c0392b' : '#8aab97'}">${fmtDate(t.echeance)}</div>` : ''}
-    </div>`).join('') : '<div style="color:#aaa;font-size:13px;text-align:center;padding:14px 0">Aucune tâche en cours</div>';
+      ${t.echeance ? `<div style="font-size:11.5px;font-weight:600;color:${isLate(t) ? '#c0392b' : '#4f6a5c'}">${fmtDate(t.echeance)}</div>` : ''}
+    </div>`).join('') : '<div style="color:#4f6a5c;font-size:13px;text-align:center;padding:14px 0">Aucune tâche en cours</div>';
 }
 
 let newDealTasks = [];
@@ -2572,7 +2572,7 @@ function renderNewDealTasks() {
   document.getElementById('dn-taches-list').innerHTML = newDealTasks.map((t, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0f0">
       <div style="flex:1;min-width:0"><div style="font-size:13px">${escH(t.titre)}</div>
-      <div style="font-size:11px;color:#8aab97">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div></div>
+      <div style="font-size:11px;color:#4f6a5c">👤 ${escH(t.assigne_a)}${t.echeance ? ' · ' + fmtDate(t.echeance) : ''}</div></div>
       <button type="button" class="btn btn-ghost btn-sm" style="color:#c0392b;padding:2px 8px" onclick="newDealTasks.splice(${i},1);renderNewDealTasks()">✕</button>
     </div>`).join('');
 }
@@ -2599,17 +2599,17 @@ function renderEquipe() {
   const bar = document.getElementById('equipe-bar');
   if (bar) bar.innerHTML = isAdmin() && equipeAvailable ? '<button class="btn btn-primary" onclick="openMembreModal()">+ Ajouter un membre</button>' : '';
   if (!equipeAvailable) {
-    grid.innerHTML = '<div style="grid-column:1/-1;color:#8aab97;padding:30px;text-align:center">La table équipe n\'est pas encore créée dans Supabase.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#4f6a5c;padding:30px;text-align:center">La table équipe n\'est pas encore créée dans Supabase.</div>';
     return;
   }
-  if (!membres.length) { grid.innerHTML = '<div style="grid-column:1/-1;color:#8aab97;padding:30px;text-align:center">Aucun membre.</div>'; return; }
+  if (!membres.length) { grid.innerHTML = '<div style="grid-column:1/-1;color:#4f6a5c;padding:30px;text-align:center">Aucun membre.</div>'; return; }
   grid.innerHTML = membres.map((m, i) => {
     const color = MEMBER_COLORS[i % MEMBER_COLORS.length];
     const init = (m.nom || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
     const nAch = state.acheteurs.filter(a => a.associe === m.nom).length;
     const nDeals = state.deals.filter(d => d.associe === m.nom).length;
     const nTer = state.terrains.filter(t => t.sourceur === m.nom).length;
-    const stat = (v, l, c) => `<div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:${c}">${v}</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8aab97;font-weight:600;margin-top:2px">${l}</div></div>`;
+    const stat = (v, l, c) => `<div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:${c}">${v}</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#4f6a5c;font-weight:600;margin-top:2px">${l}</div></div>`;
     const admin = isAdmin() ? `<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #e2ece7">
         <select class="form-select" style="flex:1;padding:6px 8px;font-size:12px" onchange="changeMembreRole(${m.id}, this.value)">
           ${['admin','associe','sourceur'].map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`).join('')}
@@ -2621,12 +2621,12 @@ function renderEquipe() {
         <div style="width:52px;height:52px;border-radius:14px;background:${color}22;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-weight:800;color:${color}">${init}</div>
         <div style="min-width:0">
           <div style="font-size:18px;font-weight:800;color:#0e1f17">${m.nom} <span style="font-size:10px;font-weight:700;background:${color}22;color:${color};border-radius:20px;padding:2px 8px;vertical-align:middle">${ROLE_LABELS[m.role] || m.role}</span></div>
-          <div style="font-size:11.5px;color:#8aab97;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${m.email}</div>
-          ${m.specialite ? `<div style="font-size:11.5px;color:#8aab97">${m.specialite}</div>` : ''}
+          <div style="font-size:11.5px;color:#4f6a5c;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${m.email}</div>
+          ${m.specialite ? `<div style="font-size:11.5px;color:#4f6a5c">${m.specialite}</div>` : ''}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${stat(nAch, 'Acheteurs', '#1f7a4d')}${stat(nDeals, 'Deals', color)}${stat(nTer, 'Terrains', '#f97316')}</div>
-      ${m.zones ? `<div style="font-size:11.5px;color:#8aab97;margin-top:12px">📍 ${m.zones}</div>` : ''}
+      ${m.zones ? `<div style="font-size:11.5px;color:#4f6a5c;margin-top:12px">📍 ${m.zones}</div>` : ''}
       ${admin}
     </div>`;
   }).join('');
@@ -2754,12 +2754,12 @@ async function tdLoad(terrainId) {
 }
 function tdRender() {
   const box = document.getElementById('td-docs'); if (!box) return;
-  if (tdUnavailable) { box.innerHTML = '<div style="padding:12px;color:#8aab97;font-size:13px">Documents indisponibles (la configuration Supabase des documents n\'est pas encore faite).</div>'; return; }
+  if (tdUnavailable) { box.innerHTML = '<div style="padding:12px;color:#4f6a5c;font-size:13px">Documents indisponibles (la configuration Supabase des documents n\'est pas encore faite).</div>'; return; }
   box.innerHTML = TD_TYPES.map((t, i) => {
     const d = tdDocs[t.k];
     const left = d
-      ? `<a href="#" onclick="tdOpen('${t.k}');return false" style="color:var(--green-mid);font-weight:600;text-decoration:none;word-break:break-all">${escH(d.nom_fichier)}</a> <span style="color:#8aab97;font-size:11px">${tdSize(d.taille)}${d.ajoute_par ? ', ' + escH(d.ajoute_par) : ''}</span>`
-      : '<span style="color:#aaa">Aucun document</span>';
+      ? `<a href="#" onclick="tdOpen('${t.k}');return false" style="color:var(--green-mid);font-weight:600;text-decoration:none;word-break:break-all">${escH(d.nom_fichier)}</a> <span style="color:#4f6a5c;font-size:11px">${tdSize(d.taille)}${d.ajoute_par ? ', ' + escH(d.ajoute_par) : ''}</span>`
+      : '<span style="color:#4f6a5c">Aucun document</span>';
     const del = d && (isAdmin() || d.ajoute_par === currentAssocie) ? ` <button class="btn btn-ghost btn-sm" onclick="tdDelete('${t.k}')" title="Supprimer">Supprimer</button>` : '';
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px;${i ? 'border-top:1px solid #eef3f0' : ''}">
       <div style="flex:0 0 150px;font-weight:600;color:var(--green-deep)">${t.l}</div>
@@ -3279,14 +3279,14 @@ function renderInteractions(terrainId) {
   if (!el) return;
   const items = (state.interactions || []).filter(i => i.terrain_id === terrainId);
   if (items.length === 0) {
-    el.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px 0;text-align:center;">Aucune interaction enregistrée</div>';
+    el.innerHTML = '<div style="color:#4f6a5c;font-size:13px;padding:12px 0;text-align:center;">Aucune interaction enregistrée</div>';
     return;
   }
   el.innerHTML = items.map(i => `
     <div style="border-left:3px solid var(--green-bright);padding:10px 14px;margin-bottom:10px;background:#f8faf9;border-radius:0 8px 8px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <span style="font-weight:700;font-size:13px;color:#1f7a4d">${i.type || 'Contact'}</span>
-        <span style="font-size:11px;color:#8aab97">${i.date || i.created_at?.slice(0,10)} · ${i.associe || ''}</span>
+        <span style="font-size:11px;color:#4f6a5c">${i.date || i.created_at?.slice(0,10)} · ${i.associe || ''}</span>
       </div>
       <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Acheteur :</strong> ${i.acheteur_nom || '—'}</div>
       <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Retour :</strong> ${i.retour || '—'}</div>
@@ -3351,7 +3351,7 @@ function renderScoreStars(acheteurId, currentScore) {
         background:${v<=currentScore?colors[i]+'33':'transparent'};cursor:pointer;font-size:10px;font-weight:700;
         color:${v<=currentScore?colors[i]:'#bbb'};transition:all 0.15s;">${v}</button>
     `).join('') +
-    `<span style="font-size:11px;color:#8aab97;margin-left:4px">${currentScore||0}/10</span></div>`;
+    `<span style="font-size:11px;color:#4f6a5c;margin-left:4px">${currentScore||0}/10</span></div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3395,7 +3395,7 @@ function renderRapportHebdo() {
       ].map(([label,val,color]) => `
         <div style="background:#f8faf9;border-radius:10px;padding:12px;text-align:center;border-top:3px solid ${color}">
           <div style="font-family:'Archivo',sans-serif;font-size:22px;font-weight:800;color:${color}">${val}</div>
-          <div style="font-size:10px;color:#8aab97;text-transform:uppercase;letter-spacing:0.08em;margin-top:3px">${label}</div>
+          <div style="font-size:10px;color:#4f6a5c;text-transform:uppercase;letter-spacing:0.08em;margin-top:3px">${label}</div>
         </div>
       `).join('')}
     </div>
@@ -3424,7 +3424,7 @@ function renderRapportHebdo() {
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
           <span style="color:var(--green-bright);font-weight:700">${i.type||'Contact'}</span>
           <span style="color:#555">${i.acheteur_nom||'—'}</span>
-          <span style="color:#aaa;margin-left:auto">${i.associe||''} · ${(i.date||i.created_at||'').slice(0,10)}</span>
+          <span style="color:#4f6a5c;margin-left:auto">${i.associe||''} · ${(i.date||i.created_at||'').slice(0,10)}</span>
         </div>
       `).join('')}
     </div>` : ''}
@@ -3458,7 +3458,7 @@ function renderActivityLog() {
   if (!el) return;
   const logs = (state.activityLog || []).slice(0, 5);
   if (logs.length === 0) {
-    el.innerHTML = '<div style="color:#aaa;font-size:12px;text-align:center;padding:16px 0;">Aucune activité enregistrée</div>';
+    el.innerHTML = '<div style="color:#4f6a5c;font-size:12px;text-align:center;padding:16px 0;">Aucune activité enregistrée</div>';
     return;
   }
   el.innerHTML = logs.map(l => `
@@ -3467,7 +3467,7 @@ function renderActivityLog() {
       <div style="flex:1;min-width:0;">
         <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${l.action}</div>
         <div style="font-size:11.5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.entity_label||''}</div>
-        <div style="font-size:10.5px;color:#aaa;margin-top:2px">${l.associe} · ${new Date(l.created_at).toLocaleString('fr-FR')}</div>
+        <div style="font-size:10.5px;color:#4f6a5c;margin-top:2px">${l.associe} · ${new Date(l.created_at).toLocaleString('fr-FR')}</div>
       </div>
     </div>
   `).join('');
@@ -3475,7 +3475,7 @@ function renderActivityLog() {
 
 function associeColor(nom) {
   const colors = { Hachim:'#c084fc', Abderrahim:'#f97316', Ayoub:'#7ee0a4', Amine:'#60a5fa', Said:'#f43f5e' };
-  return colors[nom] || '#8aab97';
+  return colors[nom] || '#4f6a5c';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3515,7 +3515,7 @@ function renderQuartierChart() {
     '<div style="width:140px;flex:0 0 140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--green-deep)" title="' + esc(r[0]) + '">' + esc(r[0]) + '</div>' +
     '<div style="flex:1;background:var(--green-pale);border-radius:4px;height:16px;overflow:hidden"><div style="width:' + Math.max(2, r[1] / max * 100) + '%;height:100%;background:linear-gradient(90deg,var(--green-mid),var(--green-bright));border-radius:4px"></div></div>' +
     '<div style="width:34px;flex:0 0 34px;text-align:right;font-weight:600">' + r[1] + '</div></div>'
-  ).join('') : '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">Aucun terrain.</div>';
+  ).join('') : '<div style="color:#4f6a5c;font-size:13px;text-align:center;padding:20px 0;">Aucun terrain.</div>';
 }
 
 const _origRenderDashboard = renderDashboard;
@@ -3878,7 +3878,7 @@ function mkPlList() {
   const list = (state.terrains || []).filter(t => t.statut !== 'Vendu').filter(t => !q || [t.ref, t.localisation, t.urba].join(' ').toLowerCase().includes(q));
   box.innerHTML = list.length ? list.map(t => `<label style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #eef3f0">
       <input type="checkbox" ${mkPlSel.has(String(t.id)) ? 'checked' : ''} onchange="mkPlToggle('${t.id}',this.checked)">
-      <span>${escH(terrainLabel(t))} <span style="color:#8aab97">${escH(t.urba || '')}</span></span></label>`).join('') : '<div style="color:#8aab97;padding:6px 0">Aucun terrain</div>';
+      <span>${escH(terrainLabel(t))} <span style="color:#4f6a5c">${escH(t.urba || '')}</span></span></label>`).join('') : '<div style="color:#4f6a5c;padding:6px 0">Aucun terrain</div>';
   document.getElementById('mk-pl-count').textContent = mkPlSel.size ? '(' + mkPlSel.size + ' sélectionné' + (mkPlSel.size > 1 ? 's' : '') + ')' : '';
 }
 function mkPlToggle(id, on) { if (on) mkPlSel.add(String(id)); else mkPlSel.delete(String(id)); mkPlList(); }
@@ -3915,7 +3915,7 @@ async function mkPropale() {
   const terr = ids.map(id => (state.terrains || []).find(t => String(t.id) === id)).filter(Boolean);
   if (!terr.length) { alert('Choisissez au moins un terrain.'); return; }
   const out = document.getElementById('mk-pdf-out');
-  out.innerHTML = '<div class="card" style="margin-bottom:20px;font-size:13px;color:#5d7d6b">Génération de la propale en cours...</div>';
+  out.innerHTML = '<div class="card" style="margin-bottom:20px;font-size:13px;color:#4f6a5c">Génération de la propale en cours...</div>';
   const base = mkRead();
   const client = document.getElementById('mk-client').value.trim();
   try { await Promise.all([document.fonts.load('800 40px Archivo'), document.fonts.load('400 20px Inter')]); } catch (e) {}
@@ -4256,7 +4256,7 @@ async function mvRun() {
   if (!q) { showNotif('Indiquez le quartier du terrain.', true); return; }
   if (!(sup > 0)) { showNotif('Indiquez la superficie en m².', true); return; }
   if (voirie >= sup) { showNotif('La surface sous voirie doit être inférieure à la superficie.', true); return; }
-  out.innerHTML = '<div class="mvf-card" style="text-align:center;color:#5d7d6b">Analyse en cours...</div>';
+  out.innerHTML = '<div class="mvf-card" style="text-align:center;color:#4f6a5c">Analyse en cours...</div>';
   try { await mvLoad(); } catch (e) { out.innerHTML = '<div class="mvf-card">Données de marché indisponibles : ' + mvE(e.message) + '</div>'; return; }
   const crmId = document.getElementById('mv-crm').value;
   const inp = { q, sup, prix, zon, fam: mvFam(zon), voirie, bati, sec: MV.data.qsect[mvN(q)] || null, notes: document.getElementById('mv-notes').value.trim() };
@@ -4508,7 +4508,7 @@ function shEnsureModal() {
   if (document.getElementById('modal-share')) return;
   const d = document.createElement('div'); d.className = 'modal-overlay'; d.id = 'modal-share';
   d.innerHTML = `<div class="modal" style="width:720px;max-width:96vw">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="modal-title" style="margin-bottom:0">Partager la fiche</div><button onclick="shClose()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#aaa;line-height:1">✕</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="modal-title" style="margin-bottom:0">Partager la fiche</div><button onclick="shClose()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#4f6a5c;line-height:1">✕</button></div>
     <label class="mv-chk" style="margin:0 0 12px"><input type="checkbox" id="sh-price" checked onchange="shBuild()"> Afficher le prix sur l'image et dans le message</label>
     <div id="sh-prev" style="text-align:center;min-height:120px;background:#f3f8f5;border-radius:12px;padding:12px"><span class="mv-sub">Préparation de l'image...</span></div>
     <div id="sh-hint" class="mv-sub" style="margin-top:8px"></div>
@@ -5343,7 +5343,7 @@ if (currentPage === 'acheteurs') prRenderList();
   --gf-body:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
   --gf-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   --green-deep:#0e1f17;--green-mid:#1f7a4d;--green-bright:#3fbf7f;--green-light:#7ee0a4;--green-glow:#a8ebc2;--green-pale:#e6f6ec;
-  --gold:#1f7a4d;--gold-light:#a8ebc2;--white:#e8f2ea;--gray-light:#dde9e1;--gray-mid:#8aa596;--dark:#0a1410;
+  --gold:#1f7a4d;--gold-light:#a8ebc2;--white:#e8f2ea;--gray-light:#dde9e1;--gray-mid:#4f6a5c;--dark:#0a1410;
   --card-bg:#f4f9f5;--shadow:0 4px 24px rgba(0,0,0,0.18);--shadow-lg:0 12px 48px rgba(0,0,0,0.28);
 }
 body{font-family:var(--gf-body);background:var(--gf-bg);color:var(--gf-fg);-webkit-font-smoothing:antialiased}
@@ -5391,6 +5391,22 @@ tbody tr:hover{background:#eaf6ef}
 .mv-tab,.mk-src{border-radius:999px !important}
 .empty-state-text{font-family:var(--gf-body)}
 #gf-login{background:var(--gf-ink)}
+
+/* Seuils de lisibilité et sobriété (détecteur Impeccable) */
+.kpi-label{color:#4f6a5c !important}
+.kpi-card::before,.kpi-card.kpi-highlight::before{display:none !important}
+.nav-section,.sidebar-footer{color:#86a092 !important}
+#page-terrains>div:first-child label,#page-terrains>div:first-child span,.pr-chk,.pr-count,.m-sh-b label,.pr-kpi span,.ac-section,#page-dashboard>div[style*="uppercase"]{color:var(--gf-fg-dim) !important}
+.nav-item{color:#a9bfb1}
+
+.form-label,.kpi-label,.nav-section,thead th,.pr-kv label,.col-header,.pr-sec,.m-se-sec{font-size:11px !important}
+.kpi-sub,.pr-foot,.pr-chip,.match-tag,.badge{font-size:11.5px}
+.kpi-label span{font-size:11px !important}
+.deal-card{position:relative;padding-left:26px !important}
+.deal-card::before{content:'';position:absolute;left:12px;top:17px;width:8px;height:8px;border-radius:50%;background:var(--gf-mint)}
+.deal-card.status-teaser::before{background:#95a5a6}.deal-card.status-nda::before{background:#3498db}.deal-card.status-visite::before{background:#f39c12}.deal-card.status-offre::before{background:#9b59b6}.deal-card.status-closing::before{background:#2ecc71}
+.btn-primary:hover{box-shadow:none !important}
+.mvf-verdict{border-left:none !important;box-shadow:inset 0 0 0 1px #e6d9a8}
 </style>
 <style id="m-css">
 /* ===== Expérience mobile : navigation basse, listes compactes, fiches plein écran ===== */
@@ -5441,7 +5457,7 @@ tbody tr:hover{background:#eaf6ef}
 .m-tr-2 i{font-style:normal;background:#e3f2fd;color:#1565c0;border-radius:6px;padding:0 5px;font-weight:700;font-size:11px}
 .m-tr-r{text-align:right;flex-shrink:0}
 .m-tr-f{font-weight:800;font-size:14px;color:var(--green-mid);white-space:nowrap}
-.m-tr-s{font-size:10.5px;font-weight:700;color:#7a6320;margin-top:2px;white-space:nowrap}
+.m-tr-s{font-size:11px;font-weight:700;color:#7a6320;margin-top:2px;white-space:nowrap}
 .m-tl-more{display:block;width:100%;margin:10px 0 0;padding:12px;border-radius:12px;border:1.5px solid rgba(126,224,164,.35);background:rgba(255,255,255,.05);color:var(--green-light);font-size:14px;font-weight:600;font-family:'Inter Tight',sans-serif}
 .m-pr{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #edf3ef;color:#1d2b23;cursor:pointer}
 .m-pr:last-child{border-bottom:none}
@@ -5468,11 +5484,10 @@ tbody tr:hover{background:#eaf6ef}
   .m-hide{display:none !important}
 
   .m-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(10,20,16,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(126,224,164,.2);padding:4px 4px env(safe-area-inset-bottom)}
-  .m-nav button{flex:1;background:none;border:none;color:#7f9c8b;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;font-size:10.5px;font-weight:600;font-family:'Inter Tight',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .m-nav button{flex:1;background:none;border:none;color:#8fa99a;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;font-size:11px;font-weight:600;font-family:'Inter Tight',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .m-nav svg{width:23px;height:23px}
   .m-nav button.on{color:var(--green-light)}
-  .m-nav button.on svg{filter:drop-shadow(0 0 6px rgba(126,224,164,.45))}
-  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,90,50,.55);cursor:pointer}
+  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer}
   .m-fab svg{width:26px;height:26px}
   .m-fab.off{display:none}
   body.m-locked .m-nav,body.m-locked .m-fab{display:none}
@@ -5499,7 +5514,7 @@ tbody tr:hover{background:#eaf6ef}
   #page-acheteurs .pr-kpis::-webkit-scrollbar{display:none}
   #page-acheteurs .pr-kpi{flex:0 0 auto;padding:8px 12px;border-radius:12px;display:flex;align-items:baseline;gap:6px}
   #page-acheteurs .pr-kpi b{display:inline;font-size:17px}
-  #page-acheteurs .pr-kpi span{font-size:10.5px;letter-spacing:.03em;white-space:nowrap}
+  #page-acheteurs .pr-kpi span{font-size:11px;letter-spacing:.03em;white-space:nowrap}
   .pr-grid{gap:8px}
   .pr-card{padding:12px 14px;gap:7px;border-radius:14px}
   .pr-card:hover{transform:none}
@@ -5518,10 +5533,10 @@ tbody tr:hover{background:#eaf6ef}
   #page-dashboard .kpi-grid{gap:8px;margin-bottom:12px}
   #page-dashboard .kpi-card{padding:11px 13px;border-radius:14px}
   #page-dashboard .kpi-icon{display:none}
-  #page-dashboard .kpi-label{font-size:9.5px;margin-bottom:5px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #page-dashboard .kpi-label{font-size:11px;margin-bottom:5px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #page-dashboard .kpi-label span{display:none}
   #page-dashboard .kpi-value{font-size:23px !important}
-  #page-dashboard .kpi-sub{font-size:10.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #page-dashboard .kpi-sub{font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #page-dashboard .kpi-grid.m-zon .kpi-value{font-size:20px !important}
   #page-dashboard .card{padding:14px 16px;margin-bottom:12px}
   #page-dashboard .dashboard-grid{gap:12px}
@@ -5913,6 +5928,223 @@ if (mMQ.addEventListener) mMQ.addEventListener('change', () => { mLayout(); if (
 else if (mMQ.addListener) mMQ.addListener(() => mLayout());
 const _mLoginObs = document.getElementById('gf-login');
 if (_mLoginObs && window.MutationObserver) new MutationObserver(mSync).observe(_mLoginObs, { attributes: true, attributeFilter: ['style'] });
+</script>
+<style id="ac-css">
+/* ===== Accueil « Aujourd'hui » et finitions (refonte Impeccable) ===== */
+::selection{background:rgba(126,224,164,.35);color:inherit}
+:focus-visible{outline:2px solid var(--gf-mint);outline-offset:2px}
+*{scrollbar-color:rgba(126,224,164,.3) transparent;scrollbar-width:thin}
+table,.num,.m-tr-f,.m-tr-2,.ac-due,.ac-kpi b,.pr-kpi b,.kpi-value{font-variant-numeric:tabular-nums}
+.nav-icon svg{width:18px;height:18px;vertical-align:-3px}
+.zc{display:inline-block;font:500 10.5px/1 'JetBrains Mono',monospace;padding:4px 6px;border-radius:5px;color:#0a1410;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.zc-B{background:#7ee0a4}.zc-D{background:#cde88f}.zc-I{background:#f2b860}.zc-E{background:#9fcaff}.zc-A{background:#78d6cb}.zc-C{background:#c3b2ff}.zc-R{background:#e2cf9e}.zc-X{background:#d3dcd6}
+#ac-home{margin-bottom:28px}
+.ac-head{display:none}
+.ac-tdate{color:var(--gf-fg-dim);font-size:14px;margin-left:14px;margin-right:auto;font-weight:400}
+body:not(.on-dashboard) .ac-tdate{display:none}
+.kpi-icon{display:none !important}
+.ac-head h2{font:900 30px/1 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em;color:var(--gf-fg);margin:0}
+.ac-date{color:var(--gf-fg-dim);font-size:14px}
+.ac-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.ac-kpi{border:1px solid var(--gf-line-strong);border-radius:14px;padding:13px 15px;background:transparent;color:var(--gf-fg);text-align:left;cursor:pointer;font-family:var(--gf-body);transition:border-color .15s,background .15s}
+.ac-kpi:hover{border-color:var(--gf-mint);background:rgba(126,224,164,.05)}
+.ac-kpi span{display:block;font-size:12px;color:var(--gf-fg-dim)}
+.ac-kpi b{display:block;font:800 26px/1 'Archivo',sans-serif;letter-spacing:-.03em;margin-top:8px}
+.ac-kpi.late b{color:#ff9b8f}.ac-kpi.good b{color:var(--gf-mint)}
+.ac-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+.ac-panel{background:var(--card-bg);color:var(--gf-ink);border-radius:18px;padding:16px 20px;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.ac-panel+.ac-panel{margin-top:16px}
+.ac-ph{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.ac-ph h3{font:800 15px/1.2 'Archivo',sans-serif;letter-spacing:-.01em;margin:0}
+.ac-ph small{color:#5d7166;font-size:12.5px}
+.ac-seg{margin-left:auto;display:inline-flex;border:1px solid #cfe0d6;border-radius:999px;padding:2px}
+.ac-seg button{border:none;background:none;border-radius:999px;padding:5px 12px;font:600 12.5px var(--gf-body);color:#5d7166;cursor:pointer}
+.ac-seg button.on{background:var(--gf-ink);color:var(--gf-mint)}
+.ac-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #e1ece5}
+.ac-row:first-of-type{border-top:none}
+.ac-dot{width:9px;height:9px;border-radius:50%;flex:none;background:#7ee0a4}
+.ac-dot.late{background:#d9483b}.ac-dot.today{background:#e3a13b}
+.ac-main{flex:1;min-width:0}
+.ac-main b{display:block;font-size:14px;font-weight:700;color:var(--gf-ink)}
+.ac-main small{display:block;font-size:12.5px;color:#5d7166;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-due{font:500 11px/1 'JetBrains Mono',monospace;padding:5px 8px;border-radius:999px;white-space:nowrap;background:#e4f3ea;color:#1f7a4d}
+.ac-due.late{background:#fbe3e0;color:#c0392b}.ac-due.today{background:#fdf0d9;color:#9a5d0b}
+.ac-acts{display:flex;gap:6px;flex:none}
+.ac-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #cfe0d6;background:#fff;color:#1f7a4d;border-radius:999px;padding:7px 12px;font:600 12.5px var(--gf-body);cursor:pointer;text-decoration:none;white-space:nowrap}
+.ac-btn svg{width:14px;height:14px}
+.ac-btn:hover{border-color:#1f7a4d;background:#eaf6ef}
+.ac-btn.wa{background:#25D366;border-color:#25D366;color:#fff}
+.ac-btn.done:hover{background:var(--gf-ink);color:var(--gf-mint);border-color:var(--gf-ink)}
+.ac-empty{padding:18px 0 8px;color:#5d7166;font-size:13.5px;line-height:1.5}
+.ac-empty b{display:block;color:var(--gf-ink);margin-bottom:4px}
+.ac-more{display:block;width:100%;margin-top:6px;border:none;background:none;color:#1f7a4d;font:600 13px var(--gf-body);padding:10px;cursor:pointer;border-top:1px solid #e1ece5}
+.ac-stage{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;border-radius:8px}
+.ac-stage span{width:66px;font-size:13px}
+.ac-stage i{flex:1;height:8px;background:#e1ece5;border-radius:4px;overflow:hidden}
+.ac-stage i u{display:block;height:8px;background:#1f7a4d;border-radius:4px}
+.ac-stage b{width:22px;text-align:right;font-size:13.5px}
+.ac-stage em{font-style:normal;width:64px;text-align:right;font-size:12px;color:#5d7166}
+.ac-rep{padding:10px 0;border-top:1px solid #e1ece5;cursor:pointer}
+.ac-rep:first-of-type{border-top:none}
+.ac-rep b{font-size:13.5px}
+.ac-rep small{display:block;font-size:12px;color:#5d7166;margin-top:3px}
+.ac-section{font:800 15px/1 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--gf-fg-dim);margin:6px 0 12px}
+#page-dashboard>#my-tasks-card,.ac-hide{display:none !important}
+@media(max-width:900px){
+  .ac-tdate{display:none}
+  .ac-kpis{display:flex;overflow-x:auto;gap:8px;margin:0 -14px 12px;padding:0 14px;scrollbar-width:none}
+  .ac-kpis::-webkit-scrollbar{display:none}
+  .ac-kpi{flex:0 0 31%;padding:10px 11px;border-radius:12px}
+  .ac-kpi span{font-size:11px;white-space:nowrap}
+  .ac-kpi b{font-size:20px;margin-top:6px}
+  .ac-grid{grid-template-columns:1fr;gap:12px}
+  .ac-panel{padding:12px 14px;border-radius:16px}
+  .ac-panel+.ac-panel{margin-top:12px}
+  .ac-row{flex-wrap:wrap;gap:6px 10px;padding:11px 0}
+  .ac-main{flex:1 1 60%}
+  .ac-acts{flex:1 1 100%;padding-left:19px}
+  .ac-acts .ac-btn{flex:1;justify-content:center;padding:8px 6px}
+  .ac-stage em{display:none}
+}
+</style>
+<script>
+// ===== Accueil « Aujourd'hui » =====
+const AC = { scope: null, max: 8 };
+const acDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const acToday = () => acDay(new Date());
+function acDiff(d) { return Math.round((acDay(d) - acToday()) / 864e5); }
+function acDueLabel(d) {
+  if (!d) return { c: '', t: 'Sans date' };
+  const n = acDiff(d);
+  if (n < 0) return { c: 'late', t: -n + ' j de retard' };
+  if (n === 0) return { c: 'today', t: 'Aujourd’hui' };
+  if (n === 1) return { c: '', t: 'Demain' };
+  return { c: '', t: new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) };
+}
+function zoneChip(code) {
+  const s = String(code || '').trim();
+  if (!s) return '';
+  const f = s[0].toUpperCase();
+  return `<span class="zc zc-${'BDIEACR'.includes(f) ? f : 'X'}" title="Zonage ${escH(s)}">${escH(s)}</span>`;
+}
+function acScope() {
+  if (AC.scope) return AC.scope;
+  return currentAssocie ? 'moi' : 'equipe';
+}
+function acItems() {
+  const all = acScope() === 'equipe', me = currentAssocie;
+  const out = [];
+  const ic = k => (typeof M_ICO !== 'undefined' ? M_ICO[k] : '');
+  (state.taches || []).filter(t => t.statut !== 'fait' && (all || t.assigne_a === me)).forEach(t => {
+    const deal = state.deals.find(d => String(d.id) === String(t.deal_id));
+    out.push({ due: t.echeance, title: t.titre, ctx: [t.deal_label || (deal ? deal.terrainLabel : ''), all ? t.assigne_a : ''].filter(Boolean).join(' · '),
+      acts: (deal ? `<button class="ac-btn" onclick="openDealEdit(${deal.id})">Ouvrir le deal</button>` : '') + `<button class="ac-btn done" onclick="toggleTache(${t.id}, true)">Fait</button>` });
+  });
+  state.acheteurs.filter(a => a.prochaine_relance && (all || a.associe === me) && acDiff(a.prochaine_relance) <= 7).forEach(a => {
+    const wa = a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+    out.push({ due: a.prochaine_relance, title: 'Relancer ' + a.nom, ctx: [a.societe, all ? a.associe : ''].filter(Boolean).join(' · ') || 'Promoteur',
+      acts: (a.telephone ? `<a class="ac-btn" href="tel:+${escH(a.telephone)}">${ic('phone')}Appeler</a>` : '') + (wa ? `<a class="ac-btn wa" href="https://wa.me/${escH(a.telephone)}" target="_blank" rel="noopener">${ic('wa')}WhatsApp</a>` : '') +
+        `<button class="ac-btn" onclick="prOpen(${a.id});PR.tab='ech';prRenderFiche()">Noter</button><button class="ac-btn done" onclick="acRelanceFaite(${a.id})">Fait</button>` });
+  });
+  if (typeof PR !== 'undefined') {
+    const g = {};
+    PR.reponses.filter(r => r.statut === 'envoye' && (r.teaser_envoye_le || r.updated_at)).forEach(r => {
+      const a = prAch(r.acheteur_id);
+      if (!a || !(all || a.associe === me)) return;
+      const sent = new Date(r.teaser_envoye_le || r.updated_at);
+      if (acDiff(sent) > -3) return;
+      const k = String(a.id);
+      (g[k] = g[k] || { a, refs: [], first: sent }).refs.push(prRef(prTerrain(r.terrain_id) || { id: r.terrain_id }));
+      if (sent < g[k].first) g[k].first = sent;
+    });
+    Object.values(g).forEach(({ a, refs, first }) => {
+      const due = new Date(first.getTime() + 3 * 864e5);
+      const wa = a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+      out.push({ due, title: 'Sans réponse de ' + a.nom, ctx: refs.length + ' terrain' + (refs.length > 1 ? 's' : '') + ' envoyé' + (refs.length > 1 ? 's' : '') + ' : ' + refs.slice(0, 3).join(', '),
+        acts: (wa ? `<a class="ac-btn wa" href="https://wa.me/${escH(a.telephone)}" target="_blank" rel="noopener">${ic('wa')}Relancer</a>` : '') + `<button class="ac-btn" onclick="prOpen(${a.id});PR.tab='prop';prRenderFiche()">Voir les envois</button>` });
+    });
+  }
+  return out.sort((x, y) => (x.due ? acDay(x.due) : Infinity) - (y.due ? acDay(y.due) : Infinity));
+}
+async function acRelanceFaite(id) {
+  const a = prAch(id);
+  if (!a) return;
+  try {
+    await prReq(`acheteurs?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ prochaine_relance: null, derniere_interaction: new Date().toISOString() }) });
+    a.prochaine_relance = null; a.derniere_interaction = new Date().toISOString();
+    logActivity('Relance faite', 'acheteur', id, a.nom);
+    showNotif('Relance marquée comme faite.');
+  } catch (e) { showNotif('Échec : ' + String(e.message).slice(0, 80), true); return; }
+  acRender();
+}
+function acRender() {
+  const box = document.getElementById('ac-home');
+  if (!box) return;
+  const items = acItems();
+  const late = items.filter(i => i.due && acDiff(i.due) <= 0).length;
+  const T = state.terrains.filter(t => t.statut !== 'Vendu');
+  const reps = typeof PR !== 'undefined' ? PR.reponses : [];
+  const week = Date.now() - 7 * 864e5;
+  const sent7 = reps.filter(r => new Date(r.teaser_envoye_le || r.updated_at) >= week).length;
+  const pos = reps.filter(r => typeof PR_POS !== 'undefined' && PR_POS.includes(r.statut)).length;
+  const d = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const kpi = (l, v, cls, fn) => `<button type="button" class="ac-kpi ${cls}" onclick="${fn}"><span>${l}</span><b>${v}</b></button>`;
+  const shown = items.slice(0, AC.max);
+  const rows = shown.map(i => { const du = acDueLabel(i.due); return `<div class="ac-row"><span class="ac-dot ${du.c}"></span><div class="ac-main"><b>${escH(i.title)}</b><small>${escH(i.ctx || '')}</small></div><span class="ac-due ${du.c}">${du.t}</span><div class="ac-acts">${i.acts}</div></div>`; }).join('');
+  const empty = `<div class="ac-empty"><b>Rien d’urgent ${acScope() === 'moi' ? 'pour vous' : 'pour l’équipe'}.</b>Les actions arrivent ici d’elles-mêmes : échéances des tâches de deal, dates de relance fixées sur un promoteur, et terrains envoyés restés sans réponse plus de 3 jours.</div>`;
+  const stLab = { teaser: 'Teaser', nda: 'NDA', visite: 'Visite', offre: 'Offre', closing: 'Closing' };
+  const max = Math.max(1, ...PIPE_STAGES.map(s => state.deals.filter(x => x.etape === s).length));
+  const stages = PIPE_STAGES.map(s => { const ds = state.deals.filter(x => x.etape === s), m = ds.reduce((a, x) => a + (Number(x.montant) || 0), 0); return `<div class="ac-stage" onclick="mGo('pipeline');M.stage='${s}';M.stagePicked=true;mPipe()"><span>${stLab[s]}</span><i><u style="width:${ds.length / max * 100}%"></u></i><b>${ds.length}</b><em>${m ? mFr(m) + ' M DH' : ''}</em></div>`; }).join('');
+  const recent = reps.filter(r => r.statut && r.statut !== 'envoye').sort((x, y) => new Date(y.updated_at) - new Date(x.updated_at)).slice(0, 5);
+  const repHtml = recent.length ? recent.map(r => { const a = prAch(r.acheteur_id), t = prTerrain(r.terrain_id), cls = r.statut === 'refuse' ? 'late' : PR_POS.includes(r.statut) ? '' : 'today';
+    return `<div class="ac-rep" onclick="prOpen(${r.acheteur_id});PR.tab='prop';prRenderFiche()"><b>${escH(a ? a.nom : 'Promoteur')}</b> <span class="ac-due ${cls}">${escH(PR_REP[r.statut] || r.statut)}${r.raison_refus ? ' : ' + escH(r.raison_refus) : ''}</span><small>${escH(t ? prRef(t) + ' ' + prQuartier(t) : 'Terrain ' + r.terrain_id)}</small></div>`; }).join('')
+    : '<div class="ac-empty">Les réponses des promoteurs aux terrains proposés s’afficheront ici, saisies dans leur fiche ou reçues par le chatbot WhatsApp.</div>';
+  box.innerHTML = `<div class="ac-head"><h2>Aujourd’hui</h2><span class="ac-date">${d.charAt(0).toUpperCase() + d.slice(1)}</span></div>
+    <div class="ac-kpis">${kpi('À relancer', late, late ? 'late' : '', "document.getElementById('ac-todo').scrollIntoView({behavior:'smooth',block:'start'})")}${kpi('Deals actifs', state.deals.filter(x => x.etape !== 'closing').length, '', "mGo('pipeline')")}${kpi('Réponses positives', pos, pos ? 'good' : '', "mGo('acheteurs')")}${kpi('Proposés (7 j)', sent7, '', "mGo('acheteurs')")}${kpi('Portefeuille', T.length + ' terrains', '', "mGo('terrains')")}</div>
+    <div class="ac-grid"><div class="ac-panel" id="ac-todo"><div class="ac-ph"><h3>À faire</h3><small>${items.length} action${items.length > 1 ? 's' : ''}</small>${currentAssocie ? `<div class="ac-seg"><button class="${acScope() === 'moi' ? 'on' : ''}" onclick="AC.scope='moi';acRender()">Moi</button><button class="${acScope() === 'equipe' ? 'on' : ''}" onclick="AC.scope='equipe';acRender()">Équipe</button></div>` : ''}</div>
+      ${rows || empty}${items.length > AC.max ? `<button class="ac-more" onclick="AC.max+=20;acRender()">Voir ${items.length - AC.max} de plus</button>` : ''}</div>
+    <div><div class="ac-panel"><div class="ac-ph"><h3>Pipeline</h3><small>${state.deals.length} deal${state.deals.length > 1 ? 's' : ''}</small></div>${stages}</div>
+    <div class="ac-panel"><div class="ac-ph"><h3>Réponses des promoteurs</h3></div>${repHtml}</div></div></div>`;
+}
+(function acInit() {
+  const page = document.getElementById('page-dashboard');
+  if (!page) return;
+  page.insertAdjacentHTML('afterbegin', '<div id="ac-home"></div>');
+  // Le reste du tableau de bord devient la section « Portefeuille »
+  const kg = page.querySelector('.kpi-grid');
+  if (kg) kg.insertAdjacentHTML('beforebegin', '<div class="ac-section">Portefeuille</div>');
+  const pipeCard = document.getElementById('pipeline-summary');
+  if (pipeCard) pipeCard.closest('.card').classList.add('ac-hide');
+  const grid = page.querySelector('.dashboard-grid');
+  if (grid) grid.style.gridTemplateColumns = '1fr';
+  const pt = document.getElementById('pageTitle');
+  const dd = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (pt) pt.insertAdjacentHTML('afterend', `<span class="ac-tdate">${dd.charAt(0).toUpperCase() + dd.slice(1)}</span>`);
+  if (pt && currentPage === 'dashboard') { pt.dataset.long = 'Aujourd\u2019hui'; if (!mMQ.matches) pt.textContent = 'Aujourd\u2019hui'; }
+  // Navigation : Accueil, icônes dessinées
+  const ico = { dashboard: 'home', pipeline: 'pipe', matching: 'match', carte: 'map', terrains: 'grid', acheteurs: 'users', marketing: 'mega', equipe: 'team' };
+  document.querySelectorAll('.sidebar .nav-item').forEach(n => {
+    const m = (n.getAttribute('onclick') || '').match(/showPage\('(\w+)'/);
+    const i = n.querySelector('.nav-icon');
+    if (m && i && ico[m[1]] && typeof M_ICO !== 'undefined') i.innerHTML = M_ICO[ico[m[1]]];
+    if (m && m[1] === 'dashboard') n.lastChild.textContent = ' Accueil';
+  });
+})();
+const _acDash = renderDashboard;
+renderDashboard = function () { const r = _acDash.apply(this, arguments); acRender(); return r; };
+const _acTask = renderMyTasks;
+renderMyTasks = function () { const r = _acTask.apply(this, arguments); acRender(); return r; };
+const _acShow = showPage;
+showPage = function (page, el) {
+  _acShow(page, el);
+  if (page === 'dashboard') { const t = document.getElementById('pageTitle'); t.dataset.long = 'Aujourd’hui'; if (!mMQ.matches) t.textContent = 'Aujourd’hui'; }
+};
+const _acPrLoad = prLoadExtras;
+prLoadExtras = async function () { const r = await _acPrLoad.apply(this, arguments); if (currentPage === 'dashboard') acRender(); return r; };
+// Pastilles de zonage dans les listes de terrains
+const _acTRow = mTRow;
+mTRow = function (t) { return _acTRow(t).replace(/<i>([^<]*)<\/i>/, (m, z) => zoneChip(z)); };
+acRender();
 </script>
 </body>
 </html>

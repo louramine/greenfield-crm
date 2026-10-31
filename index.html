@@ -1761,7 +1761,7 @@ function renderDashboard() {
     actEl.innerHTML = '<div style="color:#4f6a5c;font-size:13px;text-align:center;padding:20px 0;">Aucune activité récente.</div>';
   } else {
     actEl.innerHTML = state.activities.slice(-6).reverse().map(a =>
-      `<div class="activity-item"><div class="activity-dot"></div><div><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div></div>`
+      `<div class="activity-item"><div class="activity-dot"></div><div><div class="activity-text">${escH(a.text)}</div><div class="activity-time">${escH(a.time)}</div></div></div>`
     ).join('');
   }
 }
@@ -1774,7 +1774,7 @@ function renderPipeline() {
   if (pfs) {
     const names = [...new Set([...(state.equipe || []).map(m => m.nom), ...state.deals.map(d => d.associe).filter(Boolean)])];
     const cur = pfs.value;
-    pfs.innerHTML = '<option value="">Tous les associés</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+    pfs.innerHTML = '<option value="">Tous les associés</option>' + names.map(n => `<option value="${escH(n)}">${escH(n)}</option>`).join('');
     pfs.value = names.includes(cur) ? cur : '';
   }
   PIPE_STAGES.forEach(st => {
@@ -1804,12 +1804,12 @@ function renderPipeline() {
       const tName = terrain ? terrain.localisation : (d.terrainLabel || 'Terrain inconnu');
       const aName = acheteur ? acheteur.nom : (d.acheteurLabel || 'Acheteur inconnu');
       return `<div class="deal-card status-${st}" draggable="true" data-id="${d.id}" ondragstart="dealDragStart(event, ${d.id})" ondragend="this.classList.remove('dragging')" onclick="openDealEdit(${d.id})" style="cursor:grab">
-        <div class="deal-terrain">${tName}</div>
-        <div class="deal-acheteur">${aName}</div>
+        <div class="deal-terrain">${escH(tName)}</div>
+        <div class="deal-acheteur">${escH(aName)}</div>
         <div class="deal-amount">${d.montant ? d.montant + ' M MAD' : '-'}</div>
-        ${acheteur ? `<span class="deal-tag ${tagClass}">${acheteur.type}</span>` : ''}
+        ${acheteur ? `<span class="deal-tag ${tagClass}">${escH(acheteur.type)}</span>` : ''}
         ${taskBadge(d.id)}
-        ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#4f6a5c;margin-top:6px">Suivi : ${d.associe}</div>` : ''}
+        ${d.associe ? `<div class="admin-only" style="font-size:10.5px;color:#4f6a5c;margin-top:6px">Suivi : ${escH(d.associe)}</div>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state" style="padding:20px 0"><div class="empty-state-icon" style="font-size:22px">○</div><div class="empty-state-text" style="font-size:11px">Aucun deal</div></div>';
   });
@@ -2066,20 +2066,22 @@ function filterTerrains() {
     const sc = statutColors[t.statut] || { bg:'#f5f5f5', color:'#999' };
     // Highlight search term
     const highlight = (str) => {
-      if (!search || !str) return str || '—';
-      const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-      return String(str).replace(regex, '<mark style="background:#7ee0a444;color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
+      if (!str) return '—';
+      const safe = escH(str);
+      if (!search) return safe;
+      const regex = new RegExp(`(${escH(search).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+      return safe.replace(regex, '<mark style="background:#7ee0a444;color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
     };
     return `<tr class="terrain-row" onclick="if(!(window.getSelection&&String(window.getSelection()).length))openTerrainDetail(${t.id})" style="cursor:pointer;${t.statut === 'Vendu' ? 'opacity:0.6;' : isOld ? 'opacity:0.75;' : ''}">
       <td style="padding-right:0">${favBtn(t.id)}</td>
       <td style="white-space:nowrap;font-size:12px;color:#4f6a5c;font-weight:600">${highlight(t.ref) || '—'}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.localisation}"><strong>${highlight(t.localisation)}</strong></td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escH(t.localisation)}"><strong>${highlight(t.localisation)}</strong></td>
       <td style="max-width:96px;white-space:nowrap;">${t.urba ? zoneChip(t.urba) : '—'}</td>
       <td style="white-space:nowrap;font-size:12px;color:#4f6a5c">${tfCell(t)}</td>
       <td>${Number(t.superficie).toLocaleString('fr-FR')} m²</td>
       <td>${t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD' : '—'}</td>
       <td><strong>${forfait > 0 ? forfait + ' M MAD' : '—'}</strong></td>
-      <td><span style="display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;background:${sc.bg};color:${sc.color}">${t.statut}</span></td>
+      <td><span style="display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;background:${sc.bg};color:${sc.color}">${escH(t.statut)}</span></td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openTerrainDetail(${t.id})" style="font-size:11px;padding:4px 10px;color:#1f7a4d;border-color:rgba(126,224,164,0.3)">Modif.</button></td>
     </tr>`;
   }).join('');
@@ -2118,13 +2120,13 @@ function renderAcheteurs() {
       <span style="font-size:11px;font-weight:700;color:${scoreColor};min-width:24px;">${score}/10</span>
     </div>`;
     return `<tr>
-      <td onclick="openAcheteurEdit(${a.id})" style="cursor:pointer" title="Modifier"><strong>${a.nom}</strong>${a.contact ? `<br><span style="font-size:11px;color:#888">${a.contact}</span>` : ''}</td>
-      <td><span class="badge ${typeClass}">${a.type}</span></td>
-      <td style="font-size:12px;font-weight:600">${a.associe || '-'}</td>
+      <td onclick="openAcheteurEdit(${a.id})" style="cursor:pointer" title="Modifier"><strong>${escH(a.nom)}</strong>${a.contact ? `<br><span style="font-size:11px;color:#888">${escH(a.contact)}</span>` : ''}</td>
+      <td><span class="badge ${typeClass}">${escH(a.type)}</span></td>
+      <td style="font-size:12px;font-weight:600">${escH(a.associe || '-')}</td>
       <td style="font-size:12px">${(a.villes && a.villes.length) ? a.villes.join(', ') : (a.zones || '-')}</td>
       <td style="font-size:12px">${a.ticketMin || '?'} – ${a.ticketMax || '?'} M MAD</td>
-      <td>${a.usage || '—'}</td>
-      <td><span class="badge ${statutClass}">${a.statut}</span></td>
+      <td>${escH(a.usage || '—')}</td>
+      <td><span class="badge ${statutClass}">${escH(a.statut)}</span></td>
       <td style="min-width:160px;">
         ${scoreBar}
         <div id="score-${a.id}" style="margin-top:5px;">${renderScoreStars(a.id, score)}</div>
@@ -2195,8 +2197,8 @@ function runMatching(adhoc) {
     return `<div class="match-card" style="background:rgba(255,255,255,0.97)">
       <div class="match-score ${scoreClass}">${a.score}</div>
       <div class="match-info">
-        <div class="match-title" style="color:var(--green-deep)">${a.nom}</div>
-        <div class="match-sub">${a.type} · ${a.zones || 'Zones non précisées'} · ${a.ticketMin||'?'}–${a.ticketMax||'?'} M MAD</div>
+        <div class="match-title" style="color:var(--green-deep)">${escH(a.nom)}</div>
+        <div class="match-sub">${escH(a.type)} · ${escH(a.zones || 'Zones non précisées')} · ${a.ticketMin||'?'}–${a.ticketMax||'?'} M MAD</div>
         <div class="match-tags">${reasons.map(r => `<span class="match-tag">${r}</span>`).join('')}</div>
       </div>
       ${isAd ? '' : `<button class="btn btn-primary btn-sm" onclick="createDealFromMatch(${terrain.id}, ${a.id})">Créer deal</button>`}
@@ -2332,7 +2334,7 @@ function openDealModal() {
   document.getElementById('d-nt-q').value = ''; document.getElementById('d-nt-sup').value = '';
   dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0
-    ? state.acheteurs.map(a => `<option value="${a.id}">${a.nom}</option>`).join('')
+    ? state.acheteurs.map(a => `<option value="${a.id}">${escH(a.nom)}</option>`).join('')
     : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
   document.getElementById('d-montant').value = '';
   document.getElementById('d-notes').value = '';
@@ -2452,7 +2454,7 @@ function buildMap() {
 
     circle.bindPopup(`
       <div style="font-family:'Inter Tight',sans-serif;padding:4px 2px;min-width:140px">
-        <div style="font-weight:700;font-size:15px;color:#0e1f17;margin-bottom:4px">${s.name}</div>
+        <div style="font-weight:700;font-size:15px;color:#0e1f17;margin-bottom:4px">${escH(s.name)}</div>
         <div style="font-size:22px;font-weight:800;color:${color}">${s.count}</div>
         <div style="font-size:11px;color:#666;margin-top:2px">terrain${s.count > 1 ? 's' : ''} disponible${s.count > 1 ? 's' : ''}</div>
       </div>
@@ -2477,7 +2479,7 @@ function buildMap() {
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;cursor:pointer" onclick="map.setView([${s.lat},${s.lng}],14)">
         <span style="font-size:11px;color:#4f6a5c;width:18px;text-align:right">${i+1}</span>
         <div style="flex:1">
-          <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${s.name}</div>
+          <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${escH(s.name)}</div>
           <div style="height:4px;background:#eee;border-radius:2px;margin-top:3px">
             <div style="height:4px;background:${color};border-radius:2px;width:${barW}%"></div>
           </div>
@@ -2630,13 +2632,13 @@ function renderEquipe() {
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
         <div style="width:52px;height:52px;border-radius:14px;background:${color}22;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-weight:800;color:${color}">${init}</div>
         <div style="min-width:0">
-          <div style="font-size:18px;font-weight:800;color:#0e1f17">${m.nom} <span style="font-size:10px;font-weight:700;background:${color}22;color:${color};border-radius:20px;padding:2px 8px;vertical-align:middle">${ROLE_LABELS[m.role] || m.role}</span></div>
-          <div style="font-size:11.5px;color:#4f6a5c;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${m.email}</div>
-          ${m.specialite ? `<div style="font-size:11.5px;color:#4f6a5c">${m.specialite}</div>` : ''}
+          <div style="font-size:18px;font-weight:800;color:#0e1f17">${escH(m.nom)} <span style="font-size:10px;font-weight:700;background:${color}22;color:${color};border-radius:20px;padding:2px 8px;vertical-align:middle">${ROLE_LABELS[m.role] || m.role}</span></div>
+          <div style="font-size:11.5px;color:#4f6a5c;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${escH(m.email)}</div>
+          ${m.specialite ? `<div style="font-size:11.5px;color:#4f6a5c">${escH(m.specialite)}</div>` : ''}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${stat(nAch, 'Acheteurs', '#1f7a4d')}${stat(nDeals, 'Deals', color)}${stat(nTer, 'Terrains', '#f97316')}</div>
-      ${m.zones ? `<div style="font-size:11.5px;color:#4f6a5c;margin-top:12px">📍 ${m.zones}</div>` : ''}
+      ${m.zones ? `<div style="font-size:11.5px;color:#4f6a5c;margin-top:12px">📍 ${escH(m.zones)}</div>` : ''}
       ${admin}
     </div>`;
   }).join('');
@@ -3146,17 +3148,17 @@ function associeOptions(selected) {
   const names = (state.equipe || []).filter(m => m.actif !== false).map(m => m.nom);
   const list = names.length ? names : ['Ayoub','Hachim','Amine'];
   if (selected && !list.includes(selected)) list.push(selected);
-  return '<option value="">Non défini</option>' + list.map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
+  return '<option value="">Non défini</option>' + list.map(n => `<option value="${escH(n)}" ${n === selected ? 'selected' : ''}>${escH(n)}</option>`).join('');
 }
 function contactOptions(selected) {
   const mem = (state.equipe || []).filter(m => m.actif !== false);
-  const opt = m => `<option value="${m.nom}" ${m.nom === selected ? 'selected' : ''}>${m.nom}</option>`;
+  const opt = m => `<option value="${escH(m.nom)}" ${escH(m.nom === selected ? 'selected' : '')}>${escH(m.nom)}</option>`;
   const src = mem.filter(m => m.role === 'sourceur'), oth = mem.filter(m => m.role !== 'sourceur');
   let h = `<option value="" ${selected ? '' : 'selected'} disabled>Choisir un contact</option>`;
   if (src.length) h += '<optgroup label="Sourceurs">' + src.map(opt).join('') + '</optgroup>';
   if (oth.length) h += '<optgroup label="Associés et admins">' + oth.map(opt).join('') + '</optgroup>';
   if (!mem.length) h += ['Ayoub','Hachim','Amine'].map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
-  if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${selected}" selected>${selected}</option>`;
+  if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${escH(selected)}" selected>${escH(selected)}</option>`;
   return h;
 }
 function lockContactForSourceur() {
@@ -3297,12 +3299,12 @@ function renderInteractions(terrainId) {
   el.innerHTML = items.map(i => `
     <div style="border-left:3px solid var(--green-bright);padding:10px 14px;margin-bottom:10px;background:#f8faf9;border-radius:0 8px 8px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-weight:700;font-size:13px;color:#1f7a4d">${i.type || 'Contact'}</span>
-        <span style="font-size:11px;color:#4f6a5c">${i.date || i.created_at?.slice(0,10)} · ${i.associe || ''}</span>
+        <span style="font-weight:700;font-size:13px;color:#1f7a4d">${escH(i.type || 'Contact')}</span>
+        <span style="font-size:11px;color:#4f6a5c">${escH(i.date || i.created_at?.slice(0,10))} · ${escH(i.associe || '')}</span>
       </div>
-      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Acheteur :</strong> ${i.acheteur_nom || '—'}</div>
-      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Retour :</strong> ${i.retour || '—'}</div>
-      ${i.notes ? `<div style="font-size:12px;color:#666;font-style:italic;">${i.notes}</div>` : ''}
+      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Acheteur :</strong> ${escH(i.acheteur_nom || '—')}</div>
+      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Retour :</strong> ${escH(i.retour || '—')}</div>
+      ${i.notes ? `<div style="font-size:12px;color:#666;font-style:italic;">${escH(i.notes)}</div>` : ''}
     </div>
   `).join('');
 }
@@ -3434,9 +3436,9 @@ function renderRapportHebdo() {
     <div style="margin-bottom:16px;">
       ${interSemaine.slice(0,5).map(i => `
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
-          <span style="color:var(--green-bright);font-weight:700">${i.type||'Contact'}</span>
-          <span style="color:#555">${i.acheteur_nom||'—'}</span>
-          <span style="color:#4f6a5c;margin-left:auto">${i.associe||''} · ${(i.date||i.created_at||'').slice(0,10)}</span>
+          <span style="color:var(--green-bright);font-weight:700">${escH(i.type||'Contact')}</span>
+          <span style="color:#555">${escH(i.acheteur_nom||'—')}</span>
+          <span style="color:#4f6a5c;margin-left:auto">${escH(i.associe||'')} · ${(i.date||i.created_at||'').slice(0,10)}</span>
         </div>
       `).join('')}
     </div>` : ''}
@@ -3447,9 +3449,9 @@ function renderRapportHebdo() {
     <div>
       ${logsSemaine.slice(0,8).map(l => `
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:11.5px;">
-          <span style="background:#e8f7ef;color:#1f7a4d;padding:2px 7px;border-radius:20px;font-weight:600;font-size:10px">${l.associe}</span>
-          <span style="color:#333">${l.action}</span>
-          <span style="color:#888;font-style:italic;font-size:11px">${l.entity_label||''}</span>
+          <span style="background:#e8f7ef;color:#1f7a4d;padding:2px 7px;border-radius:20px;font-weight:600;font-size:10px">${escH(l.associe)}</span>
+          <span style="color:#333">${escH(l.action)}</span>
+          <span style="color:#888;font-style:italic;font-size:11px">${escH(l.entity_label||'')}</span>
           <span style="color:#bbb;margin-left:auto;font-size:10px">${new Date(l.created_at).toLocaleDateString('fr-FR')}</span>
         </div>
       `).join('')}
@@ -3477,9 +3479,9 @@ function renderActivityLog() {
     <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f4f4f4;">
       <div style="width:28px;height:28px;border-radius:8px;background:${associeColor(l.associe)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">${(l.associe||'?').slice(0,2).toUpperCase()}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${l.action}</div>
-        <div style="font-size:11.5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.entity_label||''}</div>
-        <div style="font-size:10.5px;color:#4f6a5c;margin-top:2px">${l.associe} · ${new Date(l.created_at).toLocaleString('fr-FR')}</div>
+        <div style="font-size:12.5px;font-weight:600;color:#1f7a4d">${escH(l.action)}</div>
+        <div style="font-size:11.5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(l.entity_label||'')}</div>
+        <div style="font-size:10.5px;color:#4f6a5c;margin-top:2px">${escH(l.associe)} · ${new Date(l.created_at).toLocaleString('fr-FR')}</div>
       </div>
     </div>
   `).join('');
@@ -3506,7 +3508,7 @@ function qtToggle() { qtAll = !qtAll; renderQuartierChart(); }
 function renderQuartierChart() {
   const box = document.getElementById('quartier-chart');
   if (!box) return;
-  const esc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const esc = escH;
   const cnt = {};
   state.terrains.filter(t => t.statut !== 'Vendu').forEach(t => {
     const q = (t.localisation || t.quartier || '').replace(/\s+/g, ' ').trim() || 'Non renseigné';
@@ -3994,7 +3996,7 @@ async function gfRefresh() {
 }
 async function gfLogout() {
   try { await fetch(`${SUPA_URL}/auth/v1/logout`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Authorization': SUPA_HEADERS['Authorization'] } }); } catch(e) {}
-  try { localStorage.removeItem('gf-session'); } catch(e) {}
+  try { Object.keys(localStorage).filter(k => k.startsWith('gf-') || k === 'greenfield-crm').forEach(k => localStorage.removeItem(k)); sessionStorage.clear(); } catch(e) {}
   location.reload();
 }
 function gfShowLogin() { document.getElementById('gf-login').style.display = 'flex'; setTimeout(() => document.getElementById('gf-email').focus(), 50); }
@@ -4065,7 +4067,7 @@ function mvPct(arr, p) {
 }
 async function mvLoad() {
   if (MV.data) return MV.data;
-  const r = await fetch('/valo-data.json?v=20261012');
+  const r = await fetch('/valo-data.json?v=20261031');
   if (!r.ok) throw new Error('Données de marché introuvables');
   MV.data = await r.json();
   return MV.data;
@@ -4149,7 +4151,7 @@ function mvInit() {
   const set = new Set((state.terrains || []).map(t => (t.localisation || '').trim()).filter(Boolean));
   mvLoad().then(d => {
     d.market.forEach(r => { if (r[2] && r[2] !== 'Non Precise' && r[2] !== 'Autre Secteur') set.add(r[2]); });
-    d.listing.forEach(r => set.add(r[1]));
+    (d.listing || []).forEach(r => set.add(r[1]));
     dl.innerHTML = [...set].sort((a, b) => a.localeCompare(b, 'fr')).map(v => `<option value="${mvE(v)}">`).join('');
   }).catch(() => {});
   mvDocsRender();

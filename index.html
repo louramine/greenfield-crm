@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1410">
 <title>GREENFIELD — CRM Foncier</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800;1,900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -5479,15 +5480,16 @@ tbody tr:hover{background:#eaf6ef}
   .m-top button:active{background:rgba(126,224,164,.18)}
   .m-top svg{width:21px;height:21px}
   .content{padding:12px 14px calc(96px + env(safe-area-inset-bottom)) !important}
-  .notif{left:16px !important;right:16px !important;bottom:calc(84px + env(safe-area-inset-bottom)) !important;text-align:center}
+  .notif{left:16px !important;right:16px !important;bottom:calc(80px + max(4px, env(safe-area-inset-bottom) - 18px)) !important;text-align:center}
   .m-only{display:inline-flex}
   .m-hide{display:none !important}
 
-  .m-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(10,20,16,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(126,224,164,.2);padding:4px 4px env(safe-area-inset-bottom)}
-  .m-nav button{flex:1;background:none;border:none;color:#8fa99a;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;font-size:11px;font-weight:600;font-family:'Inter Tight',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .m-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(10,20,16,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(126,224,164,.2);padding:2px 4px max(4px, calc(env(safe-area-inset-bottom) - 18px))}
+  .m-nav::after{content:'';position:absolute;left:0;right:0;top:100%;height:160px;background:#0a1410}
+  .m-nav button{flex:1;background:none;border:none;color:#8fa99a;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;font-size:11px;font-weight:600;font-family:'Inter Tight',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .m-nav svg{width:23px;height:23px}
   .m-nav button.on{color:var(--green-light)}
-  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer}
+  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(70px + max(4px, env(safe-area-inset-bottom) - 18px));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer}
   .m-fab svg{width:26px;height:26px}
   .m-fab.off{display:none}
   body.m-locked .m-nav,body.m-locked .m-fab{display:none}
@@ -5569,7 +5571,7 @@ tbody tr:hover{background:#eaf6ef}
   #page-marketing .card{padding:14px;overflow:visible !important}
   #page-marketing .mk-grid,#page-marketing .mk-grid>*{overflow:visible !important}
   #page-marketing label:has(.mk-net){display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;border:1.5px solid #d6eadf;background:#fff}
-  #page-marketing button[onclick="mkGenerate(true)"]{position:sticky;bottom:calc(78px + env(safe-area-inset-bottom));z-index:5;padding:14px;font-size:15px;box-shadow:0 8px 24px rgba(20,90,50,.45)}
+  #page-marketing button[onclick="mkGenerate(true)"]{position:sticky;bottom:calc(74px + max(4px, env(safe-area-inset-bottom) - 18px));z-index:5;padding:14px;font-size:15px;box-shadow:0 8px 24px rgba(20,90,50,.45)}
   #page-matching .mv-tabs{gap:6px}
 
   /* Fiches plein écran */

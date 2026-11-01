@@ -1346,11 +1346,16 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
       <div style="font-size:11.5px;color:#7a9a88">Ce terrain n'est pas dans le CRM. Le deal est créé avec ce libellé, vous pourrez ajouter le terrain plus tard.</div>
     </div>
+    <div id="d-new-demande" style="display:none;margin:-4px 0 14px;padding:12px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Demande *</label><input class="form-input" id="d-dm-q" maxlength="160" placeholder="Ex : 5 000 m² en R+4 à Bouskoura, budget 40 M DH"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Attribuer à</label><select class="form-select" id="d-dm-resp"></select></div>
+      <div style="font-size:11.5px;color:#7a9a88">Une demande attribuée à toute l'équipe apparaît dans « En cours » sur l'accueil de chaque membre, jusqu'à ce qu'elle soit marquée traitée.</div>
+    </div>
     <div class="form-group">
       <label class="form-label">Acheteur *</label>
       <select class="form-select" id="d-acheteur"></select>
     </div>
-    <div class="form-group admin-only">
+    <div class="form-group admin-only" id="d-associe-wrap">
       <label class="form-label">Responsable du deal *</label>
       <select class="form-select" id="d-associe"></select>
     </div>
@@ -1794,7 +1799,7 @@ function renderPipeline() {
   PIPE_STAGES.forEach(st => {
     const pf = document.getElementById('pipe-filter');
     const fv = isAdmin() ? (pf ? pf.value : '') : (currentAssocie || '');
-    const deals = state.deals.filter(d => d.etape === st && (!fv || d.associe === fv));
+    const deals = state.deals.filter(d => d.etape === st && (!fv || d.associe === fv || (!isAdmin() && d.associe === DEM_EQUIPE)));
     const cnt = document.getElementById('cnt-' + st);
     if (cnt) cnt.textContent = deals.length;
     const col = document.getElementById('col-' + st);
@@ -2346,16 +2351,22 @@ async function deleteAcheteur(id) {
   showNotif('Acheteur supprimé.');
 }
 
+const DEM_EQUIPE = 'Équipe', DEM_PREFIX = 'Demande : ', DEM_DONE = 'Demande traitée : ';
+const isDemande = d => String(d && d.terrainLabel || '').startsWith(DEM_PREFIX);
 function dealTerrainToggle() {
-  const on = document.getElementById('d-terrain').value === '__new__';
-  document.getElementById('d-new-terrain').style.display = on ? '' : 'none';
+  const v = document.getElementById('d-terrain').value;
+  document.getElementById('d-new-terrain').style.display = v === '__new__' ? '' : 'none';
+  document.getElementById('d-new-demande').style.display = v === '__dem__' ? '' : 'none';
+  const aw = document.getElementById('d-associe-wrap'); if (aw) aw.classList.toggle('dem-hide', v === '__dem__');
 }
 function openDealModal() {
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
-  tSel.innerHTML = '<option value="__new__">+ Nouveau terrain (hors CRM)</option>' + state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
+  tSel.innerHTML = '<option value="__new__">+ Nouveau terrain (hors CRM)</option><option value="__dem__">+ Nouvelle demande</option>' + state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
   tSel.value = '__new__';
   document.getElementById('d-nt-q').value = ''; document.getElementById('d-nt-sup').value = '';
+  document.getElementById('d-dm-q').value = '';
+  document.getElementById('d-dm-resp').innerHTML = `<option value="${DEM_EQUIPE}">Toute l'équipe</option>` + (state.equipe || []).filter(m => m.actif !== false && m.nom).map(m => `<option value="${escH(m.nom)}">${escH(m.nom)}</option>`).join('');
   dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0
     ? state.acheteurs.map(a => `<option value="${a.id}">${escH(a.nom)}</option>`).join('')
@@ -3192,7 +3203,7 @@ function contactOptions(selected) {
   let h = `<option value="" ${selected ? '' : 'selected'} disabled>Choisir un contact</option>`;
   h += mem.map(opt).join('');
   if (!mem.length) h += ['Ayoub','Hachim','Amine'].map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
-  if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${escH(selected)}" selected>${escH(selected)}</option>`;
+  if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${escH(selected)}" selected>${selected === 'Équipe' ? 'Toute l’équipe' : escH(selected)}</option>`;
   return h;
 }
 function lockContactForSourceur() {
@@ -3278,15 +3289,18 @@ saveAcheteur = async function() {
 
 const _origSaveDeal = saveDeal;
 saveDeal = async function() {
-  const isNew = document.getElementById('d-terrain').value === '__new__';
+  const isDem = document.getElementById('d-terrain').value === '__dem__';
+  const dmQ = document.getElementById('d-dm-q').value.trim();
+  if (isDem && !dmQ) { showNotif('Décrivez la demande', true); return; }
+  const isNew = document.getElementById('d-terrain').value === '__new__' || isDem;
   const terrainId = isNew ? null : parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
   const ntQ = document.getElementById('d-nt-q').value.trim(), ntSup = Number(document.getElementById('d-nt-sup').value) || 0;
-  if (isNew && !ntQ) { showNotif('⚠ Indiquez le quartier ou le nom du terrain', true); return; }
+  if (isNew && !isDem && !ntQ) { showNotif('⚠ Indiquez le quartier ou le nom du terrain', true); return; }
   if ((!isNew && !terrainId) || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
-  if (isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
+  if (!isDem && isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
   if (document.getElementById('dn-titre').value.trim() && !addNewDealTask()) return;
-  const terrain = isNew ? { localisation: normQuartier(ntQ) + (ntSup ? ' (' + Math.round(ntSup).toLocaleString('fr-FR') + ' m²)' : '') + ' [hors CRM]' } : state.terrains.find(t => t.id === terrainId);
+  const terrain = isDem ? { localisation: DEM_PREFIX + dmQ } : isNew ? { localisation: normQuartier(ntQ) + (ntSup ? ' (' + Math.round(ntSup).toLocaleString('fr-FR') + ' m²)' : '') + ' [hors CRM]' } : state.terrains.find(t => t.id === terrainId);
   const acheteur = state.acheteurs.find(a => a.id === acheteurId);
   const deal = {
     terrain_id: terrainId, acheteur_id: acheteurId,
@@ -3294,7 +3308,7 @@ saveDeal = async function() {
     etape: document.getElementById('d-etape').value,
     montant: parseFloat(document.getElementById('d-montant').value) || 0,
     notes: document.getElementById('d-notes').value,
-    layer: 1, associe: (isAdmin() && document.getElementById('d-associe').value) || currentAssocie || 'Équipe',
+    layer: 1, associe: isDem ? (document.getElementById('d-dm-resp').value || DEM_EQUIPE) : ((isAdmin() && document.getElementById('d-associe').value) || currentAssocie || 'Équipe'),
   };
   if (supabaseReady) {
     const res = await supaPost('deals', deal);
@@ -3309,8 +3323,9 @@ saveDeal = async function() {
         else showNotif('Deal créé, mais les tâches n\'ont pas pu être enregistrées.', true);
       }
       newDealTasks = [];
-      showNotif('✓ Deal créé dans Supabase !');
-    } else if (isNew) { showNotif('Échec : la base n\'accepte pas encore les deals hors CRM (voir supabase/deals-terrain-hors-crm.sql).', true); return; }
+      showNotif(isDem ? (deal.associe === DEM_EQUIPE ? 'Demande créée pour toute l’équipe.' : 'Demande créée.') : '✓ Deal créé dans Supabase !');
+    } else if (isDem) { showNotif('Échec : la base n\'accepte pas encore cette demande (voir supabase/demandes-equipe.sql).', true); return; }
+    else if (isNew) { showNotif('Échec : la base n\'accepte pas encore les deals hors CRM (voir supabase/deals-terrain-hors-crm.sql).', true); return; }
   } else {
     state.deals.push({ id: state.nextDealId++, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1 });
     addActivity(`Deal : ${terrain?.localisation} ↔ ${acheteur?.nom}`);
@@ -6021,7 +6036,7 @@ body:not(.on-dashboard) .ac-tdate{display:none}
 .ac-main b{display:block;font-size:14px;font-weight:700;color:var(--gf-ink)}
 .ac-main small{display:block;font-size:12.5px;color:#5d7166;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-due{font:500 11px/1 'JetBrains Mono',monospace;padding:5px 8px;border-radius:999px;white-space:nowrap;background:#e4f3ea;color:#1f7a4d}
-.ac-due.late{background:#fbe3e0;color:#c0392b}.ac-due.today{background:#fdf0d9;color:#9a5d0b}
+.ac-due.late{background:#fbe3e0;color:#c0392b}.ac-due.dem{background:#0a1410;color:#7ee0a4}#d-associe-wrap.dem-hide{display:none !important}.ac-due.today{background:#fdf0d9;color:#9a5d0b}
 .ac-acts{display:flex;gap:6px;flex:none}
 .ac-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #cfe0d6;background:#fff;color:#1f7a4d;border-radius:999px;padding:7px 12px;font:600 12.5px var(--gf-body);cursor:pointer;text-decoration:none;white-space:nowrap}
 .ac-btn svg{width:14px;height:14px}
@@ -6088,6 +6103,11 @@ function acItems() {
   const all = acScope() === 'equipe', me = currentAssocie;
   const out = [];
   const ic = k => (typeof M_ICO !== 'undefined' ? M_ICO[k] : '');
+  state.deals.filter(d => isDemande(d) && (all || d.associe === me || d.associe === DEM_EQUIPE)).forEach(d => {
+    const a = state.acheteurs.find(x => x.id === d.acheteurId);
+    out.push({ top: true, chip: 'Demande', title: d.terrainLabel.slice(DEM_PREFIX.length), ctx: [a ? a.nom : d.acheteurLabel, d.associe === DEM_EQUIPE ? 'Toute l’équipe' : d.associe].filter(Boolean).join(' · '),
+      acts: `<button class="ac-btn" onclick="openDealEdit(${d.id})">Ouvrir</button><button class="ac-btn done" onclick="acDemandeTraitee(${d.id})">Traitée</button>` });
+  });
   (state.taches || []).filter(t => t.statut !== 'fait' && (all || t.assigne_a === me)).forEach(t => {
     const deal = state.deals.find(d => String(d.id) === String(t.deal_id));
     out.push({ due: t.echeance, title: t.titre, ctx: [t.deal_label || (deal ? deal.terrainLabel : ''), all ? t.assigne_a : ''].filter(Boolean).join(' · '),
@@ -6117,7 +6137,18 @@ function acItems() {
         acts: (wa ? `<a class="ac-btn wa" href="https://wa.me/${escH(a.telephone)}" target="_blank" rel="noopener">${ic('wa')}Relancer</a>` : '') + `<button class="ac-btn" onclick="prOpen(${a.id});PR.tab='prop';prRenderFiche()">Voir les envois</button>` });
     });
   }
-  return out.sort((x, y) => (x.due ? acDay(x.due) : Infinity) - (y.due ? acDay(y.due) : Infinity));
+  return out.sort((x, y) => (y.top ? 1 : 0) - (x.top ? 1 : 0) || (x.due ? acDay(x.due) : Infinity) - (y.due ? acDay(y.due) : Infinity));
+}
+async function acDemandeTraitee(id) {
+  const d = state.deals.find(x => x.id === id);
+  if (!d || !isDemande(d)) return;
+  const label = DEM_DONE + d.terrainLabel.slice(DEM_PREFIX.length);
+  const res = await supaPatch('deals', id, { terrain_label: label });
+  if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); return; }
+  d.terrainLabel = label;
+  logActivity('Demande traitée', 'deal', id, label);
+  showNotif('Demande marquée comme traitée.');
+  acRender(); if (typeof renderPipeline === 'function') renderPipeline();
 }
 async function acRelanceFaite(id) {
   const a = prAch(id);
@@ -6143,7 +6174,7 @@ function acRender() {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const kpi = (l, v, cls, fn) => `<button type="button" class="ac-kpi ${cls}" onclick="${fn}"><span>${l}</span><b>${v}</b></button>`;
   const shown = items.slice(0, AC.max);
-  const rows = shown.map(i => { const du = acDueLabel(i.due); return `<div class="ac-row"><span class="ac-dot ${du.c}"></span><div class="ac-main"><b>${escH(i.title)}</b><small>${escH(i.ctx || '')}</small></div><span class="ac-due ${du.c}">${du.t}</span><div class="ac-acts">${i.acts}</div></div>`; }).join('');
+  const rows = shown.map(i => { const du = i.chip ? { c: 'dem', t: i.chip } : acDueLabel(i.due); return `<div class="ac-row"><span class="ac-dot ${du.c}"></span><div class="ac-main"><b>${escH(i.title)}</b><small>${escH(i.ctx || '')}</small></div><span class="ac-due ${du.c}">${du.t}</span><div class="ac-acts">${i.acts}</div></div>`; }).join('');
   const empty = `<div class="ac-empty"><b>Rien d’urgent ${acScope() === 'moi' ? 'pour vous' : 'pour l’équipe'}.</b>Les actions arrivent ici d’elles-mêmes : échéances des tâches de deal, dates de relance fixées sur un promoteur, et terrains envoyés restés sans réponse plus de 3 jours.</div>`;
   const stLab = { teaser: 'Teaser', nda: 'NDA', visite: 'Visite', offre: 'Offre', closing: 'Closing' };
   const max = Math.max(1, ...PIPE_STAGES.map(s => state.deals.filter(x => x.etape === s).length));
@@ -6154,7 +6185,7 @@ function acRender() {
     : '<div class="ac-empty">Les réponses des promoteurs aux terrains proposés s’afficheront ici, saisies dans leur fiche ou reçues par le chatbot WhatsApp.</div>';
   box.innerHTML = `<div class="ac-head"><h2>Aujourd’hui</h2><span class="ac-date">${d.charAt(0).toUpperCase() + d.slice(1)}</span></div>
     <div class="ac-kpis">${kpi('À relancer', late, late ? 'late' : '', "document.getElementById('ac-todo').scrollIntoView({behavior:'smooth',block:'start'})")}${kpi('Deals actifs', state.deals.filter(x => x.etape !== 'closing').length, '', "mGo('pipeline')")}${kpi('Réponses positives', pos, pos ? 'good' : '', "mGo('acheteurs')")}${kpi('Proposés (7 j)', sent7, '', "mGo('acheteurs')")}${kpi('Portefeuille', T.length + ' terrains', '', "mGo('terrains')")}</div>
-    <div class="ac-grid"><div class="ac-panel" id="ac-todo"><div class="ac-ph"><h3>À faire</h3><small>${items.length} action${items.length > 1 ? 's' : ''}</small>${currentAssocie ? `<div class="ac-seg"><button class="${acScope() === 'moi' ? 'on' : ''}" onclick="AC.scope='moi';acRender()">Moi</button><button class="${acScope() === 'equipe' ? 'on' : ''}" onclick="AC.scope='equipe';acRender()">Équipe</button></div>` : ''}</div>
+    <div class="ac-grid"><div class="ac-panel" id="ac-todo"><div class="ac-ph"><h3>En cours</h3><small>${items.length} action${items.length > 1 ? 's' : ''}</small>${currentAssocie ? `<div class="ac-seg"><button class="${acScope() === 'moi' ? 'on' : ''}" onclick="AC.scope='moi';acRender()">Moi</button><button class="${acScope() === 'equipe' ? 'on' : ''}" onclick="AC.scope='equipe';acRender()">Équipe</button></div>` : ''}</div>
       ${rows || empty}${items.length > AC.max ? `<button class="ac-more" onclick="AC.max+=20;acRender()">Voir ${items.length - AC.max} de plus</button>` : ''}</div>
     <div><div class="ac-panel"><div class="ac-ph"><h3>Réponses des promoteurs</h3></div>${repHtml}</div>
     <div class="ac-panel"><div class="ac-ph"><h3>Deals</h3><small>${state.deals.length} deal${state.deals.length > 1 ? 's' : ''}</small></div>${stages}</div></div></div>`;

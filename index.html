@@ -955,6 +955,8 @@ body:not(.role-admin) .admin-only{display:none !important}
         <div class="ms-filter" id="ms-urba"></div>
         <input id="filter-prix-min" type="number" min="0" placeholder="Forfait min (M MAD)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(126,224,164,0.25);border-radius:10px;background:rgba(14,31,23,0.8);color:var(--white);font-family:'Inter Tight',sans-serif;font-size:13px;outline:none;width:165px;">
         <input id="filter-prix-max" type="number" min="0" placeholder="Forfait max (M MAD)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(126,224,164,0.25);border-radius:10px;background:rgba(14,31,23,0.8);color:var(--white);font-family:'Inter Tight',sans-serif;font-size:13px;outline:none;width:165px;">
+        <input id="filter-sup-min" title="Superficie minimum en m²" type="number" min="0" placeholder="Superficie min (m²)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(126,224,164,0.25);border-radius:10px;background:rgba(14,31,23,0.8);color:var(--white);font-family:'Inter Tight',sans-serif;font-size:13px;outline:none;width:165px;">
+        <input id="filter-sup-max" title="Superficie maximum en m²" type="number" min="0" placeholder="Superficie max (m²)" oninput="filterTerrains()" style="padding:10px 14px;border:1.5px solid rgba(126,224,164,0.25);border-radius:10px;background:rgba(14,31,23,0.8);color:var(--white);font-family:'Inter Tight',sans-serif;font-size:13px;outline:none;width:165px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="hide-vendus" onchange="filterTerrains()"> Masquer les vendus</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="only-fav" onchange="filterTerrains()"> ★ Mes favoris <span id="fav-count" style="color:var(--gold-light)"></span></label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray-mid);white-space:nowrap"><input type="checkbox" id="only-tfdup" onchange="filterTerrains()"> TF en double <span id="tfdup-count" style="color:var(--gold-light)"></span></label>
@@ -2024,6 +2026,8 @@ function filterTerrains() {
   const search = (document.getElementById('search-terrains')?.value || '').toLowerCase().trim();
   const pmin = parseFloat(document.getElementById('filter-prix-min')?.value);
   const pmax = parseFloat(document.getElementById('filter-prix-max')?.value);
+  const smin = parseFloat(document.getElementById('filter-sup-min')?.value);
+  const smax = parseFloat(document.getElementById('filter-sup-max')?.value);
 
   let filtered = state.terrains.filter(t => {
     // Text search
@@ -2039,6 +2043,12 @@ function filterTerrains() {
     const p = Number(t.forfait) || ((Number(t.superficie) || 0) * (Number(t.prix) || 0) / 1e6);
     if (!isNaN(pmin) && p < pmin) return false;
     if (!isNaN(pmax) && p > pmax) return false;
+    if (!isNaN(smin) || !isNaN(smax)) {
+      const sup = Number(t.superficie) || 0;
+      if (!sup) return false;
+      if (!isNaN(smin) && sup < smin) return false;
+      if (!isNaN(smax) && sup > smax) return false;
+    }
     return true;
   });
 
@@ -2105,6 +2115,7 @@ function resetFilters() {
   msRender('loc'); msRender('urba');
   document.getElementById('filter-prix-min').value = '';
   document.getElementById('filter-prix-max').value = '';
+  ['filter-sup-min', 'filter-sup-max'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
   TSORT.key = ''; TSORT.dir = 1; tsortMarks();
   const hv = document.getElementById('hide-vendus'); if (hv) hv.checked = false;
   const td0 = document.getElementById('only-tfdup'); if (td0) td0.checked = false;
@@ -5422,9 +5433,9 @@ tbody tr:hover{background:#eaf6ef}
 .modal-overlay{background:rgba(10,20,16,0.82)}
 .pr-name,.pr-fhead h2,.pr-row-t,.match-title{font-family:var(--gf-display);font-weight:800;letter-spacing:-0.01em}
 .pr-kpi b,.m-tr-f{font-family:var(--gf-display);font-weight:900;letter-spacing:-0.03em}
-.pr-kpi,.pr-search input,.pr-sel,.ms-btn,#search-terrains,#filter-prix-min,#filter-prix-max{border-color:var(--gf-line-strong) !important}
+.pr-kpi,.pr-search input,.pr-sel,.ms-btn,#search-terrains,#filter-prix-min,#filter-prix-max,#filter-sup-min,#filter-sup-max{border-color:var(--gf-line-strong) !important}
 .pr-search input,#search-terrains{border-radius:999px !important;background:rgba(232,242,234,0.05) !important}
-.pr-sel,.ms-btn,#filter-prix-min,#filter-prix-max{border-radius:999px !important;background:var(--gf-bg-2) !important}
+.pr-sel,.ms-btn,#filter-prix-min,#filter-prix-max,#filter-sup-min,#filter-sup-max{border-radius:999px !important;background:var(--gf-bg-2) !important}
 .mv-tab,.mk-src{border-radius:999px !important}
 .empty-state-text{font-family:var(--gf-body)}
 #gf-login{background:var(--gf-ink)}
@@ -5810,7 +5821,7 @@ function mTBadge() {
   const b = document.getElementById('m-tf-btn');
   if (!b) return;
   let n = (msSel.loc.size ? 1 : 0) + (msSel.urba.size ? 1 : 0);
-  ['filter-prix-min', 'filter-prix-max'].forEach(id => { const e = document.getElementById(id); if (e && e.value !== '') n++; });
+  ['filter-prix-min', 'filter-prix-max', 'filter-sup-min', 'filter-sup-max'].forEach(id => { const e = document.getElementById(id); if (e && e.value !== '') n++; });
   ['hide-vendus', 'only-fav', 'only-tfdup'].forEach(id => { const e = document.getElementById(id); if (e && e.checked) n++; });
   b.classList.toggle('on', n > 0);
   b.innerHTML = M_ICO.filter + 'Filtres' + (n ? `<em>${n}</em>` : '');
@@ -5884,10 +5895,10 @@ function mLayout() {
     if (tf && tb) [...tf.children].forEach(ch => { if (!ch.classList.contains('m-search-w') && !ch.classList.contains('m-fbtn') && ch.id !== 'terrains-count') mStash(ch, tb); });
     const pt = document.querySelector('#page-acheteurs .pr-toolbar'), pb = document.getElementById('m-pf-body');
     if (pt && pb) [...pt.children].forEach(ch => { if (!ch.classList.contains('pr-search') && !ch.classList.contains('m-fbtn') && ch.id !== 'pr-count') mStash(ch, pb); });
-    const ph = { 'filter-prix-min': 'Forfait min (M DH)', 'filter-prix-max': 'Forfait max (M DH)' };
+    const ph = { 'filter-prix-min': 'Forfait min (M DH)', 'filter-prix-max': 'Forfait max (M DH)', 'filter-sup-min': 'Surface min (m²)', 'filter-sup-max': 'Surface max (m²)' };
     Object.keys(ph).forEach(id => { const e = document.getElementById(id); if (e) { e.dataset.ph = e.placeholder; e.placeholder = ph[id]; } });
   } else if (!mob && M.moved.length) {
-    ['filter-prix-min', 'filter-prix-max'].forEach(id => { const e = document.getElementById(id); if (e && e.dataset.ph) e.placeholder = e.dataset.ph; });
+    ['filter-prix-min', 'filter-prix-max', 'filter-sup-min', 'filter-sup-max'].forEach(id => { const e = document.getElementById(id); if (e && e.dataset.ph) e.placeholder = e.dataset.ph; });
     M.moved.forEach(([n, mk]) => { mk.parentNode.insertBefore(n, mk); mk.remove(); });
     M.moved = [];
     mClose();

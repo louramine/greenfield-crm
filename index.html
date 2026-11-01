@@ -2635,8 +2635,9 @@ function renderEquipe() {
     const nDeals = state.deals.filter(d => d.associe === m.nom).length;
     const nTer = state.terrains.filter(t => t.sourceur === m.nom).length;
     const stat = (v, l, c) => `<div style="background:#f8faf9;border-radius:10px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:${c}">${v}</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#4f6a5c;font-weight:600;margin-top:2px">${l}</div></div>`;
-    const admin = isAdmin() ? `<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #e2ece7">
-        <select class="form-select" style="flex:1;padding:6px 8px;font-size:12px" onchange="changeMembreRole(${m.id}, this.value)">
+    const admin = isAdmin() ? `<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #e2ece7;align-items:center">
+        <button class="btn btn-ghost btn-sm" style="flex:1;color:#0a1410;border-color:#cfe0d6" onclick="this.hidden=true;this.nextElementSibling.hidden=false">Gérer l'accès</button>
+        <select class="form-select" hidden style="flex:1;padding:6px 8px;font-size:12px" onchange="changeMembreRole(${m.id}, this.value)">
           ${['admin','associe','sourceur'].map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`).join('')}
         </select>
         <button class="btn btn-ghost btn-sm" style="color:#c0392b;border-color:#fad7d0" onclick="deleteMembre(${m.id})">Retirer</button></div>` : '';
@@ -2645,7 +2646,7 @@ function renderEquipe() {
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
         <div style="width:52px;height:52px;border-radius:14px;background:${color}22;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-weight:800;color:${color}">${init}</div>
         <div style="min-width:0">
-          <div style="font-size:18px;font-weight:800;color:#0e1f17">${escH(m.nom)} <span style="font-size:10px;font-weight:700;background:${color}22;color:${color};border-radius:20px;padding:2px 8px;vertical-align:middle">${ROLE_LABELS[m.role] || m.role}</span></div>
+          <div style="font-size:18px;font-weight:800;color:#0e1f17">${escH(m.nom)}</div>
           <div style="font-size:11.5px;color:#4f6a5c;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${escH(m.email)}</div>
           ${m.specialite ? `<div style="font-size:11.5px;color:#4f6a5c">${escH(m.specialite)}</div>` : ''}
         </div>
@@ -2704,7 +2705,7 @@ async function changeMembreRole(id, role) {
   if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); renderEquipe(); return; }
   m.role = role;
   if ((m.email || '').toLowerCase() === myEmail) applyRole();
-  renderEquipe(); showNotif('✓ Rôle mis à jour');
+  renderEquipe(); showNotif('✓ Accès mis à jour');
 }
 async function deleteMembre(id) {
   const m = state.equipe.find(x => x.id === id);
@@ -2739,7 +2740,7 @@ function openTerrainDetail(id) {
 
   document.getElementById('d-tf').value = t.tf && t.tf !== 'nan' ? t.tf : '';
   document.getElementById('d-date').value = t.dateSourcing || '';
-  { const ds = document.getElementById('d-sourceur'); if (t.sourceur && ![...ds.options].some(o => o.value === t.sourceur)) ds.add(new Option(t.sourceur, t.sourceur)); ds.value = t.sourceur || 'Abderrahim'; ds.disabled = myRole === 'sourceur'; }
+  { const ds = document.getElementById('d-sourceur'); fillSourceurSelect(ds, t.sourceur || ''); ds.disabled = myRole === 'sourceur'; }
   document.getElementById('d-statut').value = t.statut || 'À qualifier';
   document.getElementById('d-gmap').value = t.googleMap || '';
   document.getElementById('d-commentaire').value = t.commentaire || '';
@@ -3164,13 +3165,21 @@ function associeOptions(selected) {
   if (selected && !list.includes(selected)) list.push(selected);
   return '<option value="">Non défini</option>' + list.map(n => `<option value="${escH(n)}" ${n === selected ? 'selected' : ''}>${escH(n)}</option>`).join('');
 }
+function fillSourceurSelect(ds, selected) {
+  const mem = (state.equipe || []).filter(m => m.actif !== false).map(m => m.nom).filter(Boolean);
+  const autres = ['Hachim','Ayoub','Amine','LFA','RAS','Autre'].filter(n => !mem.includes(n));
+  if (selected && !mem.includes(selected) && !autres.includes(selected)) autres.unshift(selected);
+  const opt = n => `<option value="${escH(n)}">${escH(n)}</option>`;
+  ds.innerHTML = '<option value="">Non défini</option>'
+    + (mem.length ? '<optgroup label="Équipe">' + mem.map(opt).join('') + '</optgroup>' : '')
+    + '<optgroup label="Autres">' + autres.map(opt).join('') + '</optgroup>';
+  ds.value = selected;
+}
 function contactOptions(selected) {
   const mem = (state.equipe || []).filter(m => m.actif !== false);
   const opt = m => `<option value="${escH(m.nom)}" ${escH(m.nom === selected ? 'selected' : '')}>${escH(m.nom)}</option>`;
-  const src = mem.filter(m => m.role === 'sourceur'), oth = mem.filter(m => m.role !== 'sourceur');
   let h = `<option value="" ${selected ? '' : 'selected'} disabled>Choisir un contact</option>`;
-  if (src.length) h += '<optgroup label="Sourceurs">' + src.map(opt).join('') + '</optgroup>';
-  if (oth.length) h += '<optgroup label="Associés et admins">' + oth.map(opt).join('') + '</optgroup>';
+  h += mem.map(opt).join('');
   if (!mem.length) h += ['Ayoub','Hachim','Amine'].map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('');
   if (selected && !mem.some(m => m.nom === selected) && mem.length) h += `<option value="${escH(selected)}" selected>${escH(selected)}</option>`;
   return h;

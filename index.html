@@ -1334,9 +1334,9 @@ body:not(.role-admin) .admin-only{display:none !important}
 <!-- Modal Deal -->
 <div class="modal-overlay" id="modal-deal">
   <div class="modal">
-    <div class="modal-title">Nouveau Deal</div>
+    <div class="modal-title" id="d-modal-title">Nouvelle demande</div>
     <div class="form-group">
-      <label class="form-label">Terrain *</label>
+      <label class="form-label">Demande ou terrain *</label>
       <select class="form-select" id="d-terrain" onchange="dealTerrainToggle()"></select>
     </div>
     <div id="d-new-terrain" style="display:none;margin:-4px 0 14px;padding:12px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
@@ -1347,7 +1347,14 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div style="font-size:11.5px;color:#7a9a88">Ce terrain n'est pas dans le CRM. Le deal est créé avec ce libellé, vous pourrez ajouter le terrain plus tard.</div>
     </div>
     <div id="d-new-demande" style="display:none;margin:-4px 0 14px;padding:12px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
-      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Demande *</label><input class="form-input" id="d-dm-q" maxlength="160" placeholder="Ex : 5 000 m² en R+4 à Bouskoura, budget 40 M DH"></div>
+      <div class="form-grid">
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Localisation</label><select class="form-select" id="d-dm-loc"></select></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Déf. urbanistique</label><select class="form-select" id="d-dm-urba"></select></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Superficie min</label><select class="form-select" id="d-dm-smin"></select></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Superficie max</label><select class="form-select" id="d-dm-smax"></select></div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Budget max (M DH)</label><input class="form-input" id="d-dm-budget" type="number" min="0" step="any" inputmode="decimal" placeholder="Ex : 40"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Précisions</label><input class="form-input" id="d-dm-q" maxlength="120" placeholder="Ex : R+4, angle, titré, livraison rapide"></div>
       <div class="form-group" style="margin-bottom:8px"><label class="form-label">Attribuer à</label><select class="form-select" id="d-dm-resp"></select></div>
       <div style="font-size:11.5px;color:#7a9a88">Une demande attribuée à toute l'équipe apparaît dans « En cours » sur l'accueil de chaque membre, jusqu'à ce qu'elle soit marquée traitée.</div>
     </div>
@@ -1676,7 +1683,7 @@ function showPage(page, el) {
   const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs et acheteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
 
-  const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouveau promoteur' };
+  const addLabels = { dashboard: null, pipeline: '+ Nouvelle demande', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouveau promoteur' };
   const addBtn = document.getElementById('addBtn');
   if (addLabels[page]) { addBtn.style.display = ''; addBtn.textContent = addLabels[page]; }
   else { addBtn.style.display = page === 'dashboard' ? '' : 'none'; addBtn.textContent = '+ Ajouter'; }
@@ -2353,8 +2360,18 @@ async function deleteAcheteur(id) {
 
 const DEM_EQUIPE = 'Équipe', DEM_PREFIX = 'Demande : ', DEM_DONE = 'Demande traitée : ';
 const isDemande = d => String(d && d.terrainLabel || '').startsWith(DEM_PREFIX);
+// Superficies proposées : 500 m², 1 000 m², puis par 1 000 m² jusqu'à 1 ha, par 1 ha jusqu'à 10 ha, puis par 10 ha
+const DEM_SURFACES = [500, ...Array.from({ length: 10 }, (_, i) => (i + 1) * 1000), ...Array.from({ length: 9 }, (_, i) => (i + 2) * 10000), ...Array.from({ length: 9 }, (_, i) => (i + 2) * 100000)];
+const demSurf = v => v >= 10000 ? (v / 10000).toLocaleString('fr-FR') + ' ha' : v.toLocaleString('fr-FR') + ' m²';
+function demLabel() {
+  const g = id => document.getElementById(id).value.trim();
+  const smin = Number(g('d-dm-smin')) || 0, smax = Number(g('d-dm-smax')) || 0, b = Number(g('d-dm-budget')) || 0;
+  const sup = smin && smax ? demSurf(smin) + ' à ' + demSurf(smax) : smin ? 'à partir de ' + demSurf(smin) : smax ? "jusqu'à " + demSurf(smax) : '';
+  return [g('d-dm-loc'), g('d-dm-urba'), sup, b ? b.toLocaleString('fr-FR') + ' M DH max' : '', g('d-dm-q')].filter(Boolean).join(' · ');
+}
 function dealTerrainToggle() {
   const v = document.getElementById('d-terrain').value;
+  const tt = document.getElementById('d-modal-title'); if (tt) tt.textContent = v === '__dem__' ? 'Nouvelle demande' : 'Nouveau deal';
   document.getElementById('d-new-terrain').style.display = v === '__new__' ? '' : 'none';
   document.getElementById('d-new-demande').style.display = v === '__dem__' ? '' : 'none';
   const aw = document.getElementById('d-associe-wrap'); if (aw) aw.classList.toggle('dem-hide', v === '__dem__');
@@ -2363,9 +2380,15 @@ function openDealModal() {
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
   tSel.innerHTML = '<option value="__new__">+ Nouveau terrain (hors CRM)</option><option value="__dem__">+ Nouvelle demande</option>' + state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
-  tSel.value = '__new__';
+  tSel.value = '__dem__';
   document.getElementById('d-nt-q').value = ''; document.getElementById('d-nt-sup').value = '';
-  document.getElementById('d-dm-q').value = '';
+  ['d-dm-q', 'd-dm-budget'].forEach(id => { document.getElementById(id).value = ''; });
+  const locs = [...new Set((state.terrains || []).map(t => (t.localisation || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  document.getElementById('d-dm-loc').innerHTML = '<option value="">Indifférent</option>' + locs.map(v => `<option value="${escH(v)}">${escH(v)}</option>`).join('');
+  document.getElementById('d-dm-urba').innerHTML = '<option value="">Indifférent</option>' + PR_ZONES.map(([k, l]) => `<option value="${escH(l)}">${escH(l)}</option>`).join('');
+  const sOpts = DEM_SURFACES.map(v => `<option value="${v}">${demSurf(v)}</option>`).join('');
+  document.getElementById('d-dm-smin').innerHTML = '<option value="">Indifférent</option>' + sOpts;
+  document.getElementById('d-dm-smax').innerHTML = '<option value="">Indifférent</option>' + sOpts;
   document.getElementById('d-dm-resp').innerHTML = `<option value="${DEM_EQUIPE}">Toute l'équipe</option>` + (state.equipe || []).filter(m => m.actif !== false && m.nom).map(m => `<option value="${escH(m.nom)}">${escH(m.nom)}</option>`).join('');
   dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0
@@ -3290,8 +3313,12 @@ saveAcheteur = async function() {
 const _origSaveDeal = saveDeal;
 saveDeal = async function() {
   const isDem = document.getElementById('d-terrain').value === '__dem__';
-  const dmQ = document.getElementById('d-dm-q').value.trim();
-  if (isDem && !dmQ) { showNotif('Décrivez la demande', true); return; }
+  const dmQ = isDem ? demLabel() : '';
+  if (isDem) {
+    const smin = Number(document.getElementById('d-dm-smin').value) || 0, smax = Number(document.getElementById('d-dm-smax').value) || 0;
+    if (!dmQ) { showNotif('Indiquez au moins un critère de la demande', true); return; }
+    if (smin && smax && smin > smax) { showNotif('La superficie min dépasse la superficie max', true); return; }
+  }
   const isNew = document.getElementById('d-terrain').value === '__new__' || isDem;
   const terrainId = isNew ? null : parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
@@ -5758,7 +5785,7 @@ function mActions() {
   const a = (ic, l, sub, fn) => `<button type="button" class="m-act" onclick="${fn}"><span>${M_ICO[ic]}</span><div>${l}<small>${sub}</small></div></button>`;
   mSheet('Ajouter', a('terrain', 'Nouveau terrain', 'Saisir un terrain dans le portefeuille', 'mClose();openTerrainModal()') +
     a('person', 'Nouveau promoteur', 'Créer une fiche promoteur ou acheteur', 'mClose();openAcheteurNew()') +
-    a('deal', 'Nouveau deal', 'Associer un terrain et un acheteur', 'mClose();openDealModal()') +
+    a('deal', 'Nouvelle demande', 'Ce que cherche un promoteur, ou un deal sur un terrain', 'mClose();openDealModal()') +
     a('note', 'Noter un échange', 'Appel, rendez-vous ou visite avec un promoteur', "mSearchOpen(true)"));
 }
 async function mRefresh() {

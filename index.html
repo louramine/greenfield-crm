@@ -1431,11 +1431,11 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div class="form-group"><label class="form-label">Attribuée à</label><select class="form-select" id="dm-resp"></select></div>
     </div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="dm-notes" style="min-height:64px"></textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:18px">
-      <button class="btn btn-ghost btn-sm" id="dm-cloture" onclick="dmCloture()"></button>
+    <div class="dm-acts" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:18px">
+      <button class="btn btn-ghost btn-sm dm-clo" onclick="dmCloture()"></button>
       <button class="btn btn-primary btn-sm" onclick="dmSave()">Enregistrer les modifications</button>
     </div>
-    <div class="dm-sec"><b>Terrains proposés</b><span id="dm-tcount"></span><button class="btn btn-ghost btn-sm" onclick="dmPickToggle(true)">+ Proposer des terrains</button></div>
+    <div class="dm-sec" id="dm-tsec"><b>Terrains proposés</b><span id="dm-tcount"></span><button class="btn btn-ghost btn-sm" onclick="dmPickToggle(true, true)">+ Proposer des terrains</button></div>
     <div id="dm-pick" style="display:none;margin:8px 0 12px;padding:10px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
       <input class="form-input" id="dm-pick-q" placeholder="Chercher par réf, quartier, zonage..." oninput="dmPickRender()" autocomplete="off">
       <div id="dm-pick-list" style="max-height:260px;overflow:auto;margin:8px 0"></div>
@@ -1445,7 +1445,9 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="dm-sec" style="margin-top:18px"><b>Historique</b></div>
     <div id="dm-histo"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-demande')">Fermer</button>
+      <button class="btn btn-ghost dm-close" onclick="closeModal('modal-demande')">Fermer</button>
+      <button class="btn btn-ghost dm-clo m-only" onclick="dmCloture()"></button>
+      <button class="btn btn-primary m-only" onclick="dmSave()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -6204,7 +6206,7 @@ async function openDemande(id, pick) {
   document.getElementById('dm-resp').value = d.associe || DEM_EQUIPE;
   dmRenderHead();
   document.getElementById('dm-pick-q').value = '';
-  dmPickToggle(!!pick);
+  dmPickToggle(false);
   document.getElementById('dm-terrains').innerHTML = '<div class="dm-empty">Chargement...</div>';
   document.getElementById('dm-histo').innerHTML = '';
   openModal('modal-demande');
@@ -6217,14 +6219,14 @@ async function openDemande(id, pick) {
   } catch (e) { DM.ok = false; }
   if (DM.id !== d.id) return;
   dmRenderTerrains(); dmRenderHisto();
-  if (pick) document.getElementById('dm-pick-q').focus();
+  if (pick) dmPickToggle(true, true);
 }
 function dmRenderHead() {
   const d = state.deals.find(x => x.id === DM.id); if (!d) return;
   const open = isDemande(d);
   document.getElementById('dm-title').textContent = open ? 'Demande' : 'Demande traitée';
   document.getElementById('dm-meta').textContent = [d.createdAt ? 'Créée le ' + dmDate(d.createdAt) : '', open ? 'En cours' : 'Traitée'].filter(Boolean).join(' · ');
-  document.getElementById('dm-cloture').textContent = open ? 'Marquer traitée' : 'Rouvrir la demande';
+  document.querySelectorAll('#modal-demande .dm-clo').forEach(b => { b.textContent = open ? 'Marquer traitée' : 'Rouvrir'; });
 }
 function dmTerrainLine(t, fallback) {
   if (!t) return escH(fallback || 'Terrain retiré du CRM');
@@ -6245,9 +6247,15 @@ function dmRenderHisto() {
   box.innerHTML = DM.histo.length ? DM.histo.map(h => `<div class="dm-h"><span>${dmDateH(h.created_at)}</span><div><b>${escH(h.action)}</b>${h.auteur ? ' par ' + escH(h.auteur) : ''}${h.detail ? `<small>${escH(h.detail)}</small>` : ''}</div></div>`).join('')
     : '<div class="dm-empty">' + (DM.ok ? 'Aucune modification enregistrée.' : 'Historique indisponible (voir supabase/demandes-fiche.sql).') + '</div>';
 }
-function dmPickToggle(on) {
+function dmPickToggle(on, show) {
   document.getElementById('dm-pick').style.display = on ? '' : 'none';
-  if (on) dmPickRender();
+  if (!on) return;
+  dmPickRender();
+  if (!show) return;
+  // Sur téléphone on fait défiler jusqu'à la recherche sans ouvrir le clavier, qui cacherait la liste
+  const phone = window.matchMedia('(max-width: 900px)').matches;
+  if (phone) document.getElementById('dm-tsec').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  else document.getElementById('dm-pick-q').focus();
 }
 function dmPickRender() {
   const q = document.getElementById('dm-pick-q').value.toLowerCase().trim();
@@ -6394,6 +6402,36 @@ const _acTRow = mTRow;
 mTRow = function (t) { return _acTRow(t).replace(/<i>([^<]*)<\/i>/, (m, z) => zoneChip(z)); };
 acRender();
 </script>
+<style id="dm-css">
+@media(max-width:900px){
+  #modal-demande{align-items:stretch !important}
+  #modal-demande .modal{width:100% !important;max-width:100% !important;height:100vh;height:100dvh;max-height:100dvh !important;border-radius:0 !important;padding:0 16px !important;padding-top:env(safe-area-inset-top) !important;overflow-x:hidden !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  #modal-demande .modal *{max-width:100%}
+  #modal-demande .modal-title{position:sticky;top:0;z-index:6;background:#fff;margin:0 -16px 0;padding:14px 56px 4px 16px;font-size:19px}
+  #dm-meta{position:sticky;top:44px;z-index:6;background:#fff;margin:0 -16px 12px !important;padding:0 16px 10px;box-shadow:0 1px 0 #e6efe9}
+  #modal-demande .form-grid{grid-template-columns:1fr !important;gap:0}
+  #modal-demande .form-input,#modal-demande .form-select,#modal-demande .form-textarea{font-size:16px !important;min-height:46px}
+  #modal-demande .dm-acts{display:none !important}
+  #modal-demande .modal-actions{position:sticky;bottom:0;z-index:6;background:#fff;margin:16px -16px 0;padding:10px 16px max(10px, env(safe-area-inset-bottom));box-shadow:0 -1px 0 #e6efe9;flex-wrap:nowrap;gap:8px}
+  #modal-demande .modal-actions .btn{flex:1;padding:13px 8px;font-size:14.5px;justify-content:center}
+  #modal-demande .modal-title,#dm-meta,#modal-demande .modal-actions{max-width:none !important;width:auto}
+  #modal-demande .modal-actions .dm-close{display:none}
+  #modal-demande .de-x{position:fixed;top:calc(8px + env(safe-area-inset-top))}
+  .dm-sec{flex-wrap:wrap;scroll-margin-top:96px}
+  .dm-sec b{font-size:15px}
+  .dm-sec button{padding:9px 14px}
+  #dm-pick{margin:8px -6px 12px !important}
+  #dm-pick-list{max-height:52vh !important;overscroll-behavior:contain}
+  #dm-pick .btn{flex:1;padding:12px 8px}
+  .dm-row{padding:11px 0;gap:12px}
+  .dm-pk input{width:22px;height:22px;flex:none;accent-color:#1f7a4d}
+  .dm-main{font-size:14px}
+  .dm-main small{font-size:12.5px}
+  .dm-row .btn{flex:none;width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+  .dm-h{flex-direction:column;gap:3px;padding:9px 0;font-size:13.5px}
+  .dm-h>span{flex:none}
+}
+</style>
 <style id="de-css">
 .de-ctx{display:none}
 .de-steps{display:none}
@@ -6430,7 +6468,7 @@ acRender();
 <script>
 // ===== Fiche deal : contexte, étapes en un geste, plein écran mobile =====
 (function () {
-  ['modal-deal-edit', 'modal-deal'].forEach(id => {
+  ['modal-deal-edit', 'modal-deal', 'modal-demande'].forEach(id => {
     const m = document.querySelector('#' + id + ' .modal');
     if (!m) return;
     m.insertAdjacentHTML('afterbegin', `<button type="button" class="de-x m-only" aria-label="Fermer" onclick="closeModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`);

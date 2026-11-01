@@ -1421,6 +1421,34 @@ body:not(.role-admin) .admin-only{display:none !important}
 </div>
 
 <!-- Modal Edition Deal -->
+<div class="modal-overlay" id="modal-demande">
+  <div class="modal">
+    <div class="modal-title" id="dm-title">Demande</div>
+    <div id="dm-meta" style="font-size:12px;color:#4f6a5c;margin:-10px 0 14px"></div>
+    <div class="form-group"><label class="form-label">Demande *</label><input class="form-input" id="dm-texte" maxlength="200"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Promoteur</label><select class="form-select" id="dm-acheteur"></select></div>
+      <div class="form-group"><label class="form-label">Attribuée à</label><select class="form-select" id="dm-resp"></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="dm-notes" style="min-height:64px"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:18px">
+      <button class="btn btn-ghost btn-sm" id="dm-cloture" onclick="dmCloture()"></button>
+      <button class="btn btn-primary btn-sm" onclick="dmSave()">Enregistrer les modifications</button>
+    </div>
+    <div class="dm-sec"><b>Terrains proposés</b><span id="dm-tcount"></span><button class="btn btn-ghost btn-sm" onclick="dmPickToggle(true)">+ Proposer des terrains</button></div>
+    <div id="dm-pick" style="display:none;margin:8px 0 12px;padding:10px;border-radius:10px;background:#f3f8f5;border:1px solid #dfe9e3">
+      <input class="form-input" id="dm-pick-q" placeholder="Chercher par réf, quartier, zonage..." oninput="dmPickRender()" autocomplete="off">
+      <div id="dm-pick-list" style="max-height:260px;overflow:auto;margin:8px 0"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-ghost btn-sm" onclick="dmPickToggle(false)">Fermer</button><button class="btn btn-primary btn-sm" id="dm-pick-go" onclick="dmProposer()">Proposer</button></div>
+    </div>
+    <div id="dm-terrains"></div>
+    <div class="dm-sec" style="margin-top:18px"><b>Historique</b></div>
+    <div id="dm-histo"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-demande')">Fermer</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-deal-edit">
   <div class="modal">
     <div class="modal-title" id="de-title">Deal</div>
@@ -1863,6 +1891,7 @@ let editingDealId = null;
 function openDealEdit(id) {
   const d = state.deals.find(x => String(x.id) === String(id));
   if (!d) return;
+  if (isDemAny(d)) { openDemande(d.id); return; }
   editingDealId = d.id;
   const t = state.terrains.find(t => t.id == d.terrainId);
   const a = state.acheteurs.find(a => a.id == d.acheteurId);
@@ -2353,6 +2382,8 @@ async function deleteAcheteur(id) {
 
 const DEM_EQUIPE = 'Équipe', DEM_PREFIX = 'Demande : ', DEM_DONE = 'Demande traitée : ';
 const isDemande = d => String(d && d.terrainLabel || '').startsWith(DEM_PREFIX);
+const isDemAny = d => isDemande(d) || String(d && d.terrainLabel || '').startsWith(DEM_DONE);
+const demTexte = d => String(d.terrainLabel || '').replace(DEM_PREFIX, '').replace(DEM_DONE, '');
 function dealTerrainToggle() {
   const v = document.getElementById('d-terrain').value;
   document.getElementById('d-new-terrain').style.display = v === '__new__' ? '' : 'none';
@@ -3032,7 +3063,7 @@ async function loadFromSupabase() {
       id: d.id, terrainId: d.terrain_id, acheteurId: d.acheteur_id,
       terrainLabel: d.terrain_label, acheteurLabel: d.acheteur_label,
       etape: d.etape, montant: d.montant, layer: d.layer || 1,
-      associe: d.associe, notes: d.notes || '',
+      associe: d.associe, notes: d.notes || '', createdAt: d.created_at || null,
     }));
     msgs.push(deals.length + ' deals');
   } else {
@@ -3313,7 +3344,8 @@ saveDeal = async function() {
   if (supabaseReady) {
     const res = await supaPost('deals', deal);
     if (res && res[0]) {
-      state.deals.push({ id: res[0].id, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1, associe: deal.associe });
+      state.deals.push({ id: res[0].id, terrainId, acheteurId, terrainLabel: deal.terrain_label, acheteurLabel: deal.acheteur_label, etape: deal.etape, montant: deal.montant, notes: deal.notes, layer: 1, associe: deal.associe, createdAt: res[0].created_at || new Date().toISOString() });
+      if (isDem) dmHisto(res[0].id, 'Demande créée', dmQ + ' · ' + (deal.associe === DEM_EQUIPE ? 'Toute l’équipe' : deal.associe));
       await logActivity('Nouveau deal', 'deal', res[0].id, `${terrain?.localisation} ↔ ${acheteur?.nom}`);
       if (newDealTasks.length && tachesAvailable) {
         const label = `${terrain?.localisation || ''} / ${acheteur?.nom || ''}`;
@@ -4058,6 +4090,7 @@ async function gfStart() {
   try { await loadFromSupabase(); } catch(e) {}
   await loadEquipe();
   await loadTaches();
+  if (typeof loadDemandes === 'function') await loadDemandes();
   applyRole();
   renderPage(currentPage);
   setInterval(gfRefresh, 45 * 60 * 1000);
@@ -5763,7 +5796,7 @@ function mActions() {
 }
 async function mRefresh() {
   mClose();
-  try { await loadFromSupabase(); if (typeof loadTaches === 'function') await loadTaches(); } catch (e) {}
+  try { await loadFromSupabase(); if (typeof loadTaches === 'function') await loadTaches(); if (typeof loadDemandes === 'function') await loadDemandes(); } catch (e) {}
   renderPage(currentPage);
 }
 
@@ -6036,6 +6069,9 @@ body:not(.on-dashboard) .ac-tdate{display:none}
 .ac-main b{display:block;font-size:14px;font-weight:700;color:var(--gf-ink)}
 .ac-main small{display:block;font-size:12.5px;color:#5d7166;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-due{font:500 11px/1 'JetBrains Mono',monospace;padding:5px 8px;border-radius:999px;white-space:nowrap;background:#e4f3ea;color:#1f7a4d}
+.dm-sec{display:flex;align-items:center;gap:8px;border-top:1px solid #e2ece7;padding-top:14px;margin-bottom:6px;font-size:14px;color:#0a1410}.dm-sec span{color:#4f6a5c;font-size:12px}.dm-sec button{margin-left:auto}
+.dm-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eef3f0}.dm-pk{cursor:pointer}.dm-main{flex:1;min-width:0;font-size:13px;color:#0a1410;cursor:pointer}.dm-main small{display:block;font-size:11.5px;color:#4f6a5c;margin-top:2px}
+.dm-h{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #eef3f0;font-size:12.5px;color:#0a1410}.dm-h>span{flex:0 0 108px;font:500 11px/1.5 'JetBrains Mono',monospace;color:#4f6a5c}.dm-h small{display:block;color:#4f6a5c;margin-top:2px;overflow-wrap:anywhere}.dm-empty{font-size:12.5px;color:#4f6a5c;padding:8px 0}
 .ac-due.late{background:#fbe3e0;color:#c0392b}.ac-due.dem{background:#0a1410;color:#7ee0a4}#d-associe-wrap.dem-hide{display:none !important}.ac-due.today{background:#fdf0d9;color:#9a5d0b}
 .ac-acts{display:flex;gap:6px;flex:none}
 .ac-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #cfe0d6;background:#fff;color:#1f7a4d;border-radius:999px;padding:7px 12px;font:600 12.5px var(--gf-body);cursor:pointer;text-decoration:none;white-space:nowrap}
@@ -6105,8 +6141,9 @@ function acItems() {
   const ic = k => (typeof M_ICO !== 'undefined' ? M_ICO[k] : '');
   state.deals.filter(d => isDemande(d) && (all || d.associe === me || d.associe === DEM_EQUIPE)).forEach(d => {
     const a = state.acheteurs.find(x => x.id === d.acheteurId);
-    out.push({ top: true, chip: 'Demande', title: d.terrainLabel.slice(DEM_PREFIX.length), ctx: [a ? a.nom : d.acheteurLabel, d.associe === DEM_EQUIPE ? 'Toute l’équipe' : d.associe].filter(Boolean).join(' · '),
-      acts: `<button class="ac-btn" onclick="openDealEdit(${d.id})">Ouvrir</button><button class="ac-btn done" onclick="acDemandeTraitee(${d.id})">Traitée</button>` });
+    const nT = (state.demTer || []).filter(x => x.deal_id === d.id).length;
+    out.push({ top: true, chip: 'Demande', title: demTexte(d), ctx: [a ? a.nom : d.acheteurLabel, d.associe === DEM_EQUIPE ? 'Toute l’équipe' : d.associe, d.createdAt ? 'créée le ' + dmDate(d.createdAt) : '', nT ? nT + ' terrain' + (nT > 1 ? 's' : '') + ' proposé' + (nT > 1 ? 's' : '') : ''].filter(Boolean).join(' · '),
+      acts: `<button class="ac-btn" onclick="openDemande(${d.id})">Ouvrir</button><button class="ac-btn done" onclick="openDemande(${d.id}, true)">Proposer des terrains</button>` });
   });
   (state.taches || []).filter(t => t.statut !== 'fait' && (all || t.assigne_a === me)).forEach(t => {
     const deal = state.deals.find(d => String(d.id) === String(t.deal_id));
@@ -6139,16 +6176,143 @@ function acItems() {
   }
   return out.sort((x, y) => (y.top ? 1 : 0) - (x.top ? 1 : 0) || (x.due ? acDay(x.due) : Infinity) - (y.due ? acDay(y.due) : Infinity));
 }
-async function acDemandeTraitee(id) {
-  const d = state.deals.find(x => x.id === id);
-  if (!d || !isDemande(d)) return;
-  const label = DEM_DONE + d.terrainLabel.slice(DEM_PREFIX.length);
-  const res = await supaPatch('deals', id, { terrain_label: label });
+// ═══════════ FICHE DEMANDE ═══════════
+const DM = { id: null, terrains: [], histo: [], pick: new Set(), ok: true };
+state.demTer = [];
+const dmDate = v => new Date(v).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+const dmDateH = v => new Date(v).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+async function loadDemandes() {
+  try { state.demTer = await supaGet('demande_terrains', 'select=id,deal_id,terrain_id&order=id.asc'); DM.ok = true; }
+  catch (e) { state.demTer = []; DM.ok = false; }
+}
+async function dmHisto(dealId, action, detail) {
+  const row = { deal_id: dealId, auteur: currentAssocie || null, action, detail: detail || null };
+  const r = await supaPost('demande_historique', row);
+  if (r && r[0] && DM.id === dealId) { DM.histo.unshift(r[0]); dmRenderHisto(); }
+  return !!(r && r[0]);
+}
+async function openDemande(id, pick) {
+  const d = state.deals.find(x => String(x.id) === String(id));
+  if (!d) return;
+  DM.id = d.id; DM.pick = new Set(); DM.terrains = []; DM.histo = [];
+  document.getElementById('dm-texte').value = demTexte(d);
+  document.getElementById('dm-notes').value = d.notes || '';
+  document.getElementById('dm-acheteur').innerHTML = state.acheteurs.map(a => `<option value="${a.id}" ${a.id === d.acheteurId ? 'selected' : ''}>${escH(a.nom)}</option>`).join('');
+  const mem = (state.equipe || []).filter(m => m.actif !== false && m.nom).map(m => m.nom);
+  if (d.associe && d.associe !== DEM_EQUIPE && !mem.includes(d.associe)) mem.push(d.associe);
+  document.getElementById('dm-resp').innerHTML = `<option value="${DEM_EQUIPE}">Toute l'équipe</option>` + mem.map(n => `<option value="${escH(n)}">${escH(n)}</option>`).join('');
+  document.getElementById('dm-resp').value = d.associe || DEM_EQUIPE;
+  dmRenderHead();
+  document.getElementById('dm-pick-q').value = '';
+  dmPickToggle(!!pick);
+  document.getElementById('dm-terrains').innerHTML = '<div class="dm-empty">Chargement...</div>';
+  document.getElementById('dm-histo').innerHTML = '';
+  openModal('modal-demande');
+  try {
+    const [ts, hs] = await Promise.all([
+      supaGet('demande_terrains', `select=*&deal_id=eq.${d.id}&order=created_at.asc`),
+      supaGet('demande_historique', `select=*&deal_id=eq.${d.id}&order=created_at.desc`)
+    ]);
+    DM.terrains = ts; DM.histo = hs; DM.ok = true;
+  } catch (e) { DM.ok = false; }
+  if (DM.id !== d.id) return;
+  dmRenderTerrains(); dmRenderHisto();
+  if (pick) document.getElementById('dm-pick-q').focus();
+}
+function dmRenderHead() {
+  const d = state.deals.find(x => x.id === DM.id); if (!d) return;
+  const open = isDemande(d);
+  document.getElementById('dm-title').textContent = open ? 'Demande' : 'Demande traitée';
+  document.getElementById('dm-meta').textContent = [d.createdAt ? 'Créée le ' + dmDate(d.createdAt) : '', open ? 'En cours' : 'Traitée'].filter(Boolean).join(' · ');
+  document.getElementById('dm-cloture').textContent = open ? 'Marquer traitée' : 'Rouvrir la demande';
+}
+function dmTerrainLine(t, fallback) {
+  if (!t) return escH(fallback || 'Terrain retiré du CRM');
+  const sup = Number(t.superficie) || 0, f = Number(t.forfait) || Math.round(sup * (Number(t.prix) || 0) / 1e6);
+  return `<b>${escH(t.ref || 'Sans réf.')}</b> ${escH(t.localisation || '')}<small>${[sup ? sup.toLocaleString('fr-FR') + ' m²' : '', t.urba ? escH(t.urba) : '', f ? f.toLocaleString('fr-FR') + ' M DH' : '', t.statut === 'Vendu' ? 'Vendu' : ''].filter(Boolean).join(' · ')}</small>`;
+}
+function dmRenderTerrains() {
+  const box = document.getElementById('dm-terrains');
+  document.getElementById('dm-tcount').textContent = DM.terrains.length ? '(' + DM.terrains.length + ')' : '';
+  if (!DM.ok) { box.innerHTML = '<div class="dm-empty">La base n’accepte pas encore les terrains proposés (voir supabase/demandes-fiche.sql).</div>'; return; }
+  box.innerHTML = DM.terrains.length ? DM.terrains.map(r => {
+    const t = state.terrains.find(x => x.id === r.terrain_id);
+    return `<div class="dm-row"><div class="dm-main" onclick="${t ? `openTerrainDetail(${t.id})` : ''}">${dmTerrainLine(t, r.terrain_label)}<small>Proposé par ${escH(r.propose_par || '?')} le ${dmDate(r.created_at)}</small></div><button type="button" class="btn btn-ghost btn-sm" title="Retirer" onclick="dmRetirer(${r.id})">✕</button></div>`;
+  }).join('') : '<div class="dm-empty">Aucun terrain proposé pour le moment.</div>';
+}
+function dmRenderHisto() {
+  const box = document.getElementById('dm-histo');
+  box.innerHTML = DM.histo.length ? DM.histo.map(h => `<div class="dm-h"><span>${dmDateH(h.created_at)}</span><div><b>${escH(h.action)}</b>${h.auteur ? ' par ' + escH(h.auteur) : ''}${h.detail ? `<small>${escH(h.detail)}</small>` : ''}</div></div>`).join('')
+    : '<div class="dm-empty">' + (DM.ok ? 'Aucune modification enregistrée.' : 'Historique indisponible (voir supabase/demandes-fiche.sql).') + '</div>';
+}
+function dmPickToggle(on) {
+  document.getElementById('dm-pick').style.display = on ? '' : 'none';
+  if (on) dmPickRender();
+}
+function dmPickRender() {
+  const q = document.getElementById('dm-pick-q').value.toLowerCase().trim();
+  const taken = new Set(DM.terrains.map(r => r.terrain_id));
+  const words = q.split(/\s+/).filter(Boolean);
+  const list = state.terrains.filter(t => t.statut !== 'Vendu' && !taken.has(t.id) && words.every(w => [t.ref, t.localisation, t.urba, t.superficie].join(' ').toLowerCase().includes(w)));
+  const shown = list.slice(0, 80);
+  document.getElementById('dm-pick-list').innerHTML = shown.length ? shown.map(t => `<label class="dm-row dm-pk"><input type="checkbox" ${DM.pick.has(t.id) ? 'checked' : ''} onchange="dmPickSet(${t.id}, this.checked)"><div class="dm-main">${dmTerrainLine(t)}</div></label>`).join('')
+    + (list.length > shown.length ? `<div class="dm-empty">${list.length - shown.length} autres terrains, précisez la recherche.</div>` : '')
+    : '<div class="dm-empty">Aucun terrain trouvé.</div>';
+  dmPickBtn();
+}
+function dmPickSet(id, on) { if (on) DM.pick.add(id); else DM.pick.delete(id); dmPickBtn(); }
+function dmPickBtn() { const n = DM.pick.size, b = document.getElementById('dm-pick-go'); b.textContent = n ? 'Proposer ' + n + ' terrain' + (n > 1 ? 's' : '') : 'Proposer'; b.disabled = !n; }
+async function dmProposer() {
+  if (!DM.pick.size) return;
+  const ts = [...DM.pick].map(id => state.terrains.find(t => t.id === id)).filter(Boolean);
+  const rows = ts.map(t => ({ deal_id: DM.id, terrain_id: t.id, terrain_label: terrainLabel(t), propose_par: currentAssocie || null }));
+  const res = await supaPost('demande_terrains', rows);
+  if (!res || !res.length) { showNotif('Échec : la base n’accepte pas encore les terrains proposés (voir supabase/demandes-fiche.sql).', true); return; }
+  DM.terrains.push(...res); state.demTer.push(...res.map(r => ({ id: r.id, deal_id: r.deal_id, terrain_id: r.terrain_id })));
+  DM.pick = new Set();
+  await dmHisto(DM.id, res.length > 1 ? res.length + ' terrains proposés' : 'Terrain proposé', ts.map(t => (t.ref || '') + ' ' + (t.localisation || '')).join(', '));
+  dmRenderTerrains(); dmPickToggle(false); acRender();
+  showNotif(res.length > 1 ? res.length + ' terrains proposés.' : 'Terrain proposé.');
+}
+async function dmRetirer(rid) {
+  const r = DM.terrains.find(x => x.id === rid); if (!r) return;
+  const t = state.terrains.find(x => x.id === r.terrain_id);
+  if (!confirm('Retirer ce terrain de la demande ?')) return;
+  if (!(await supaDelete('demande_terrains', rid))) { showNotif('Échec de la suppression.', true); return; }
+  DM.terrains = DM.terrains.filter(x => x.id !== rid); state.demTer = state.demTer.filter(x => x.id !== rid);
+  await dmHisto(DM.id, 'Terrain retiré', t ? (t.ref || '') + ' ' + (t.localisation || '') : r.terrain_label);
+  dmRenderTerrains(); acRender();
+}
+async function dmSave() {
+  const d = state.deals.find(x => x.id === DM.id); if (!d) return;
+  const texte = document.getElementById('dm-texte').value.trim();
+  if (!texte) { showNotif('Décrivez la demande', true); return; }
+  const acheteurId = parseInt(document.getElementById('dm-acheteur').value) || d.acheteurId;
+  const a = state.acheteurs.find(x => x.id === acheteurId);
+  const resp = document.getElementById('dm-resp').value || DEM_EQUIPE, notes = document.getElementById('dm-notes').value;
+  const label = (isDemande(d) ? DEM_PREFIX : DEM_DONE) + texte;
+  const ch = [];
+  if (demTexte(d) !== texte) ch.push(`Demande : « ${demTexte(d)} » devient « ${texte} »`);
+  if (d.acheteurId !== acheteurId) ch.push('Promoteur : ' + (a ? a.nom : ''));
+  if ((d.associe || '') !== resp) ch.push('Attribuée à : ' + (resp === DEM_EQUIPE ? 'toute l’équipe' : resp));
+  if ((d.notes || '') !== notes) ch.push('Notes modifiées');
+  if (!ch.length) { showNotif('Aucune modification.'); return; }
+  const res = await supaPatch('deals', d.id, { terrain_label: label, acheteur_id: acheteurId, acheteur_label: a ? a.nom : d.acheteurLabel, associe: resp, notes });
+  if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); return; }
+  Object.assign(d, { terrainLabel: label, acheteurId, acheteurLabel: a ? a.nom : d.acheteurLabel, associe: resp, notes });
+  await dmHisto(d.id, 'Demande modifiée', ch.join(' · '));
+  showNotif('Demande mise à jour.');
+  acRender(); if (typeof renderPipeline === 'function') renderPipeline();
+}
+async function dmCloture() {
+  const d = state.deals.find(x => x.id === DM.id); if (!d) return;
+  const open = isDemande(d), label = (open ? DEM_DONE : DEM_PREFIX) + demTexte(d);
+  const res = await supaPatch('deals', d.id, { terrain_label: label });
   if (!res || !res.length) { showNotif('Échec de la mise à jour.', true); return; }
   d.terrainLabel = label;
-  logActivity('Demande traitée', 'deal', id, label);
-  showNotif('Demande marquée comme traitée.');
-  acRender(); if (typeof renderPipeline === 'function') renderPipeline();
+  await dmHisto(d.id, open ? 'Demande marquée traitée' : 'Demande rouverte', '');
+  dmRenderHead(); acRender(); if (typeof renderPipeline === 'function') renderPipeline();
+  showNotif(open ? 'Demande marquée comme traitée.' : 'Demande rouverte.');
 }
 async function acRelanceFaite(id) {
   const a = prAch(id);

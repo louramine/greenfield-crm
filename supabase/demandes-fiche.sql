@@ -42,3 +42,6 @@ create policy "demande_historique_lecture" on public.demande_historique for sele
   using (public.mon_role() is not null and exists (select 1 from public.deals d where d.id = deal_id));
 create policy "demande_historique_ajout" on public.demande_historique for insert to authenticated
   with check (public.mon_role() is not null and auteur = public.mon_nom() and exists (select 1 from public.deals d where d.id = deal_id));
+
+-- Recharge le schéma de l'API pour que les nouvelles tables soient visibles tout de suite
+notify pgrst, 'reload schema';

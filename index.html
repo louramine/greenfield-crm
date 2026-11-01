@@ -6156,8 +6156,8 @@ function acRender() {
     <div class="ac-kpis">${kpi('À relancer', late, late ? 'late' : '', "document.getElementById('ac-todo').scrollIntoView({behavior:'smooth',block:'start'})")}${kpi('Deals actifs', state.deals.filter(x => x.etape !== 'closing').length, '', "mGo('pipeline')")}${kpi('Réponses positives', pos, pos ? 'good' : '', "mGo('acheteurs')")}${kpi('Proposés (7 j)', sent7, '', "mGo('acheteurs')")}${kpi('Portefeuille', T.length + ' terrains', '', "mGo('terrains')")}</div>
     <div class="ac-grid"><div class="ac-panel" id="ac-todo"><div class="ac-ph"><h3>À faire</h3><small>${items.length} action${items.length > 1 ? 's' : ''}</small>${currentAssocie ? `<div class="ac-seg"><button class="${acScope() === 'moi' ? 'on' : ''}" onclick="AC.scope='moi';acRender()">Moi</button><button class="${acScope() === 'equipe' ? 'on' : ''}" onclick="AC.scope='equipe';acRender()">Équipe</button></div>` : ''}</div>
       ${rows || empty}${items.length > AC.max ? `<button class="ac-more" onclick="AC.max+=20;acRender()">Voir ${items.length - AC.max} de plus</button>` : ''}</div>
-    <div><div class="ac-panel"><div class="ac-ph"><h3>Deals</h3><small>${state.deals.length} deal${state.deals.length > 1 ? 's' : ''}</small></div>${stages}</div>
-    <div class="ac-panel"><div class="ac-ph"><h3>Réponses des promoteurs</h3></div>${repHtml}</div></div></div>`;
+    <div><div class="ac-panel"><div class="ac-ph"><h3>Réponses des promoteurs</h3></div>${repHtml}</div>
+    <div class="ac-panel"><div class="ac-ph"><h3>Deals</h3><small>${state.deals.length} deal${state.deals.length > 1 ? 's' : ''}</small></div>${stages}</div></div></div>`;
 }
 (function acInit() {
   const page = document.getElementById('page-dashboard');

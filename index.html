@@ -5525,8 +5525,8 @@ tbody tr:hover{background:#eaf6ef}
   .m-nav button{flex:1;background:none;border:none;color:#8fa99a;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;font-size:11px;font-weight:600;font-family:'Inter Tight',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .m-nav svg{width:23px;height:23px}
   .m-nav button.on{color:var(--green-light)}
-  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(70px + max(4px, env(safe-area-inset-bottom) - 18px));z-index:81;width:56px;height:56px;border-radius:18px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer}
-  .m-fab svg{width:26px;height:26px}
+  .m-fab{display:flex;position:fixed;right:16px;bottom:calc(70px + max(4px, env(safe-area-inset-bottom) - 18px));z-index:81;width:64px;height:64px;border-radius:20px;border:none;background:var(--gf-mint);color:var(--gf-ink);align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer}
+  .m-fab svg{width:30px;height:30px}
   .m-fab.off{display:none}
   body.m-locked .m-nav,body.m-locked .m-fab{display:none}
 
@@ -5903,7 +5903,7 @@ function mBuild() {
   top.insertAdjacentHTML('beforeend', `<div class="m-top"><button type="button" aria-label="Rechercher" onclick="mSearchOpen()">${M_ICO.search}</button><button type="button" aria-label="Synchroniser" onclick="mRefresh()">${M_ICO.sync}</button></div>`);
   document.body.insertAdjacentHTML('beforeend', `
     <nav class="m-nav">${M_TABS.map(([p, l, i]) => `<button type="button" data-p="${p}" onclick="mGo('${p}')">${M_ICO[i]}${l}</button>`).join('')}<button type="button" data-p="plus" onclick="mPlus()">${M_ICO.more}Plus</button></nav>
-    <button type="button" class="m-fab" aria-label="Ajouter" onclick="mActions()">${M_ICO.plus}</button>
+    <button type="button" class="m-fab" aria-label="Ajouter" onclick="mActions()"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M14 0h8v14h14v8H22v14h-8V22H0v-8h14z" fill="currentColor"/></svg></button>
     <div class="m-sheet-bg" id="m-bg" onclick="mClose()"></div>
     <div class="m-sheet" id="m-sheet"><div class="m-sh-h"><b id="m-sheet-t"></b><button type="button" onclick="mClose()">Fermer</button></div><div class="m-sh-b" id="m-sheet-b"></div></div>
     <div class="m-sheet" id="m-sheet-tf"><div class="m-sh-h"><b>Filtrer les terrains</b><button type="button" onclick="mClose()">Voir les résultats</button></div><div class="m-sh-b" id="m-tf-body">

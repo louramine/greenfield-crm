@@ -836,7 +836,7 @@ body:not(.role-admin) .admin-only{display:none !important}
           </div>
           <div style="margin-top:20px">
             <div class="stat-row">
-              <div class="stat-label"><span>Taux de matching terrain/acheteur</span><span id="match-rate">0%</span></div>
+              <div class="stat-label"><span>Taux de matching terrain/promoteur</span><span id="match-rate">0%</span></div>
               <div class="stat-bar"><div class="stat-fill" id="match-fill" style="width:0%"></div></div>
             </div>
             <div class="stat-row">
@@ -897,7 +897,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="page" id="page-matching">
       <div class="mv-tabs">
         <button type="button" class="mv-tab active" id="mv-tab-valo" onclick="mvTab('valo')">Analyse terrain</button>
-        <button type="button" class="mv-tab" id="mv-tab-match" onclick="mvTab('match')">Matching acheteurs</button>
+        <button type="button" class="mv-tab" id="mv-tab-match" onclick="mvTab('match')">Matching promoteurs</button>
         <div id="mv-newbar" style="display:none;margin-left:auto"><button type="button" class="mv-plus" onclick="mvNew()">+ Nouveau terrain à analyser</button></div>
       </div>
       <div id="valo-pane">
@@ -922,7 +922,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       </div>
       <div id="matching-pane" style="display:none">
       <div style="margin-bottom:20px">
-        <label class="form-label" style="color:var(--gray-mid)">Sélectionner un terrain pour voir les acheteurs compatibles</label>
+        <label class="form-label" style="color:var(--gray-mid)">Sélectionner un terrain pour voir les promoteurs compatibles</label>
         <select class="form-select" id="matching-terrain-select" onchange="runMatching()" style="max-width:400px;background:#0d3320;color:var(--white);border-color:rgba(126,224,164,0.3)">
           <option value="">— Choisir un terrain —</option>
         </select>
@@ -1352,7 +1352,7 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div style="font-size:11.5px;color:#7a9a88">Une demande attribuée à toute l'équipe apparaît dans « En cours » sur l'accueil de chaque membre, jusqu'à ce qu'elle soit marquée traitée.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Acheteur *</label>
+      <label class="form-label">Promoteur *</label>
       <select class="form-select" id="d-acheteur"></select>
     </div>
     <div class="form-group admin-only" id="d-associe-wrap">
@@ -1603,8 +1603,8 @@ body:not(.role-admin) .admin-only{display:none !important}
       <div style="background:#f8faf9;border-radius:12px;padding:14px;margin-bottom:14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div>
-            <label class="form-label" style="font-size:11px;">Acheteur contacté *</label>
-            <input class="form-input" id="i-acheteur" placeholder="Nom promoteur / acheteur" style="font-size:12.5px;padding:8px 10px;">
+            <label class="form-label" style="font-size:11px;">Promoteur contacté *</label>
+            <input class="form-input" id="i-acheteur" placeholder="Nom du promoteur" style="font-size:12.5px;padding:8px 10px;">
           </div>
           <div>
             <label class="form-label" style="font-size:11px;">Type d'interaction</label>
@@ -1703,7 +1703,7 @@ function showPage(page, el) {
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
 
-  const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Deals', matching: 'Matching Terrain / Acheteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs et acheteurs' };
+  const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Deals', matching: 'Matching Terrain / Promoteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
 
   const addLabels = { dashboard: null, pipeline: '+ Nouveau Deal', matching: null, carte: null, equipe: null, marketing: null, terrains: '+ Nouveau Terrain', acheteurs: '+ Nouveau promoteur' };
@@ -1851,7 +1851,7 @@ function renderPipeline() {
       const acheteur = state.acheteurs.find(a => a.id == d.acheteurId);
       const tagClass = acheteur ? (acheteur.type === 'Promoteur' ? 'tag-promoteur' : acheteur.type === 'Fonds' ? 'tag-fonds' : 'tag-hnwi') : 'tag-promoteur';
       const tName = terrain ? terrain.localisation : (d.terrainLabel || 'Terrain inconnu');
-      const aName = acheteur ? acheteur.nom : (d.acheteurLabel || 'Acheteur inconnu');
+      const aName = acheteur ? acheteur.nom : (d.acheteurLabel || 'Promoteur inconnu');
       return `<div class="deal-card status-${st}" draggable="true" data-id="${d.id}" ondragstart="dealDragStart(event, ${d.id})" ondragend="this.classList.remove('dragging')" onclick="openDealEdit(${d.id})" style="cursor:grab">
         <div class="deal-terrain">${escH(tName)}</div>
         <div class="deal-acheteur">${escH(aName)}</div>
@@ -1897,7 +1897,7 @@ function openDealEdit(id) {
   editingDealId = d.id;
   const t = state.terrains.find(t => t.id == d.terrainId);
   const a = state.acheteurs.find(a => a.id == d.acheteurId);
-  document.getElementById('de-title').textContent = (t ? t.localisation : d.terrainLabel || 'Terrain') + ' / ' + (a ? a.nom : d.acheteurLabel || 'Acheteur');
+  document.getElementById('de-title').textContent = (t ? t.localisation : d.terrainLabel || 'Terrain') + ' / ' + (a ? a.nom : d.acheteurLabel || 'Promoteur');
   document.getElementById('de-etape').value = d.etape;
   document.getElementById('de-montant').value = d.montant || '';
   document.getElementById('de-notes').value = d.notes || '';
@@ -2162,7 +2162,7 @@ function resetFilters() {
 function renderAcheteurs() {
   const tbody = document.getElementById('acheteurs-tbody');
   if (state.acheteurs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#4f6a5c;padding:30px">Aucun acheteur. Cliquez sur "+ Nouvel Acheteur" pour commencer.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#4f6a5c;padding:30px">Aucun promoteur. Cliquez sur "+ Nouveau promoteur" pour commencer.</td></tr>';
     return;
   }
   // Sort by score desc
@@ -2220,7 +2220,7 @@ function runMatching(adhoc) {
   if (!terrain) return;
 
   if (state.acheteurs.length === 0) {
-    resultsEl.innerHTML = `<div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:30px;text-align:center;color:rgba(255,255,255,0.4)"><div style="font-size:22px;margin-bottom:8px">◎</div>Aucun acheteur dans votre base.<br><span style="font-size:12px">Ajoutez des acheteurs pour lancer le matching.</span></div>`;
+    resultsEl.innerHTML = `<div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:30px;text-align:center;color:rgba(255,255,255,0.4)"><div style="font-size:22px;margin-bottom:8px">◎</div>Aucun promoteur dans votre base.<br><span style="font-size:12px">Ajoutez des promoteurs pour lancer le matching.</span></div>`;
     return;
   }
 
@@ -2267,7 +2267,7 @@ function runMatching(adhoc) {
   const adBanner = isAd ? `<div style="margin-bottom:12px;padding:12px 14px;border-radius:10px;background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.35);color:var(--gold-light);font-size:13px">Terrain analysé : <strong>${escH(terrain.localisation)}</strong>, ${Math.round(terrain.superficie).toLocaleString('fr-FR')} m², ${forfait.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M MAD (${terrain.prixSource}). Ce terrain n'est pas dans le CRM, ajoutez-le pour créer un deal.</div>` : '';
   resultsEl.innerHTML = adBanner + `
     <div style="margin-bottom:14px;color:rgba(255,255,255,0.6);font-size:13px">
-      <strong style="color:var(--green-light)">${scored.filter(a => a.score >= 60).length}</strong> acheteurs très compatibles · 
+      <strong style="color:var(--green-light)">${scored.filter(a => a.score >= 60).length}</strong> promoteurs très compatibles · 
       <strong style="color:var(--gold-light)">${scored.filter(a => a.score >= 35 && a.score < 60).length}</strong> compatibles · 
       <strong style="color:rgba(255,255,255,0.4)">${scored.filter(a => a.score < 35).length}</strong> peu compatibles
     </div>
@@ -2361,17 +2361,17 @@ function saveAcheteur() {
     notes: document.getElementById('a-notes').value
   };
   state.acheteurs.push(acheteur);
-  addActivity(`Nouvel acheteur ajouté : ${nom} (${acheteur.type})`);
+  addActivity(`Nouveau promoteur ajouté : ${nom} (${acheteur.type})`);
   saveState();
   closeModal('modal-acheteur');
   renderAcheteurs();
   renderDashboard();
-  showNotif('✓ Acheteur ajouté !');
+  showNotif('✓ Promoteur ajouté !');
 }
 
 async function deleteAcheteur(id) {
   const a = state.acheteurs.find(a => a.id === id);
-  if (!a || !confirm('Supprimer cet acheteur définitivement ?')) return;
+  if (!a || !confirm('Supprimer ce promoteur définitivement ?')) return;
   if (typeof supabaseReady !== 'undefined' && supabaseReady) {
     const ok = await supaDelete('acheteurs', id);
     if (!ok) { showNotif('Échec de la suppression.', true); return; }
@@ -2379,7 +2379,7 @@ async function deleteAcheteur(id) {
   }
   state.acheteurs = state.acheteurs.filter(x => x.id !== id);
   saveState(); closeModal('modal-acheteur'); renderAcheteurs(); renderDashboard();
-  showNotif('Acheteur supprimé.');
+  showNotif('Promoteur supprimé.');
 }
 
 const DEM_EQUIPE = 'Équipe', DEM_PREFIX = 'Demande : ', DEM_DONE = 'Demande traitée : ';
@@ -2403,7 +2403,7 @@ function openDealModal() {
   dealTerrainToggle();
   aSel.innerHTML = state.acheteurs.length > 0
     ? state.acheteurs.map(a => `<option value="${a.id}">${escH(a.nom)}</option>`).join('')
-    : '<option value="">Aucun acheteur — ajoutez-en d\'abord</option>';
+    : '<option value="">Aucun promoteur, ajoutez-en d\'abord</option>';
   document.getElementById('d-montant').value = '';
   document.getElementById('d-notes').value = '';
   document.getElementById('d-associe').innerHTML = contactOptions('');
@@ -2417,7 +2417,7 @@ function openDealModal() {
 function saveDeal() {
   const terrainId = parseInt(document.getElementById('d-terrain').value);
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
-  if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
+  if (!terrainId || !acheteurId) { showNotif('⚠ Sélectionnez terrain et promoteur', true); return; }
   const terrain = state.terrains.find(t => t.id === terrainId);
   const acheteur = state.acheteurs.find(a => a.id === acheteurId);
   const deal = {
@@ -2706,7 +2706,7 @@ function renderEquipe() {
           ${m.specialite ? `<div style="font-size:11.5px;color:#4f6a5c">${escH(m.specialite)}</div>` : ''}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${stat(nAch, 'Acheteurs', '#1f7a4d')}${stat(nDeals, 'Deals', color)}${stat(nTer, 'Terrains', '#f97316')}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${stat(nAch, 'Promoteurs', '#1f7a4d')}${stat(nDeals, 'Deals', color)}${stat(nTer, 'Terrains', '#f97316')}</div>
       ${m.zones ? `<div style="font-size:11.5px;color:#4f6a5c;margin-top:12px">📍 ${escH(m.zones)}</div>` : ''}
       ${admin}
     </div>`;
@@ -3053,10 +3053,10 @@ async function loadFromSupabase() {
       ticketMax: a.ticket_max !== undefined ? a.ticket_max : (a.ticketMax || 0),
       usage: a.usage || '', notes: a.notes || '', score: a.score || 0,
     }));
-    msgs.push(acheteurs.length + ' acheteurs');
+    msgs.push(acheteurs.length + ' promoteurs');
   } else {
     const err = acheteurs && acheteurs._error ? acheteurs._error.substring(0, 60) : 'null';
-    msgs.push('⚠ acheteurs: ' + err);
+    msgs.push('⚠ promoteurs: ' + err);
     hasError = true;
   }
 
@@ -3252,7 +3252,7 @@ function resetAcheteurForm() {
 }
 function openAcheteurNew() {
   editingAcheteurId = null; resetAcheteurForm();
-  document.getElementById('a-modal-title').textContent = 'Nouvel Acheteur';
+  document.getElementById('a-modal-title').textContent = 'Nouveau promoteur';
   document.getElementById('a-associe').innerHTML = contactOptions(myRole === 'sourceur' ? currentAssocie : '');
   lockContactForSourceur();
   document.getElementById('a-delete-btn').style.display = 'none';
@@ -3263,7 +3263,7 @@ function openAcheteurEdit(id) {
   const a = state.acheteurs.find(x => x.id === id);
   if (!a) return;
   editingAcheteurId = id; resetAcheteurForm();
-  document.getElementById('a-modal-title').textContent = 'Modifier l\'acheteur';
+  document.getElementById('a-modal-title').textContent = 'Modifier le promoteur';
   document.getElementById('a-nom').value = a.nom || '';
   document.getElementById('a-contact').value = a.contact || '';
   document.getElementById('a-type').value = a.type || 'Promoteur';
@@ -3305,16 +3305,16 @@ saveAcheteur = async function() {
       logActivity('Modif acheteur', 'acheteur', editingAcheteurId, nom);
     }
     if (idx >= 0) state.acheteurs[idx] = local(editingAcheteurId, state.acheteurs[idx].score || 0);
-    saveState(); showNotif('✓ Acheteur mis à jour');
+    saveState(); showNotif('✓ Promoteur mis à jour');
   } else if (supabaseReady) {
     const res = await supaPost('acheteurs', { ...acheteur, score: 0 });
     if (!res || !res[0]) { showNotif('Échec de l\'ajout.', true); return; }
     state.acheteurs.push(local(res[0].id, 0));
     logActivity('Ajout acheteur', 'acheteur', res[0].id, nom);
-    showNotif('✓ Acheteur ajouté');
+    showNotif('✓ Promoteur ajouté');
   } else {
     state.acheteurs.push(local(state.nextAcheteurId++, 0));
-    saveState(); showNotif('✓ Acheteur ajouté (local).');
+    saveState(); showNotif('✓ Promoteur ajouté (local).');
   }
   editingAcheteurId = null;
   closeModal('modal-acheteur'); renderAcheteurs(); renderDashboard();
@@ -3330,7 +3330,7 @@ saveDeal = async function() {
   const acheteurId = parseInt(document.getElementById('d-acheteur').value);
   const ntQ = document.getElementById('d-nt-q').value.trim(), ntSup = Number(document.getElementById('d-nt-sup').value) || 0;
   if (isNew && !isDem && !ntQ) { showNotif('⚠ Indiquez le quartier ou le nom du terrain', true); return; }
-  if ((!isNew && !terrainId) || !acheteurId) { showNotif('⚠ Sélectionnez terrain et acheteur', true); return; }
+  if ((!isNew && !terrainId) || !acheteurId) { showNotif('⚠ Sélectionnez terrain et promoteur', true); return; }
   if (!isDem && isAdmin() && !document.getElementById('d-associe').value) { showNotif('⚠ Choisissez le responsable du deal', true); return; }
   if (document.getElementById('dn-titre').value.trim() && !addNewDealTask()) return;
   const terrain = isDem ? { localisation: DEM_PREFIX + dmQ } : isNew ? { localisation: normQuartier(ntQ) + (ntSup ? ' (' + Math.round(ntSup).toLocaleString('fr-FR') + ' m²)' : '') + ' [hors CRM]' } : state.terrains.find(t => t.id === terrainId);
@@ -3385,7 +3385,7 @@ function renderInteractions(terrainId) {
         <span style="font-weight:700;font-size:13px;color:#1f7a4d">${escH(i.type || 'Contact')}</span>
         <span style="font-size:11px;color:#4f6a5c">${escH(i.date || i.created_at?.slice(0,10))} · ${escH(i.associe || '')}</span>
       </div>
-      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Acheteur :</strong> ${escH(i.acheteur_nom || '—')}</div>
+      <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Promoteur :</strong> ${escH(i.acheteur_nom || '—')}</div>
       <div style="font-size:12.5px;color:#333;margin-bottom:3px"><strong>Retour :</strong> ${escH(i.retour || '—')}</div>
       ${i.notes ? `<div style="font-size:12px;color:#666;font-style:italic;">${escH(i.notes)}</div>` : ''}
     </div>
@@ -3403,7 +3403,7 @@ async function saveInteraction() {
     retour: document.getElementById('i-retour').value,
     notes: document.getElementById('i-notes-inter').value,
   };
-  if (!interaction.acheteur_nom) { showNotif('⚠ Nom acheteur obligatoire', true); return; }
+  if (!interaction.acheteur_nom) { showNotif('⚠ Nom du promoteur obligatoire', true); return; }
   if (supabaseReady) {
     const res = await supaPost('interactions', interaction);
     if (res && res[0]) {
@@ -4469,12 +4469,12 @@ function mvRender(inp, res, pool) {
   const secMed = sectorSet.length ? mvPct(sectorSet.map(p => p.prix), 0.5) : null;
   if (secMed && central >= secMed * 1.3) plus.push(`Quartier valorisé : la médiane locale (${mvFr(central)}) dépasse de ${Math.round((central / secMed - 1) * 100)} % celle du secteur (${mvFr(secMed)}).`);
   if (inp.fam === 'Immeuble') plus.push('Zonage de type immeuble : forte constructibilité et meilleure valorisation au m² que les zones villa ou rurales.');
-  if (/mix/i.test(inp.zon)) plus.push('Zonage mixte : plusieurs programmes possibles (logements, commerces, bureaux), ce qui élargit le nombre d\'acheteurs.');
+  if (/mix/i.test(inp.zon)) plus.push('Zonage mixte : plusieurs programmes possibles (logements, commerces, bureaux), ce qui élargit le nombre de promoteurs intéressés.');
   if (sup < 1000 && inp.fam === 'Immeuble' && /Centre|Sud/.test(inp.sec || '')) plus.push('Petit lot en zone urbaine dense : rare et très liquide, recherché par les promoteurs de petits immeubles.');
   if (sup >= 10000 && inp.fam === 'Immeuble') plus.push('Grande assiette en zone immeuble : permet une opération d\'ensemble, intéressante pour un promoteur.');
   if (/Casablanca/.test(inp.sec || '')) plus.push('Tendance récente favorable : prix des terrains urbains de Casablanca +1,8 % et ventes +41 % au T2 2026 (IPAI).');
   if (Object.keys(MV.files).length === 3) plus.push('Dossier documentaire complet (plan cadastral, note de renseignement, certificat de propriété) : sécurise la transaction.');
-  if (inp.prix && inp.prix < st.p25) plus.push('Prix demandé sous le marché : marge de négociation favorable à l\'acheteur et revente facilitée.');
+  if (inp.prix && inp.prix < st.p25) plus.push('Prix demandé sous le marché : marge de négociation favorable au promoteur et revente facilitée.');
   const ratio = sup / mvPct(kept.map(p => p.sup), 0.5);
   if (ratio > 3 || sup >= 50000) moins.push(`Grande surface (${mvFr(sup)} m², ${ratio.toFixed(1).replace('.', ',')} fois la médiane des comparables) : décote d'échelle habituelle au m² et clientèle plus étroite.`);
   if (ratio < 0.33) moins.push('Surface nettement plus petite que les comparables : le prix au m² peut être supérieur à la médiane, à vérifier.');
@@ -4544,7 +4544,7 @@ function mvRender(inp, res, pool) {
     <div class="mvf-tw"><table class="mvf-t"><thead><tr><th>Source</th><th>Quartier</th><th>Zonage</th><th class="r">Surface m²</th><th class="r">Prix MAD/m²</th><th class="r">Écart médiane</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${sorted.length > 12 ? `<div class="mvf-noprint" style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="mvToggleAll()">${MV.showAll ? 'Réduire la liste' : 'Voir les ' + sorted.length + ' comparables'}</button></div>` : ''}
     ${removed}
-    <div class="mvf-noprint mvf-next"><button type="button" class="btn btn-primary" onclick="mvGoMatch()">Passer au matching acheteurs</button><span class="mvf-sub">${MV.last && MV.last.crmId ? 'Le terrain du CRM est présélectionné.' : 'Choisissez ensuite un terrain du CRM.'}</span></div>
+    <div class="mvf-noprint mvf-next"><button type="button" class="btn btn-primary" onclick="mvGoMatch()">Passer au matching promoteurs</button><span class="mvf-sub">${MV.last && MV.last.crmId ? 'Le terrain du CRM est présélectionné.' : 'Choisissez ensuite un terrain du CRM.'}</span></div>
   </div>`;
 }
 function mvToggleAll() { MV.showAll = !MV.showAll; if (MV.last) document.getElementById('mv-out').innerHTML = mvRender(MV.last.inp, MV.last.res, MV.last.pool); }
@@ -5793,7 +5793,7 @@ function mActions() {
   const a = (ic, l, sub, fn) => `<button type="button" class="m-act" onclick="${fn}"><span>${M_ICO[ic]}</span><div>${l}<small>${sub}</small></div></button>`;
   mSheet('Ajouter', a('terrain', 'Nouveau terrain', 'Saisir un terrain dans le portefeuille', 'mClose();openTerrainModal()') +
     a('person', 'Nouveau promoteur', 'Créer une fiche promoteur ou acheteur', 'mClose();openAcheteurNew()') +
-    a('deal', 'Nouveau deal', 'Associer un terrain et un acheteur', 'mClose();openDealModal()') +
+    a('deal', 'Nouveau deal', 'Associer un terrain et un promoteur', 'mClose();openDealModal()') +
     a('note', 'Noter un échange', 'Appel, rendez-vous ou visite avec un promoteur', "mSearchOpen(true)"));
 }
 async function mRefresh() {

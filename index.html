@@ -527,6 +527,9 @@
 #gf-login input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cfd8d3;border-radius:8px;font-size:14px;margin-bottom:12px}
 #gf-login button{width:100%;padding:11px;border:0;border-radius:8px;background:#1e6b4a;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 #gf-login .err{color:#b3261e;font-size:12.5px;min-height:16px;margin-bottom:8px}
+#gf-login .err.ok{color:#1f7a4d}
+#gf-login button.gf-link{background:none;color:#1f7a4d;font-weight:500;font-size:13px;margin-top:10px;padding:6px;text-decoration:underline;text-underline-offset:3px}
+#gf-login form[hidden]{display:none}
 </style>
 <style id="gf-kanban-css">
 .mk-src{flex:1;background:#fff;border:1px solid #cfe0d6;color:#1f7a4d}
@@ -686,6 +689,21 @@ body:not(.role-admin) .admin-only{display:none !important}
   <input type="password" id="gf-pass" placeholder="Mot de passe" autocomplete="current-password" required>
   <div class="err" id="gf-err"></div>
   <button type="submit">Se connecter</button>
+  <button type="button" class="gf-link" onclick="gfAuthView('forgot')">Mot de passe oublié ?</button>
+</form>
+<form id="gf-forgot-form" hidden>
+  <p>Saisissez votre email. Vous recevrez un lien pour choisir un nouveau mot de passe.</p>
+  <input type="email" id="gf-forgot-email" placeholder="Email" autocomplete="username" required>
+  <div class="err" id="gf-forgot-err"></div>
+  <button type="submit">Envoyer le lien</button>
+  <button type="button" class="gf-link" onclick="gfAuthView('login')">Retour à la connexion</button>
+</form>
+<form id="gf-reset-form" hidden>
+  <p>Choisissez votre nouveau mot de passe (8 caractères minimum).</p>
+  <input type="password" id="gf-new-pass" placeholder="Nouveau mot de passe" autocomplete="new-password" minlength="8" required>
+  <input type="password" id="gf-new-pass2" placeholder="Confirmer le mot de passe" autocomplete="new-password" minlength="8" required>
+  <div class="err" id="gf-reset-err"></div>
+  <button type="submit">Enregistrer et se connecter</button>
 </form></div></div>
 
 
@@ -4106,7 +4124,69 @@ document.getElementById('gf-login-form').addEventListener('submit', async (ev) =
     gfStart();
   } catch(e) { err.textContent = 'Email ou mot de passe incorrect.'; }
 });
-(async () => { (await gfRefresh()) ? gfStart() : gfShowLogin(); })();
+// ─── Mot de passe oublié ───
+function gfAuthView(v) {
+  const ids = { login: 'gf-login-form', forgot: 'gf-forgot-form', reset: 'gf-reset-form' };
+  Object.entries(ids).forEach(([k, id]) => { document.getElementById(id).hidden = k !== v; });
+  if (v === 'forgot') { const e = document.getElementById('gf-forgot-email'); e.value = document.getElementById('gf-email').value; document.getElementById('gf-forgot-err').textContent = ''; setTimeout(() => e.focus(), 50); }
+  if (v === 'reset') setTimeout(() => document.getElementById('gf-new-pass').focus(), 50);
+  if (v === 'login') setTimeout(() => document.getElementById('gf-email').focus(), 50);
+}
+document.getElementById('gf-forgot-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const err = document.getElementById('gf-forgot-err'), btn = ev.target.querySelector('button[type=submit]');
+  err.className = 'err'; err.textContent = ''; btn.disabled = true;
+  try {
+    const r = await fetch(`${SUPA_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(location.origin + '/')}`, { method: 'POST', headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gf-forgot-email').value.trim() }) });
+    if (r.status === 429) throw new Error('trop');
+    if (!r.ok) throw new Error('auth ' + r.status);
+    err.className = 'err ok';
+    err.textContent = 'Si cet email a un compte, un lien vient d’être envoyé. Pensez à regarder dans les indésirables.';
+  } catch (e) {
+    err.textContent = e.message === 'trop' ? 'Trop de demandes, réessayez dans quelques minutes.' : 'Envoi impossible pour le moment, réessayez.';
+  }
+  btn.disabled = false;
+});
+let gfRecovery = null;
+document.getElementById('gf-reset-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const err = document.getElementById('gf-reset-err'), p1 = document.getElementById('gf-new-pass').value, p2 = document.getElementById('gf-new-pass2').value;
+  err.textContent = '';
+  if (p1.length < 8) { err.textContent = 'Le mot de passe doit faire au moins 8 caractères.'; return; }
+  if (p1 !== p2) { err.textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+  try {
+    const r = await fetch(`${SUPA_URL}/auth/v1/user`, { method: 'PUT', headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + gfRecovery.access_token, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: p1 }) });
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error(/same|different/i.test(t) ? 'same' : /weak|short|characters/i.test(t) ? 'weak' : 'auth');
+    }
+    gfSaveSession(gfRecovery); gfRecovery = null;
+    ['gf-new-pass', 'gf-new-pass2'].forEach(id => { document.getElementById(id).value = ''; });
+    gfAuthView('login');
+    gfStart();
+  } catch (e) {
+    err.textContent = e.message === 'same' ? 'Choisissez un mot de passe différent de l’ancien.' : e.message === 'weak' ? 'Mot de passe trop faible, choisissez-en un plus long.' : 'Le lien a expiré. Redemandez un lien depuis « Mot de passe oublié ».';
+  }
+});
+// Retour du lien reçu par email : #access_token=...&type=recovery (ou #error=... si le lien a expiré)
+function gfReadRecovery() {
+  const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  if (!h.get('type') && !h.get('error')) return false;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (h.get('type') === 'recovery' && h.get('access_token')) {
+    gfRecovery = { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_in: Number(h.get('expires_in')) || 3600 };
+    document.getElementById('gf-login').style.display = 'flex';
+    gfAuthView('reset');
+    return true;
+  }
+  if (h.get('error')) {
+    gfShowLogin(); gfAuthView('forgot');
+    document.getElementById('gf-forgot-err').textContent = 'Ce lien n’est plus valable. Redemandez un lien ci-dessous.';
+    return true;
+  }
+  return false;
+}
+(async () => { if (gfReadRecovery()) return; (await gfRefresh()) ? gfStart() : gfShowLogin(); })();
 </script>
 <script>
 // ===== Valorisation de terrains (rubrique Matching) =====

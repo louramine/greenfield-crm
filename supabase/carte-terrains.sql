@@ -78,6 +78,11 @@ create table if not exists public.carte_liens (
   derniere_vue timestamptz
 );
 create index if not exists carte_liens_cree_le on public.carte_liens (cree_le desc);
+-- Chaque nouveau lien est rattaché à un promoteur (les liens de test déjà créés sans promoteur restent valables)
+do $$ begin
+  alter table public.carte_liens add constraint carte_liens_acheteur_requis check (acheteur_id is not null) not valid;
+exception when duplicate_object then null;
+end $$;
 
 alter table public.carte_liens enable row level security;
 drop policy if exists "liens_lecture" on public.carte_liens;
@@ -194,7 +199,9 @@ begin
   into res
   from pos p;
 
-  return jsonb_build_object('ok', true, 'version', l.version, 'prospect', l.prospect, 'contact', l.cree_par,
+  return jsonb_build_object('ok', true, 'version', l.version,
+                            'prospect', coalesce(l.prospect, (select a.nom from public.acheteurs a where a.id = l.acheteur_id)),
+                            'contact', l.cree_par,
                             'expire_le', l.expire_le, 'terrains', res);
 end;
 $$;
@@ -204,6 +211,8 @@ returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   l public.carte_liens;
+  tid bigint;
+  n integer := 0;
 begin
   select * into l from public.carte_liens where token = p_token;
   if not found or l.revoque or l.expire_le < now() then
@@ -214,6 +223,34 @@ begin
   end if;
   insert into public.carte_retours (lien_id, nom, telephone, message, refs)
   values (l.id, left(p_nom, 120), left(p_tel, 40), left(p_message, 2000), coalesce(p_refs[1:200], '{}'));
+
+  -- Chaque terrain choisi devient « Intéressé » sur la fiche du promoteur (préférences apprises)
+  if l.acheteur_id is not null then
+    for tid in
+      select t.id from public.terrains t
+       where t.ref = any(coalesce(p_refs[1:200], '{}'))
+         and coalesce(t.statut, '') <> 'Vendu'
+         and (l.terrain_ids is null or t.id = any(l.terrain_ids))
+    loop
+      insert into public.acheteur_terrain_reponses (acheteur_id, terrain_id, statut, canal, envoye_par, teaser_envoye_le, notes, updated_at)
+      values (l.acheteur_id, tid, 'interesse', 'Lien carte', l.cree_par, l.cree_le, nullif(left(p_message, 500), ''), now())
+      on conflict (acheteur_id, terrain_id) do update
+        set statut = case when public.acheteur_terrain_reponses.statut in ('envoye', 'infos', 'refuse') then 'interesse' else public.acheteur_terrain_reponses.statut end,
+            canal = coalesce(public.acheteur_terrain_reponses.canal, 'Lien carte'),
+            notes = coalesce(nullif(left(p_message, 500), ''), public.acheteur_terrain_reponses.notes),
+            raison_refus = case when public.acheteur_terrain_reponses.statut = 'refuse' then null else public.acheteur_terrain_reponses.raison_refus end,
+            updated_at = now();
+      n := n + 1;
+    end loop;
+    update public.acheteurs set statut = 'Tiède'
+     where id = l.acheteur_id and n > 0 and coalesce(statut, 'À qualifier') in ('À qualifier', 'Froid');
+    begin
+      insert into public.activity_log (associe, action, entity_type, entity_id, entity_label, details)
+      select l.cree_par, 'Sélection reçue (lien carte)', 'acheteur', a.id, a.nom, n || ' terrain(s) : ' || array_to_string(p_refs[1:200], ', ')
+        from public.acheteurs a where a.id = l.acheteur_id;
+    exception when others then null;
+    end;
+  end if;
   return jsonb_build_object('ok', true);
 end;
 $$;

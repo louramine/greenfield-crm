@@ -148,25 +148,68 @@ async function refreshBadge () {
 const DUREES = [['48', '48 heures'], ['168', '7 jours'], ['720', '30 jours']]
 function linkUrl (token) { return location.origin + '/carte/' + token }
 
-function createLink (selected) {
+function achLabel (a) {
+  return a.nom + (a.contact ? ' · ' + a.contact : '') + (a.type ? ' · ' + a.type : '')
+}
+function normTel (t) {
+  const d = String(t ?? '').replace(/[^0-9]/g, '')
+  if (!d) return ''
+  if (d.startsWith('212')) return d
+  if (d.startsWith('0')) return '212' + d.slice(1)
+  return d
+}
+
+function createLink (selected, presetId) {
   const n = selected.length
   const defV = mode === 'decouverte' ? 'decouverte' : 'qualifie'
-  const names = (state.acheteurs ? state.acheteurs : []).map(a => a.nom).filter(Boolean)
-  api.modal('<h3>Lien temporaire pour un prospect</h3>' +
+  const achs = (state.acheteurs ? state.acheteurs : []).filter(a => a.nom).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
+  let chosen = presetId ? achs.find(a => String(a.id) === String(presetId)) : null
+  api.modal('<h3>Lien temporaire pour un promoteur</h3>' +
+    '<label>Promoteur (obligatoire)</label><input id="lk-q" placeholder="Rechercher un promoteur ou un contact" autocomplete="off">' +
+    '<div id="lk-list" class="lk-list"></div><div id="lk-ch" class="lk-ch"></div>' +
     '<label>Version</label><select id="lk-v"><option value="decouverte"' + (defV === 'decouverte' ? ' selected' : '') + '>Découverte (formes et prix approximatifs)</option><option value="qualifie"' + (defV === 'qualifie' ? ' selected' : '') + '>Acheteur qualifié (contours exacts, sans TF)</option></select>' +
     '<label>Terrains</label><select id="lk-t">' + (n ? '<option value="sel">Les ' + n + ' terrain' + (n > 1 ? 's' : '') + ' de ma sélection</option>' : '') + '<option value="all">Tous les terrains non vendus</option></select>' +
-    '<label>Prospect</label><input id="lk-p" list="lk-pl" placeholder="Nom du promoteur ou du contact"><datalist id="lk-pl">' + names.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>' +
     '<label>Durée de validité</label><select id="lk-d">' + DUREES.map(([v, l]) => '<option value="' + v + '"' + (v === '168' ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
     '<label>Note interne (facultatif)</label><input id="lk-n">' +
     '<div class="gfc-acts"><button class="gfc-btn gfc-b3" data-m="close">Annuler</button><button class="gfc-btn gfc-b4" id="lk-go">Créer le lien</button></div>', (box, close) => {
+    const q = box.querySelector('#lk-q')
+    const list = box.querySelector('#lk-list')
+    const ch = box.querySelector('#lk-ch')
+    const showChosen = () => {
+      ch.innerHTML = chosen ? 'Lien personnalisé pour <b>' + esc(chosen.nom) + '</b>' + (chosen.telephone ? ' · ' + esc(chosen.telephone) : '') + ' <button class="gfc-link" id="lk-chg">changer</button>' : ''
+      list.style.display = chosen ? 'none' : 'block'
+      q.style.display = chosen ? 'none' : 'block'
+      const chg = box.querySelector('#lk-chg')
+      if (chg) chg.addEventListener('click', () => {
+        chosen = null
+        showChosen()
+        q.focus()
+      })
+    }
+    const draw = () => {
+      const v = q.value.trim().toLowerCase()
+      const m = achs.filter(a => v ? achLabel(a).toLowerCase().includes(v) : true).slice(0, 8)
+      list.innerHTML = m.length ? m.map(a => '<button type="button" data-a="' + a.id + '">' + esc(achLabel(a)) + '</button>').join('') : '<div class="lk-m">Aucun promoteur trouvé. Créez-le d\'abord dans la page Promoteurs.</div>'
+      list.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+        chosen = achs.find(a => String(a.id) === b.dataset.a)
+        showChosen()
+      }))
+    }
+    q.addEventListener('input', draw)
+    draw()
+    showChosen()
     box.querySelector('#lk-go').addEventListener('click', async () => {
-      const prospect = box.querySelector('#lk-p').value.trim()
-      const ach = (state.acheteurs ? state.acheteurs : []).find(a => a.nom === prospect)
+      if (!chosen) {
+        showNotif('Choisissez le promoteur destinataire du lien.', true)
+        q.focus()
+        return
+      }
+      const ids = box.querySelector('#lk-t').value === 'sel' ? selected.map(t => Number(t.key)) : null
       const body = {
         version: box.querySelector('#lk-v').value,
-        terrain_ids: box.querySelector('#lk-t').value === 'sel' ? selected.map(t => Number(t.key)) : null,
-        prospect: prospect ? prospect : null,
-        acheteur_id: ach ? ach.id : null,
+        terrain_ids: ids,
+        prospect: chosen.nom,
+        acheteur_id: chosen.id,
         note: box.querySelector('#lk-n').value.trim() ? box.querySelector('#lk-n').value.trim() : null,
         expire_le: new Date(Date.now() + Number(box.querySelector('#lk-d').value) * 3600e3).toISOString()
       }
@@ -176,7 +219,17 @@ function createLink (selected) {
         return
       }
       const row = (await r.json())[0]
-      showLink(row, box)
+      // Les terrains envoyés apparaissent sur la fiche du promoteur comme « Envoyé » (sans écraser une réponse existante)
+      if (ids && ids.length) {
+        const now = new Date().toISOString()
+        const rows = ids.map(id => ({ acheteur_id: chosen.id, terrain_id: id, statut: 'envoye', canal: 'Lien carte', envoye_par: typeof currentAssocie !== 'undefined' ? currentAssocie : null, teaser_envoye_le: now, updated_at: now }))
+        try {
+          await fetch(SUPA_URL + '/rest/v1/acheteur_terrain_reponses?on_conflict=acheteur_id,terrain_id', { method: 'POST', headers: H({ Prefer: 'resolution=ignore-duplicates,return=minimal' }), body: JSON.stringify(rows) })
+          if (typeof prLoadExtras === 'function') await prLoadExtras()
+        } catch (e) { /* fiche promoteur mise à jour au prochain chargement */ }
+      }
+      if (typeof logActivity === 'function') logActivity('Lien carte envoyé', 'acheteur', chosen.id, chosen.nom, (ids ? ids.length + ' terrain(s)' : 'tous les terrains') + ', version ' + body.version)
+      showLink(row, box, chosen)
     })
   })
 }
@@ -186,11 +239,11 @@ function waText (row) {
   return 'Bonjour' + (row.prospect ? ' ' + row.prospect : '') + ', voici la sélection de terrains Greenfield : ' + linkUrl(row.token) + ' (lien valable jusqu\'au ' + d + ').'
 }
 
-function showLink (row, box) {
+function showLink (row, box, ach) {
   const url = linkUrl(row.token)
   box.innerHTML = '<h3>Lien créé</h3><p style="font-size:13px;color:#4f6a5c">Valable jusqu\'au ' + new Date(row.expire_le).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' }) + '. Version ' + (row.version === 'qualifie' ? 'acheteur qualifié' : 'découverte') + '.</p>' +
     '<input id="lk-url" readonly value="' + esc(url) + '">' +
-    '<div class="gfc-acts"><button class="gfc-btn gfc-b3" id="lk-copy">Copier</button><a class="gfc-btn gfc-b1" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(waText(row)) + '">WhatsApp</a><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>'
+    '<div class="gfc-acts"><button class="gfc-btn gfc-b3" id="lk-copy">Copier</button><a class="gfc-btn gfc-b1" target="_blank" rel="noopener" href="https://wa.me/' + (ach && normTel(ach.telephone) ? normTel(ach.telephone) : '') + '?text=' + encodeURIComponent(waText(row)) + '">WhatsApp' + (ach && normTel(ach.telephone) ? ' ' + esc(ach.nom.split(' ')[0]) : '') + '</a><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>'
   box.querySelector('[data-m="close"]').addEventListener('click', () => box.parentElement.classList.remove('on'))
   box.querySelector('#lk-copy').addEventListener('click', async () => {
     try {
@@ -225,6 +278,7 @@ async function linksPanel () {
     const actif = !l.revoque && exp > now
     return '<div class="lk-row"><div><b>' + esc(l.prospect ? l.prospect : 'Sans nom') + '</b> · ' + (l.version === 'qualifie' ? 'Qualifié' : 'Découverte') + ' · ' + nb +
       '<div class="lk-m">' + st + ' · ' + vues + ' · par ' + esc(l.cree_par) + '</div></div><div class="lk-a">' +
+      (l.acheteur_id ? '<button data-fiche="' + l.acheteur_id + '">Fiche promoteur</button>' : '') +
       (actif ? '<button data-copy="' + l.token + '">Copier</button><button data-rev="' + l.id + '">Révoquer</button>' : '') +
       '<button data-ext="' + l.id + '">+7 j</button></div></div>'
   }
@@ -232,7 +286,7 @@ async function linksPanel () {
     const l = links.find(k => k.id === x.lien_id)
     return '<div class="lk-row' + (x.traite ? ' done' : '') + '"><div><b>' + esc(x.nom ? x.nom : 'Prospect') + '</b>' + (x.telephone ? ' · ' + esc(x.telephone) : '') + (l && l.prospect ? ' · lien ' + esc(l.prospect) : '') +
       '<div class="lk-m">' + new Date(x.cree_le).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + x.refs.length + ' terrain' + (x.refs.length > 1 ? 's' : '') + ' : ' + esc(x.refs.join(', ')) + '</div>' +
-      (x.message ? '<div class="lk-m">« ' + esc(x.message) + ' »</div>' : '') + '</div><div class="lk-a">' + (x.traite ? '' : '<button data-done="' + x.id + '">Traité</button>') + '</div></div>'
+      (x.message ? '<div class="lk-m">« ' + esc(x.message) + ' »</div>' : '') + '<div class="lk-m">Ajouté' + (x.refs.length > 1 ? 's' : '') + ' en « Intéressé » sur la fiche du promoteur.</div></div><div class="lk-a">' + (l && l.acheteur_id ? '<button data-fiche="' + l.acheteur_id + '">Fiche promoteur</button>' : '') + (x.traite ? '' : '<button data-done="' + x.id + '">Traité</button>') + '</div></div>'
   }
   api.modal('<h3>Sélections reçues</h3>' + (rets.length ? rets.map(rrow).join('') : '<p class="lk-m">Aucune sélection reçue pour le moment.</p>') +
     '<h3 style="margin-top:16px">Liens envoyés</h3>' + (links.length ? links.map(lrow).join('') : '<p class="lk-m">Aucun lien créé.</p>') +
@@ -256,6 +310,17 @@ async function linksPanel () {
       patch('carte_liens', b.dataset.ext, { expire_le: new Date(from + 7 * 864e5).toISOString(), revoque: false })
     }))
     box.querySelectorAll('[data-done]').forEach(b => b.addEventListener('click', () => patch('carte_retours', b.dataset.done, { traite: true })))
+    box.querySelectorAll('[data-fiche]').forEach(b => b.addEventListener('click', async () => {
+      box.parentElement.classList.remove('on')
+      if (typeof prLoadExtras === 'function') { try { await prLoadExtras() } catch (e) { /* ignore */ } }
+      if (typeof prOpen === 'function') {
+        prOpen(Number(b.dataset.fiche))
+        if (typeof PR !== 'undefined' && typeof prRenderFiche === 'function') {
+          PR.tab = 'prop'
+          prRenderFiche()
+        }
+      }
+    }))
   })
 }
 
@@ -315,6 +380,7 @@ async function carteInit () {
     api = GFCarte.mount(host, {
       mode, terrains: dataFor(mode), brand: false, sel, intern: internRows,
       printSub: typeof currentAssocie !== 'undefined' && currentAssocie ? 'Contact : ' + currentAssocie : '',
+      printLogo: location.origin + '/teaser/logo-pied-clair.png',
       actions: [{ label: 'Créer un lien prospect', cls: 'gfc-b1', always: true, onClick: s => createLink(s) }]
     })
     header()

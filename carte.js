@@ -77,6 +77,7 @@ const CSS = `
 .gfc *{box-sizing:border-box}
 .gfc-side{width:370px;flex:none;display:flex;flex-direction:column;background:#f4f9f5;z-index:500;box-shadow:2px 0 12px rgba(0,0,0,.25)}
 .gfc-brand{background:#0a1410;color:#7ee0a4;padding:16px 18px 12px}
+.gfc-logo{display:block;height:34px;width:auto;max-width:100%}
 .gfc-word{font-family:'Archivo','League Spartan',sans-serif;font-weight:900;font-size:26px;letter-spacing:-.02em;line-height:1}
 .gfc-word sup{font-size:15px;margin-left:2px}
 .gfc-slogan{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;margin-top:6px}
@@ -154,6 +155,7 @@ const CSS = `
 .gfc-warn{bottom:auto;top:64px;font-size:11.5px}
 .gfc-brand{border-radius:16px 16px 0 0;padding:11px 15px}
 .gfc-word{font-size:20px}
+.gfc-logo{height:24px}
 .gfc-sub{display:none}
 }
 .gfc-print{display:none}
@@ -217,7 +219,7 @@ function svgPlan (t, w, h) {
 
 function mount (root, opt) {
   injectCss()
-  const o = Object.assign({ mode: 'qualifie', terrains: [], actions: [], brand: true, sub: '', storeKey: null, intern: null, onReady: null }, opt)
+  const o = Object.assign({ mode: 'qualifie', terrains: [], actions: [], brand: true, sub: '', storeKey: null, intern: null, onReady: null, logo: null, printLogo: null }, opt)
   let MODE = o.mode
   let D = []
   const selLocal = new Set()
@@ -240,7 +242,7 @@ function mount (root, opt) {
 
   root.innerHTML = '<div class="gfc">' +
     '<aside class="gfc-side">' +
-    (o.brand ? '<div class="gfc-brand"><div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">EXIGEZ PLUS</div><div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
+    (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
     '<div class="gfc-filters">' +
     '<label class="gfc-full">Recherche<input type="search" data-f="txt" placeholder="Référence, zone, zonage"></label>' +
     '<label class="gfc-full">Zone<select data-f="q"></select></label>' +
@@ -491,7 +493,25 @@ function mount (root, opt) {
       }).join('')
       fiches.push('<div class="pg">' + head + '<div class="tr">' + pair + '</div><p class="nt">' + MODES[MODE].note + '</p></div>')
     }
-    printEl.innerHTML = sum + fiches.join('')
+    const logo = o.printLogo ? '<img src="' + escUrl(o.printLogo) + '" alt="Greenfield" style="height:30px">' : '<div class="w">GREENFIELD+</div>'
+    const body = (sum + fiches.join('')).split('<div class="w">GREENFIELD+</div>').join(logo)
+    const css = CSS.slice(CSS.indexOf('@media print{') + 13, CSS.lastIndexOf('}')).replace(/body\.gfc-printing [^{]*\{[^}]*\}/g, '').split('.gfc-print ').join('')
+    const doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Greenfield, sélection de terrains</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&display=swap" rel="stylesheet">' +
+      '<style>body{margin:0}body{font-family:"Inter Tight",Inter,system-ui,sans-serif}body{color:#0a1410}body{-webkit-print-color-adjust:exact}body{print-color-adjust:exact}' + css +
+      '.bar{position:sticky}.bar{top:0}.bar{background:#0a1410}.bar{color:#7ee0a4}.bar{padding:10px 14px}.bar{display:flex}.bar{gap:10px}.bar{align-items:center}.bar{justify-content:space-between}.bar{font-size:13px}' +
+      '.bar button{font:inherit}.bar button{font-weight:600}.bar button{background:#7ee0a4}.bar button{color:#0a1410}.bar button{border:none}.bar button{border-radius:999px}.bar button{padding:8px 16px}.bar button{cursor:pointer}' +
+      '.pg{max-width:780px}.pg{margin:0 auto}@media print{.bar{display:none}}@page{margin:10mm}</style></head><body>' +
+      '<div class="bar"><span>Fiche de sélection, ' + list.length + ' terrain' + (list.length > 1 ? 's' : '') + '</span><button onclick="window.print()">Imprimer ou enregistrer en PDF</button></div>' +
+      body + '<scr' + 'ipt>window.addEventListener("load", () => setTimeout(() => window.print(), 600))</scr' + 'ipt></body></html>'
+    const w = window.open('', '_blank')
+    if (w) {
+      w.document.open()
+      w.document.write(doc)
+      w.document.close()
+      return
+    }
+    printEl.innerHTML = body
     document.body.classList.add('gfc-printing')
     const done = () => {
       document.body.classList.remove('gfc-printing')

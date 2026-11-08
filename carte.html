@@ -7,6 +7,16 @@
 <meta name="referrer" content="no-referrer">
 <title>Greenfield, sélection de terrains</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="Votre sélection de terrains Greenfield, lien personnel et temporaire.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Greenfield">
+<meta property="og:title" content="Greenfield, votre sélection de terrains">
+<meta property="og:description" content="Carte interactive des terrains sélectionnés pour vous. Lien personnel et temporaire.">
+<meta property="og:image" content="https://crm.greenfield.plus/teaser/carte-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://crm.greenfield.plus/teaser/carte-og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -32,10 +42,13 @@ body{background:#0e1f17}
 .msg p{max-width:420px}
 .msg p{line-height:1.5}
 .msg p{color:#c8e6d3}
+.msg .lg{width:min(320px,80vw)}
+.msg .lg{height:auto}
+.msg .lg{margin-bottom:8px}
 </style>
 </head>
 <body>
-<div id="app"><div class="msg"><div class="w">GREENFIELD+</div><p>Chargement de la sélection…</p></div></div>
+<div id="app"><div class="msg"><img class="lg" src="/teaser/logo-contact.png" alt="Greenfield, exigez plus"><p>Chargement de la sélection…</p></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="/carte.js"></script>
 <script>
@@ -49,7 +62,7 @@ body{background:#0e1f17}
   const esc = s => String(s ?? '').replace(/&/g, ' et ').replace(/</g, '‹').replace(/>/g, '›').replace(/"/g, '”')
 
   function message (txt) {
-    app.innerHTML = '<div class="msg"><div class="w">GREENFIELD+</div><p>' + txt + '</p></div>'
+    app.innerHTML = '<div class="msg"><img class="lg" src="/teaser/logo-contact.png" alt="Greenfield, exigez plus"><p>' + txt + '</p></div>'
   }
   const RAISONS = {
     expire: 'Ce lien a expiré. Contactez votre interlocuteur Greenfield pour recevoir une sélection à jour.',
@@ -79,6 +92,8 @@ body{background:#0e1f17}
     const sub = (d.prospect ? 'Sélection préparée pour ' + d.prospect + '. ' : '') + 'Lien valable jusqu’au ' + exp + '. Cochez les terrains qui vous intéressent pour faire votre fiche PDF ou nous les envoyer.'
     GFCarte.mount(app, {
       mode: d.version, terrains, brand: true, sub,
+      logo: '/teaser/logo-pied-sombre.png',
+      printLogo: location.origin + '/teaser/logo-pied-clair.png',
       storeKey: 'gf-sel-' + token,
       printSub: (d.prospect ? 'Préparé pour ' + d.prospect : '') + (d.contact ? (d.prospect ? ' · ' : '') + 'Contact Greenfield : ' + d.contact : ''),
       actions: [{ label: 'Envoyer à Greenfield', cls: 'gfc-b1', onClick: (sel, api) => envoyer(sel, api, d) }]

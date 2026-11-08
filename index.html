@@ -4008,10 +4008,12 @@ async function gfStart() {
   if (gfStarted) return;
   gfStarted = true;
   loadState();
-  try { await loadFromSupabase(); } catch(e) {}
-  await loadEquipe();
-  await loadTaches();
-  if (typeof loadDemandes === 'function') await loadDemandes();
+  await Promise.all([
+    loadFromSupabase().catch(() => {}),
+    loadEquipe(),
+    loadTaches(),
+    typeof loadDemandes === 'function' ? loadDemandes() : null,
+  ]);
   applyRole();
   renderPage(currentPage);
   setInterval(gfRefresh, 45 * 60 * 1000);
@@ -4864,8 +4866,12 @@ function prEnsureExtras() {
 const _prOrigLoad = loadFromSupabase;
 loadFromSupabase = async function () {
   const r = await _prOrigLoad.apply(this, arguments);
-  try { PR.tried = true; await prLoadExtras(); } catch (e) { console.warn('Promoteurs', e); }
-  if (currentPage === 'acheteurs') prRenderList();
+  PR.tried = true;
+  prLoadExtras().then(() => {
+    if (currentPage === 'acheteurs') prRenderList();
+    if (typeof acRender === 'function') acRender();
+    if (PR.open && document.getElementById('modal-promoteur').classList.contains('open')) prRenderFiche();
+  }).catch(e => console.warn('Promoteurs', e));
   return r;
 };
 
@@ -5776,7 +5782,7 @@ function mActions() {
 }
 async function mRefresh() {
   mClose();
-  try { await loadFromSupabase(); if (typeof loadTaches === 'function') await loadTaches(); if (typeof loadDemandes === 'function') await loadDemandes(); } catch (e) {}
+  try { await Promise.all([loadFromSupabase(), typeof loadTaches === 'function' ? loadTaches() : null, typeof loadDemandes === 'function' ? loadDemandes() : null]); } catch (e) {}
   renderPage(currentPage);
 }
 

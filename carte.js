@@ -135,7 +135,7 @@ const CSS = `
 .gfc-acts .gfc-btn{flex:1;text-align:center;padding:10px}
 .gfc-poi{background:#0a1410;color:#7ee0a4;font-size:11px;font-weight:600;padding:3px 8px;border-radius:12px;white-space:nowrap;border:1px solid #7ee0a4;transform:translate(-50%,-50%);display:inline-block}
 .gfc .leaflet-tooltip.gfc-lab{background:#0a1410;color:#fff;border:none;font-weight:600;font-size:11.5px}
-.gfc-warn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:1001;background:#0a1410;color:#7ee0a4;font-size:12.5px;padding:8px 14px;border-radius:999px;display:none;max-width:90%;text-align:center}
+.gfc-warn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:450;pointer-events:none;background:#0a1410;color:#7ee0a4;font-size:12.5px;padding:8px 14px;border-radius:999px;display:none;max-width:90%;text-align:center}
 .gfc-warn.on{display:block}
 .gfc-toggle{display:none}
 .gfc-empty{padding:30px 16px;text-align:center;color:#4f6a5c;font-size:13px}
@@ -146,17 +146,58 @@ const CSS = `
 .gfc-box label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:#4f6a5c;margin:10px 0 4px}
 .gfc-box input,.gfc-box select,.gfc-box textarea{width:100%;font:inherit;font-size:14px;padding:9px 10px;border:1px solid #cfdcd2;border-radius:10px}
 .gfc-box .gfc-acts{padding:14px 0 0}
+.gfc-sh,.gfc-mtop{display:none}
+.gfc-zlo .gfc-poi{font-size:0;padding:4px;border-width:2px;line-height:0}
 @media (max-width:900px){
-.gfc-side{position:absolute;left:0;right:0;bottom:0;width:auto;height:64%;transform:translateY(100%);transition:transform .25s;border-radius:16px 16px 0 0}
-.gfc-side.open{transform:translateY(0)}
-.gfc-toggle{display:block;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:1001;background:#0a1410;color:#7ee0a4;border:none;font:inherit;font-weight:600;padding:11px 20px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-.gfc-selbar{left:10px;right:10px;top:10px;max-width:none;border-radius:16px}
-.gfc-detail{left:10px;right:10px;width:auto;top:auto;bottom:10px;max-height:72%}
-.gfc-warn{bottom:auto;top:64px;font-size:11.5px}
-.gfc-brand{border-radius:16px 16px 0 0;padding:11px 15px}
-.gfc-word{font-size:20px}
-.gfc-logo{height:24px}
-.gfc-sub{display:none}
+.gfc{font-size:15px}
+.gfc-side{z-index:1100;position:absolute;left:0;right:0;bottom:0;width:auto;height:52%;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.35);transition:height .22s ease;padding-bottom:env(safe-area-inset-bottom)}
+.gfc-side.peek{height:calc(76px + env(safe-area-inset-bottom))}
+.gfc-side.full{height:calc(100% - 64px)}
+.gfc-side.drag{transition:none}
+.gfc.dopen .gfc-side{display:none}
+.gfc-brand{display:none}
+.gfc-sh{display:block;padding:6px 14px 8px;touch-action:none;cursor:grab;flex:none;border-bottom:1px solid #e2ebe4}
+.gfc-grip{width:44px;height:5px;border-radius:3px;background:#b9cbbf;margin:2px auto 8px}
+.gfc-shr{display:flex;align-items:center;gap:8px}
+.gfc-n2{flex:1;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gfc-pill{font:inherit;font-size:13.5px;font-weight:600;border:1px solid #cfdcd2;background:#fff;color:#0a1410;border-radius:999px;padding:8px 13px;cursor:pointer;white-space:nowrap}
+.gfc-pill.on{background:#0a1410;color:#7ee0a4;border-color:#0a1410}
+.gfc-pill b{display:inline-block;min-width:18px;margin-left:5px;padding:0 5px;border-radius:9px;background:#7ee0a4;color:#0a1410;font-size:11.5px;line-height:18px;text-align:center}
+.gfc-filters{display:none}
+.gfc-side.fopen .gfc-filters{display:grid}
+.gfc-filters select,.gfc-filters input,.gfc-box input,.gfc-box select,.gfc-box textarea{font-size:16px;padding:10px}
+.gfc-count{display:none}
+.gfc-side.fopen .gfc-count{display:flex}
+.gfc-list{padding:8px 10px 18px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.gfc-card{grid-template-columns:34px 1fr auto;padding:12px;gap:10px}
+.gfc-card .t{font-size:15px}
+.gfc-card .m{font-size:12.5px}
+.gfc-card .p{font-size:14px}
+.gfc-ck{width:30px;height:30px;border-radius:9px;font-size:16px}
+.gfc-mtop{display:flex;position:absolute;left:0;right:0;top:0;z-index:950;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:linear-gradient(#0a1410,rgba(10,20,16,.88));color:#7ee0a4}
+.gfc-mtop img{height:20px;width:auto}
+.gfc-mtop .w{font-family:'Archivo','League Spartan',sans-serif;font-weight:900;font-size:18px}
+.gfc-mtop span{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;border:1px solid #7ee0a4;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.gfc-mtop span.red{border-color:#ffb36b;color:#ffb36b}
+.gfc-selbar{z-index:1050;left:8px;right:8px;top:8px;max-width:none;border-radius:16px;padding:6px 6px 6px 12px;flex-wrap:nowrap;gap:6px;font-size:13px}
+.gfc.hasbrand .gfc-selbar{top:calc(46px + env(safe-area-inset-top))}
+.gfc-selbar > span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gfc-selbar .gfc-btn{padding:8px 11px;font-size:13px}
+.gfc-selbar .gfc-lg{display:none}
+.gfc-detail{z-index:1200;left:0;right:0;width:auto;top:auto;bottom:0;max-height:64%;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+.gfc-dh{border-radius:18px 18px 0 0;padding:12px 16px 13px}
+.gfc-dh::before{content:'';display:block;width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);margin:0 auto 8px}
+.gfc-dh h2{font-size:20px}
+.gfc-dh .x{top:14px;right:8px;width:40px;height:40px;font-size:26px}
+.gfc-acts .gfc-btn{padding:13px 10px;font-size:14px}
+.gfc-warn{bottom:auto;top:60px;font-size:11.5px}
+.gfc.hasbrand .gfc-warn{top:100px}
+.gfc-modal{align-items:flex-end;padding:0;z-index:2000}
+.gfc-box{max-width:none;border-radius:18px 18px 0 0;max-height:92%;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.gfc .leaflet-control-layers{margin-top:62px}
+.gfc .leaflet-control-attribution{font-size:9px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gfc.hasbrand .leaflet-control-layers{margin-top:100px}
+.gfc-toggle{display:none}
 }
 .gfc-print{display:none}
 @media print{
@@ -241,8 +282,10 @@ function mount (root, opt) {
   }
 
   root.innerHTML = '<div class="gfc">' +
+    '<div class="gfc-mtop"></div>' +
     '<aside class="gfc-side">' +
     (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
+    '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="filt">Filtres</button><button class="gfc-pill" data-a="onlysel2">Sélection</button></div></div>' +
     '<div class="gfc-filters">' +
     '<label class="gfc-full">Recherche<input type="search" data-f="txt" placeholder="Référence, zone, zonage"></label>' +
     '<label class="gfc-full">Zone<select data-f="q"></select></label>' +
@@ -258,7 +301,6 @@ function mount (root, opt) {
     '<div class="gfc-detail"></div>' +
     '<div class="gfc-warn">Le fond satellite ne se charge pas ici. Ouvrez la page dans Chrome, Safari ou Edge.</div>' +
     '<div class="gfc-modal"><div class="gfc-box"></div></div>' +
-    '<button class="gfc-toggle">Liste des terrains</button>' +
     '</div>'
   const $ = s => root.querySelector(s)
   const $$ = s => root.querySelectorAll(s)
@@ -270,8 +312,11 @@ function mount (root, opt) {
     document.body.appendChild(printEl)
   }
 
-  const map = L.map($('.gfc-map'), { zoomControl: false }).setView([33.5, -7.68], 11)
-  L.control.zoom({ position: 'bottomright' }).addTo(map)
+  const mob = () => window.matchMedia('(max-width:900px)').matches
+  const touch = window.matchMedia('(hover: none)').matches
+  if (o.brand) $('.gfc').classList.add('hasbrand')
+  const map = L.map($('.gfc-map'), { zoomControl: false, tap: true }).setView([33.5, -7.68], 11)
+  if (!mob()) L.control.zoom({ position: 'bottomright' }).addTo(map)
   const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/'
   const sat = L.layerGroup([
     L.tileLayer(esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics' }),
@@ -279,7 +324,10 @@ function mount (root, opt) {
     L.tileLayer(esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
   ]).addTo(map)
   const plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© OpenStreetMap © CARTO' })
-  L.control.layers({ 'Satellite': sat, 'Plan': plan }, null, { position: 'bottomright' }).addTo(map)
+  L.control.layers({ 'Satellite': sat, 'Plan': plan }, null, { position: mob() ? 'topright' : 'bottomright' }).addTo(map)
+  if (mob()) map.attributionControl.setPosition('topright')
+  const zcls = () => $('.gfc').classList.toggle('gfc-zlo', map.getZoom() < 12)
+  map.on('zoomend', zcls)
   POIS.forEach(p => {
     L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<span class="gfc-poi">' + p.n + '</span>', iconSize: [0, 0] }), interactive: false }).addTo(map)
   })
@@ -289,7 +337,11 @@ function mount (root, opt) {
     l.on('tileload', () => { tileOk++ })
     l.on('tileerror', () => {
       tileErr++
-      if (tileErr > 6 && tileOk === 0) $('.gfc-warn').classList.add('on')
+      if (tileErr > 6 && tileOk === 0 && !$('.gfc-warn').dataset.shown) {
+        $('.gfc-warn').dataset.shown = '1'
+        $('.gfc-warn').classList.add('on')
+        setTimeout(() => $('.gfc-warn').classList.remove('on'), 9000)
+      }
     })
   })
 
@@ -329,7 +381,7 @@ function mount (root, opt) {
       shapes.push(L.circleMarker([t.lat, t.lng], { radius: 6, color: '#fff', weight: 1.5, fillColor: col, fillOpacity: 1 }))
       const lab = t.id + ' · ' + surfTxt(t)
       shapes.forEach(sh => {
-        sh.bindTooltip(lab, { className: 'gfc-lab', sticky: true })
+        if (!touch) sh.bindTooltip(lab, { className: 'gfc-lab', sticky: true })
         sh.on('click', () => select(t.key))
       })
       layers[t.key] = L.featureGroup(shapes)
@@ -353,6 +405,7 @@ function mount (root, opt) {
       const b = $('.gfc-badge')
       b.textContent = 'Version ' + MODES[MODE].label.toLowerCase() + (INT() ? ', ne pas diffuser' : '')
       b.classList.toggle('red', INT())
+      $('.gfc-mtop').innerHTML = (o.logo ? '<img src="' + escUrl(o.logo) + '" alt="Greenfield">' : '<span class="w">GREENFIELD+</span>') + '<span class="' + (INT() ? 'red' : '') + '">' + MODES[MODE].label + '</span>'
     }
   }
 
@@ -384,6 +437,12 @@ function mount (root, opt) {
     Object.values(layers).forEach(l => map.removeLayer(l))
     shown.forEach(t => layers[t.key].addTo(map))
     $('.gfc-n').textContent = shown.length + ' terrain' + (shown.length > 1 ? 's' : '') + ' sur ' + D.length
+    $('.gfc-n2').textContent = (onlySel ? 'Ma sélection : ' : '') + shown.length + ' terrain' + (shown.length > 1 ? 's' : '')
+    const nf = ['txt', 'q', 's', 'b'].filter(k => $('[data-f="' + k + '"]').value).length + (active.size < FAM.length ? 1 : 0)
+    $('[data-a="filt"]').innerHTML = 'Filtres' + (nf ? '<b>' + nf + '</b>' : '')
+    $('[data-a="filt"]').classList.toggle('on', $('.gfc-side').classList.contains('fopen'))
+    $('[data-a="onlysel2"]').innerHTML = 'Sélection' + (selected().length ? '<b>' + selected().length + '</b>' : '')
+    $('[data-a="onlysel2"]').classList.toggle('on', onlySel)
     $('[data-a="onlysel"]').textContent = onlySel ? 'Tous les terrains' : 'Ma sélection'
     $('.gfc-list').innerHTML = shown.length ? shown.map(t => {
       const on = sel.has(t.key)
@@ -416,10 +475,12 @@ function mount (root, opt) {
   function selbar () {
     const n = selected().length
     const acts = o.actions.filter(a => a.always ? true : n > 0)
-    $('.gfc-selbar').innerHTML = '<span><b>' + n + '</b> terrain' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '') + '</span>' +
-      (n ? '<button class="gfc-btn gfc-b2" data-a="pdf">Fiche PDF</button>' : '') +
-      acts.map((a, i) => '<button class="gfc-btn ' + (a.cls ? a.cls : 'gfc-b1') + '" data-act="' + i + '">' + a.label + '</button>').join('') +
-      (n ? '<button class="gfc-btn gfc-b2" data-a="clear">Vider</button>' : '')
+    const m = mob()
+    $('.gfc-selbar').innerHTML = '<span><b>' + n + '</b> ' + (m ? 'sélectionné' + (n > 1 ? 's' : '') : 'terrain' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '')) + '</span>' +
+      (n ? '<button class="gfc-btn gfc-b2" data-a="pdf">' + (m ? 'PDF' : 'Fiche PDF') + '</button>' : '') +
+      acts.map((a, i) => '<button class="gfc-btn ' + (a.cls ? a.cls : 'gfc-b1') + '" data-act="' + i + '">' + (m && a.short ? a.short : a.label) + '</button>').join('') +
+      (n ? '<button class="gfc-btn gfc-b2" data-a="clear" aria-label="Vider la sélection">' + (m ? '×' : 'Vider') + '</button>' : '')
+    $('.gfc-selbar').style.display = (m && !n && !acts.length) ? 'none' : ''
     const pdf = $('[data-a="pdf"]')
     if (pdf) pdf.addEventListener('click', () => printSel())
     const clr = $('[data-a="clear"]')
@@ -459,13 +520,18 @@ function mount (root, opt) {
     $('.gfc-detail').classList.add('on')
     $('[data-a="close"]').addEventListener('click', closeDetail)
     $('[data-a="tsel"]').addEventListener('click', () => toggleSel(t.key))
-    if (!keepView) map.fitBounds(bounds[key], { maxZoom: DEC() ? 15 : 17, paddingTopLeft: [40, 70], paddingBottomRight: [window.innerWidth > 900 ? 380 : 40, window.innerWidth > 900 ? 40 : 260], animate: !instant })
+    if (mob()) $('.gfc').classList.add('dopen')
+    $('.gfc-detail').scrollTop = 0
+    if (!keepView) {
+      const h = $('.gfc-map').clientHeight
+      const pad = mob() ? { paddingTopLeft: [30, o.brand ? 110 : 70], paddingBottomRight: [30, Math.round(Math.min(h * 0.64, $('.gfc-detail').offsetHeight)) + 20] } : { paddingTopLeft: [40, 70], paddingBottomRight: [380, 40] }
+      map.fitBounds(bounds[key], Object.assign({ maxZoom: DEC() ? 15 : 17, animate: !instant }, pad))
+    }
     $$('.gfc-card').forEach(el => el.classList.toggle('sel', el.dataset.k === key))
-    $('.gfc-side').classList.remove('open')
-    $('.gfc-toggle').textContent = 'Liste des terrains'
   }
   function closeDetail () {
     $('.gfc-detail').classList.remove('on')
+    $('.gfc').classList.remove('dopen')
     current = null
     $$('.gfc-card').forEach(el => el.classList.remove('sel'))
   }
@@ -537,9 +603,63 @@ function mount (root, opt) {
     onlySel = !onlySel
     render()
   })
-  $('.gfc-toggle').addEventListener('click', () => {
-    const open = $('.gfc-side').classList.toggle('open')
-    $('.gfc-toggle').textContent = open ? 'Voir la carte' : 'Liste des terrains'
+  // Feuille du bas (mobile) : aperçu, moitié ou plein écran, à glisser ou toucher
+  const side = $('.gfc-side')
+  const STATES = ['peek', 'half', 'full']
+  function setSheet (st) {
+    STATES.forEach(x => side.classList.toggle(x, x === st))
+    side.dataset.st = st
+  }
+  setSheet(o.sheet ? o.sheet : 'peek')
+  const sh = $('.gfc-sh')
+  let y0 = null
+  let h0 = 0
+  let moved = false
+  sh.addEventListener('touchstart', e => {
+    if (e.target.closest('button')) return
+    y0 = e.touches[0].clientY
+    h0 = side.offsetHeight
+    moved = false
+    side.classList.add('drag')
+  }, { passive: true })
+  sh.addEventListener('touchmove', e => {
+    if (y0 === null) return
+    const dy = e.touches[0].clientY - y0
+    if (Math.abs(dy) > 6) moved = true
+    const max = root.clientHeight - 64
+    side.style.height = Math.max(70, Math.min(max, h0 - dy)) + 'px'
+  }, { passive: true })
+  sh.addEventListener('touchend', e => {
+    if (y0 === null) return
+    side.classList.remove('drag')
+    const hNow = side.offsetHeight
+    side.style.height = ''
+    y0 = null
+    if (!moved) return
+    const H = root.clientHeight
+    const targets = [76, H * 0.52, H - 64]
+    let best = 0
+    targets.forEach((v, i) => { if (Math.abs(v - hNow) < Math.abs(targets[best] - hNow)) best = i })
+    setSheet(STATES[best])
+  })
+  sh.addEventListener('click', e => {
+    if (e.target.closest('button')) return
+    const st = side.dataset.st
+    setSheet(st === 'peek' ? 'half' : (st === 'half' ? 'full' : 'half'))
+  })
+  $('[data-a="filt"]').addEventListener('click', () => {
+    const open = side.classList.toggle('fopen')
+    if (open) setSheet('full')
+    render()
+  })
+  $('[data-a="onlysel2"]').addEventListener('click', () => {
+    onlySel = !onlySel
+    if (side.dataset.st === 'peek') setSheet('half')
+    render()
+  })
+  window.addEventListener('resize', () => {
+    map.invalidateSize()
+    selbar()
   })
 
   function modal (html, wire) {
@@ -559,13 +679,16 @@ function mount (root, opt) {
     if (fit && D.length) {
       const withShape = D.filter(t => t.g && t.g.length)
       const pts = (withShape.length >= 3 ? withShape : D).map(t => [t.lat, t.lng])
-      map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], animate: false })
+      map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, o.brand ? 110 : 70], paddingBottomRight: [24, Math.round(side.offsetHeight) + 16], animate: false } : { padding: [40, 40], animate: false })
     }
   }
 
   const api = { setData, render, selected, map, modal, select, printSel, versDecouverte, get mode () { return MODE } }
   setData(MODE, o.terrains, true)
-  setTimeout(() => map.invalidateSize(), 100)
+  setTimeout(() => {
+    map.invalidateSize()
+    zcls()
+  }, 100)
   return api
 }
 

@@ -1695,6 +1695,7 @@ function showPage(page, el) {
   el.classList.add('active');
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
+  document.body.classList.toggle('on-carte', page === 'carte');
   if (page === 'carte' && typeof carteInit === 'function') carteInit();
 
   const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Deals', matching: 'Matching Terrain / Promoteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs' };
@@ -6643,7 +6644,23 @@ function tgHere() {
 .lk-list button{font:inherit;font-size:13px;text-align:left;border:1px solid #e2ebe4;background:#f4f9f5;border-radius:10px;padding:8px 10px;cursor:pointer;color:#0a1410}
 .lk-list button:hover{border-color:#7ee0a4}
 .lk-ch{font-size:13.5px;margin-top:6px;color:#0a1410}
-@media (max-width:900px){.gfc-host{height:calc(100dvh - 210px);min-height:420px}.ch-sp{display:none}}
+.ch-sm{display:none}
+.ch-dot{display:none}
+@media (max-width:900px){
+body.on-carte .content{padding-bottom:0 !important}
+body.on-carte .carte-head{position:fixed;left:0;right:0;top:54px;z-index:60;margin:0;padding:6px 10px;gap:8px;flex-wrap:nowrap;overflow-x:auto;background:#0e1f17;border-bottom:1px solid rgba(126,224,164,0.15);scrollbar-width:none}
+body.on-carte .carte-head::-webkit-scrollbar{display:none}
+body.on-carte .gfc-host{position:fixed;left:0;right:0;top:104px;bottom:calc(60px + max(4px, env(safe-area-inset-bottom) - 18px));height:auto;min-height:0;border-radius:0;border:none;box-shadow:none;z-index:50}
+.ch-seg{flex:none}
+.ch-seg button{padding:7px 11px;font-size:13px}
+.ch-btn{flex:none;padding:7px 12px}
+.ch-ck,.ch-hint{flex:none;font-size:12.5px;white-space:nowrap}
+.ch-lg{display:none}
+.ch-sm{display:inline}
+.ch-dot{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#7ee0a4;color:#0a1410;font-size:11.5px;line-height:18px;text-align:center}
+#ch-import{display:none}
+.ch-sp{display:none}
+}
 </style>
 <script src="/carte-crm.js" defer></script>
 </body>

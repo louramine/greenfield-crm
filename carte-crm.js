@@ -114,9 +114,9 @@ function header () {
   const isAdmin = typeof myRole !== 'undefined' && myRole === 'admin'
   host.innerHTML = '<div class="ch-seg">' +
     [['interne', 'Interne'], ['qualifie', 'Qualifié'], ['decouverte', 'Découverte']].map(([k, l]) => '<button data-m="' + k + '" class="' + (mode === k ? 'on' : '') + '">' + l + '</button>').join('') + '</div>' +
-    (mode === 'interne' ? '<label class="ch-ck"><input type="checkbox" id="ch-sold"' + (withSold ? ' checked' : '') + '> Inclure les vendus</label>' : '<span class="ch-hint">Aperçu de ce que voit le prospect</span>') +
+    (mode === 'interne' ? '<label class="ch-ck"><input type="checkbox" id="ch-sold"' + (withSold ? ' checked' : '') + '> <span class="ch-lg">Inclure les </span>vendus</label>' : '<span class="ch-hint"><span class="ch-lg">Aperçu de ce que voit le prospect</span><span class="ch-sm">Vue prospect</span></span>') +
     '<span class="ch-sp"></span>' +
-    '<button class="ch-btn" id="ch-links">Liens envoyés<span id="ch-badge"></span></button>' +
+    '<button class="ch-btn" id="ch-links"><span class="ch-lg">Liens envoyés</span><span class="ch-sm">Liens</span><span id="ch-badge"></span></button>' +
     (isAdmin ? '<button class="ch-btn" id="ch-import">Importer les contours</button><input type="file" id="ch-file" accept=".json,.gz" hidden>' : '')
   host.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => {
     mode = b.dataset.m
@@ -141,7 +141,7 @@ async function refreshBadge () {
     const r = await fetch(SUPA_URL + '/rest/v1/carte_retours?select=id&traite=eq.false', { headers: H() })
     const rows = r.ok ? await r.json() : []
     const b = document.getElementById('ch-badge')
-    if (b) b.textContent = rows.length ? ' · ' + rows.length + ' sélection' + (rows.length > 1 ? 's' : '') + ' reçue' + (rows.length > 1 ? 's' : '') : ''
+    if (b) b.innerHTML = rows.length ? '<span class="ch-lg"> · ' + rows.length + ' sélection' + (rows.length > 1 ? 's' : '') + ' reçue' + (rows.length > 1 ? 's' : '') + '</span><b class="ch-dot">' + rows.length + '</b>' : ''
   } catch (e) { /* table absente */ }
 }
 
@@ -355,11 +355,39 @@ async function importContours (file) {
   }
 }
 
+// Mobile : la carte occupe tout l'espace entre la barre du haut et la barre d'onglets
+function layoutMobile () {
+  const host = document.getElementById('gfc-host')
+  const head = document.getElementById('carte-head')
+  if (!host || !head) return
+  const m = window.matchMedia('(max-width:900px)').matches && document.body.classList.contains('on-carte')
+  if (!m) {
+    head.style.top = ''
+    host.style.top = ''
+    host.style.bottom = ''
+    return
+  }
+  const tb = document.querySelector('.topbar')
+  const top = tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 54
+  head.style.top = top + 'px'
+  host.style.top = (top + head.offsetHeight) + 'px'
+  const nav = document.querySelector('.m-nav')
+  const nb = nav && getComputedStyle(nav).display !== 'none' ? Math.max(0, window.innerHeight - nav.getBoundingClientRect().top) : 0
+  host.style.bottom = nb + 'px'
+  if (api) api.map.invalidateSize()
+}
+window.addEventListener('resize', () => layoutMobile())
+window.addEventListener('orientationchange', () => setTimeout(layoutMobile, 300))
+
 async function carteInit () {
   const host = document.getElementById('gfc-host')
   if (!host) return
+  setTimeout(layoutMobile, 0)
   if (api) {
-    setTimeout(() => api.map.invalidateSize(), 50)
+    setTimeout(() => {
+      layoutMobile()
+      api.map.invalidateSize()
+    }, 60)
     return
   }
   if (loading) return
@@ -381,9 +409,10 @@ async function carteInit () {
       mode, terrains: dataFor(mode), brand: false, sel, intern: internRows,
       printSub: typeof currentAssocie !== 'undefined' && currentAssocie ? 'Contact : ' + currentAssocie : '',
       printLogo: location.origin + '/teaser/logo-pied-clair.png',
-      actions: [{ label: 'Créer un lien prospect', cls: 'gfc-b1', always: true, onClick: s => createLink(s) }]
+      actions: [{ label: 'Créer un lien prospect', short: 'Lien', cls: 'gfc-b1', always: true, onClick: s => createLink(s) }]
     })
     header()
+    layoutMobile()
   } catch (e) {
     host.innerHTML = '<div class="ch-load">La carte n\'a pas pu se charger : ' + esc(e.message) + '</div>'
   }

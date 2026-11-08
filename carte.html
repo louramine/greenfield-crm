@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1410">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Greenfield, sélection de terrains</title>
@@ -22,6 +23,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 html,body{height:100%}
+html,body{overflow:hidden}
+body{overscroll-behavior:none}
+#app{height:100dvh}
 body{margin:0}
 body{background:#0e1f17}
 #app{height:100%}
@@ -96,7 +100,8 @@ body{background:#0e1f17}
       printLogo: location.origin + '/teaser/logo-pied-clair.png',
       storeKey: 'gf-sel-' + token,
       printSub: (d.prospect ? 'Préparé pour ' + d.prospect : '') + (d.contact ? (d.prospect ? ' · ' : '') + 'Contact Greenfield : ' + d.contact : ''),
-      actions: [{ label: 'Envoyer à Greenfield', cls: 'gfc-b1', onClick: (sel, api) => envoyer(sel, api, d) }]
+      sheet: 'half',
+      actions: [{ label: 'Envoyer à Greenfield', short: 'Envoyer', cls: 'gfc-b1', onClick: (sel, api) => envoyer(sel, api, d) }]
     })
   }
 

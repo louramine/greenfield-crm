@@ -8,7 +8,5 @@ delete from public.terrain_contours c
     where c.cle = any(public.tf_cles(t.tf))
  );
 
--- Libère l'espace disque occupé par les lignes supprimées
-vacuum (analyze) public.terrain_contours;
-
+-- L'espace disque est récupéré automatiquement par Supabase dans les minutes qui suivent
 select count(*) as contours_conserves from public.terrain_contours;

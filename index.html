@@ -1994,6 +1994,7 @@ function renderTerrains() {
   favEnsure();
   mkQuartierList();
   msRender('loc'); msRender('urba');
+  tsortMarks();
   filterTerrains();
 }
 
@@ -2026,7 +2027,7 @@ function tfCell(t) {
   return `<span title="${escH(raw)}">${escH(short)}</span>${badge}`;
 }
 
-const TSORT = { key: '', dir: 1 };
+const TSORT = { key: 'ref', dir: -1 };
 const TSORT_COLS = {
   ref:  { get: t => t.ref || '' },
   loc:  { get: t => t.localisation || '' },
@@ -2147,7 +2148,7 @@ function resetFilters() {
   document.getElementById('filter-prix-min').value = '';
   document.getElementById('filter-prix-max').value = '';
   ['filter-sup-min', 'filter-sup-max'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  TSORT.key = ''; TSORT.dir = 1; tsortMarks();
+  TSORT.key = 'ref'; TSORT.dir = -1; tsortMarks();
   const hv = document.getElementById('hide-vendus'); if (hv) hv.checked = false;
   const td0 = document.getElementById('only-tfdup'); if (td0) td0.checked = false;
   const fv0 = document.getElementById('only-fav'); if (fv0) fv0.checked = false;
@@ -5952,7 +5953,7 @@ function mBuild() {
     <div class="m-sheet-bg" id="m-bg" onclick="mClose()"></div>
     <div class="m-sheet" id="m-sheet"><div class="m-sh-h"><b id="m-sheet-t"></b><button type="button" onclick="mClose()">Fermer</button></div><div class="m-sh-b" id="m-sheet-b"></div></div>
     <div class="m-sheet" id="m-sheet-tf"><div class="m-sh-h"><b>Filtrer les terrains</b><button type="button" onclick="mClose()">Voir les résultats</button></div><div class="m-sh-b" id="m-tf-body">
-      <select class="m-sort" id="m-tsort" onchange="mTSort(this.value)"><option value="">Tri : ordre du listing</option><option value="ref:1">Référence</option><option value="loc:1">Localisation (A à Z)</option><option value="sup:-1">Superficie (plus grande)</option><option value="sup:1">Superficie (plus petite)</option><option value="prix:1">Prix au m² (moins cher)</option><option value="prix:-1">Prix au m² (plus cher)</option><option value="forfait:1">Forfait (moins cher)</option><option value="forfait:-1">Forfait (plus cher)</option></select>
+      <select class="m-sort" id="m-tsort" onchange="mTSort(this.value)"><option value="">Tri : ordre du listing</option><option value="ref:-1">Plus récents (réf.)</option><option value="ref:1">Plus anciens (réf.)</option><option value="loc:1">Localisation (A à Z)</option><option value="sup:-1">Superficie (plus grande)</option><option value="sup:1">Superficie (plus petite)</option><option value="prix:1">Prix au m² (moins cher)</option><option value="prix:-1">Prix au m² (plus cher)</option><option value="forfait:1">Forfait (moins cher)</option><option value="forfait:-1">Forfait (plus cher)</option></select>
     </div></div>
     <div class="m-sheet" id="m-sheet-pf"><div class="m-sh-h"><b>Filtrer les promoteurs</b><button type="button" onclick="mClose()">Voir les résultats</button></div><div class="m-sh-b" id="m-pf-body"></div></div>
     <div class="m-search" id="m-search"><div class="m-se-h"><input id="m-se-q" type="search" autocomplete="off" oninput="mSearchRun()"><button type="button" onclick="mClose()">Annuler</button></div><div class="m-se-r" id="m-se-r"></div></div>`);

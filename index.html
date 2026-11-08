@@ -1007,26 +1007,8 @@ body:not(.role-admin) .admin-only{display:none !important}
 
     <!-- ═══════════ CARTE ═══════════ -->
     <div class="page" id="page-carte">
-      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-          <div style="font-size:18px;font-weight:700;color:var(--white);margin-bottom:2px;">Carte du Portefeuille</div>
-          <div style="font-size:13px;color:var(--gray-mid);">Vue géographique de tous les terrains sourcés</div>
-        </div>
-        <a href="https://www.google.com/maps/d/viewer?mid=1ILjcjpSMedHIkChvVTt1lpH1YWl5J74" target="_blank"
-           style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(126,224,164,0.15);border:1.5px solid rgba(126,224,164,0.35);border-radius:10px;color:var(--green-light);font-size:13px;font-weight:500;text-decoration:none;transition:all 0.2s;"
-           onmouseover="this.style.background='rgba(126,224,164,0.25)'" onmouseout="this.style.background='rgba(126,224,164,0.15)'">
-          <span style="font-size:15px;">↗</span> Ouvrir dans Google Maps
-        </a>
-      </div>
-      <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(14,31,23,0.25);border:1px solid rgba(126,224,164,0.15);position:relative;">
-        <iframe
-          src="https://www.google.com/maps/d/embed?mid=1ILjcjpSMedHIkChvVTt1lpH1YWl5J74&ehbc=2E312F&ll=33.5700,-7.6300&z=11"
-          style="width:100%;height:calc(100vh - 220px);min-height:520px;display:block;border:none;"
-          allowfullscreen
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade">
-        </iframe>
-      </div>
+      <div id="carte-head" class="carte-head"></div>
+      <div id="gfc-host" class="gfc-host"></div>
     </div>
 
     <!-- ═══════════ ACHETEURS ═══════════ -->
@@ -1713,6 +1695,7 @@ function showPage(page, el) {
   el.classList.add('active');
   currentPage = page;
   document.body.classList.toggle('on-dashboard', page === 'dashboard');
+  if (page === 'carte' && typeof carteInit === 'function') carteInit();
 
   const titles = { dashboard: 'Aujourd\u2019hui', pipeline: 'Deals', matching: 'Matching Terrain / Promoteur', carte: 'Carte des terrains', equipe: 'Équipe Greenfield', marketing: 'Marketing', terrains: 'Portefeuille Terrains', acheteurs: 'Promoteurs' };
   document.getElementById('pageTitle').textContent = titles[page];
@@ -5987,8 +5970,6 @@ function mBuild() {
   const kg = document.querySelectorAll('#page-dashboard .kpi-grid');
   if (kg[1]) kg[1].classList.add('m-zon');
   // Carte
-  const mapBox = document.querySelector('#page-carte > div:last-child');
-  if (mapBox) mapBox.insertAdjacentHTML('beforeend', '<a class="m-map-btn" href="https://www.google.com/maps/d/viewer?mid=1ILjcjpSMedHIkChvVTt1lpH1YWl5J74" target="_blank" rel="noopener">Google Maps ↗</a>');
   // Fiche terrain : barre d'actions
   const foot = document.querySelector('#modal-terrain-detail .td-foot');
   if (foot) {
@@ -6641,5 +6622,25 @@ function tgHere() {
 }
 </script>
 <script src="/teaser.js?v=20261104" defer></script>
+<style id="carte-css">
+.carte-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ch-seg{display:inline-flex;background:rgba(255,255,255,0.06);border:1px solid rgba(126,224,164,0.28);border-radius:999px;padding:3px}
+.ch-seg button{font:inherit;font-size:13px;font-weight:600;border:none;background:none;color:var(--gray-mid,#9cb3a3);padding:7px 14px;border-radius:999px;cursor:pointer}
+.ch-seg button.on{background:#0a1410;color:#7ee0a4}
+.ch-ck{font-size:13px;color:var(--gray-mid,#9cb3a3);display:inline-flex;align-items:center;gap:6px}
+.ch-hint{font-size:12.5px;color:#e3a13b}
+.ch-sp{flex:1}
+.ch-btn{font:inherit;font-size:13px;font-weight:600;border:1px solid rgba(126,224,164,0.35);background:rgba(126,224,164,0.12);color:#e8f2ea;padding:8px 14px;border-radius:999px;cursor:pointer}
+#ch-badge{color:#7ee0a4}
+.gfc-host{height:calc(100vh - 180px);min-height:520px;border-radius:16px;overflow:hidden;border:1px solid rgba(126,224,164,0.15);box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.ch-load{display:flex;align-items:center;justify-content:center;height:100%;color:#9cb3a3;font-size:14px}
+.lk-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #e2ebe4;font-size:13px}
+.lk-row.done{opacity:.55}
+.lk-m{font-size:12px;color:#4f6a5c;margin-top:2px}
+.lk-a{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.lk-a button{font:inherit;font-size:12px;border:1px solid #cfdcd2;background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+@media (max-width:900px){.gfc-host{height:calc(100dvh - 210px);min-height:420px}.ch-sp{display:none}}
+</style>
+<script src="/carte-crm.js" defer></script>
 </body>
 </html>

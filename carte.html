@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Greenfield, sélection de terrains</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+html,body{height:100%}
+body{margin:0}
+body{background:#0e1f17}
+#app{height:100%}
+.msg{height:100%}
+.msg{display:flex}
+.msg{flex-direction:column}
+.msg{align-items:center}
+.msg{justify-content:center}
+.msg{text-align:center}
+.msg{color:#e8f2ea}
+.msg{font-family:'Inter Tight',system-ui,sans-serif}
+.msg{padding:24px}
+.msg .w{font-family:'Archivo',sans-serif}
+.msg .w{font-weight:900}
+.msg .w{font-size:34px}
+.msg .w{color:#7ee0a4}
+.msg .w{letter-spacing:-.02em}
+.msg p{max-width:420px}
+.msg p{line-height:1.5}
+.msg p{color:#c8e6d3}
+</style>
+</head>
+<body>
+<div id="app"><div class="msg"><div class="w">GREENFIELD+</div><p>Chargement de la sélection…</p></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/carte.js"></script>
+<script>
+(function () {
+  const SUPA_URL = 'https://hjscwsybbcjpditudssq.supabase.co'
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhqc2N3c3liYmNqcGRpdHVkc3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTQ5MjUsImV4cCI6MjA5MTgzMDkyNX0.OccaI1Fw16ldu_PMElJvLyz7b-2EWmmXHeEEyPxeC2w'
+  const H = { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' }
+  const app = document.getElementById('app')
+  const parts = location.pathname.split('/').filter(Boolean)
+  const token = parts[0] === 'carte' && parts[1] ? parts[1] : new URLSearchParams(location.search).get('t')
+  const esc = s => String(s ?? '').replace(/&/g, ' et ').replace(/</g, '‹').replace(/>/g, '›').replace(/"/g, '”')
+
+  function message (txt) {
+    app.innerHTML = '<div class="msg"><div class="w">GREENFIELD+</div><p>' + txt + '</p></div>'
+  }
+  const RAISONS = {
+    expire: 'Ce lien a expiré. Contactez votre interlocuteur Greenfield pour recevoir une sélection à jour.',
+    revoque: 'Ce lien n’est plus actif. Contactez votre interlocuteur Greenfield.',
+    introuvable: 'Ce lien n’est pas valide. Vérifiez l’adresse reçue ou contactez Greenfield.'
+  }
+
+  async function rpc (fn, body) {
+    const r = await fetch(SUPA_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: H, body: JSON.stringify(body) })
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+    return r.json()
+  }
+
+  async function start () {
+    if (!token) return message(RAISONS.introuvable)
+    let d
+    try {
+      d = await rpc('carte_publique', { p_token: token })
+    } catch (e) {
+      return message('La sélection ne peut pas être chargée pour le moment. Réessayez dans quelques instants.')
+    }
+    if (!d.ok) return message(RAISONS[d.raison] ? RAISONS[d.raison] : RAISONS.introuvable)
+    const exp = new Date(d.expire_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    const terrains = d.terrains.map(t => Object.assign({ key: t.id }, t))
+    if (!terrains.length) return message('Cette sélection ne contient plus de terrain disponible. Contactez votre interlocuteur Greenfield.')
+    app.innerHTML = ''
+    const sub = (d.prospect ? 'Sélection préparée pour ' + d.prospect + '. ' : '') + 'Lien valable jusqu’au ' + exp + '. Cochez les terrains qui vous intéressent pour faire votre fiche PDF ou nous les envoyer.'
+    GFCarte.mount(app, {
+      mode: d.version, terrains, brand: true, sub,
+      storeKey: 'gf-sel-' + token,
+      printSub: (d.prospect ? 'Préparé pour ' + d.prospect : '') + (d.contact ? (d.prospect ? ' · ' : '') + 'Contact Greenfield : ' + d.contact : ''),
+      actions: [{ label: 'Envoyer à Greenfield', cls: 'gfc-b1', onClick: (sel, api) => envoyer(sel, api, d) }]
+    })
+  }
+
+  function envoyer (sel, api, d) {
+    api.modal('<h3>Envoyer ma sélection</h3><p style="font-size:13px;color:#4f6a5c">' + sel.length + ' terrain' + (sel.length > 1 ? 's' : '') + ' : ' + esc(sel.map(t => t.id).join(', ')) + '</p>' +
+      '<label>Votre nom</label><input id="sv-n" autocomplete="name" value="' + esc(d.prospect) + '">' +
+      '<label>Téléphone</label><input id="sv-t" type="tel" autocomplete="tel">' +
+      '<label>Message (facultatif)</label><textarea id="sv-m" rows="3"></textarea>' +
+      '<div class="gfc-acts"><button class="gfc-btn gfc-b3" data-m="close">Annuler</button><button class="gfc-btn gfc-b4" id="sv-go">Envoyer</button></div>', (box, close) => {
+      box.querySelector('#sv-go').addEventListener('click', async () => {
+        const btn = box.querySelector('#sv-go')
+        btn.disabled = true
+        try {
+          const r = await rpc('carte_envoyer_selection', { p_token: token, p_nom: box.querySelector('#sv-n').value.trim(), p_tel: box.querySelector('#sv-t').value.trim(), p_message: box.querySelector('#sv-m').value.trim(), p_refs: sel.map(t => t.id) })
+          box.innerHTML = r.ok
+            ? '<h3>Merci</h3><p>Votre sélection a bien été transmise à Greenfield' + (d.contact ? ' (' + esc(d.contact) + ')' : '') + '. Nous revenons vers vous rapidement.</p><div class="gfc-acts"><button class="gfc-btn gfc-b4" id="sv-ok">Fermer</button></div>'
+            : '<h3>Envoi impossible</h3><p>' + esc(r.raison) + '</p><div class="gfc-acts"><button class="gfc-btn gfc-b4" id="sv-ok">Fermer</button></div>'
+        } catch (e) {
+          box.innerHTML = '<h3>Envoi impossible</h3><p>Vérifiez votre connexion et réessayez.</p><div class="gfc-acts"><button class="gfc-btn gfc-b4" id="sv-ok">Fermer</button></div>'
+        }
+        box.querySelector('#sv-ok').addEventListener('click', close)
+      })
+    })
+  }
+
+  start()
+})()
+</script>
+</body>
+</html>

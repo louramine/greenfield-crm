@@ -184,7 +184,7 @@ const CSS = `
 .gfc-selbar > span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gfc-selbar .gfc-btn{padding:8px 11px;font-size:13px}
 .gfc-selbar .gfc-lg{display:none}
-.gfc-detail{z-index:1200;left:0;right:0;width:auto;top:auto;bottom:0;max-height:64%;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+.gfc-detail{z-index:1200;left:0;right:0;width:auto;top:auto;bottom:0;max-height:52%;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}
 .gfc-dh{border-radius:18px 18px 0 0;padding:12px 16px 13px}
 .gfc-dh::before{content:'';display:block;width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);margin:0 auto 8px}
 .gfc-dh h2{font-size:20px}
@@ -199,6 +199,9 @@ const CSS = `
 .gfc.hasbrand .leaflet-control-layers{margin-top:100px}
 .gfc-toggle{display:none}
 }
+.gfc .leaflet-control-layers-toggle,.gfc.leaflet-touch .leaflet-control-layers-toggle,.gfc .leaflet-touch .leaflet-control-layers-toggle{background-image:none !important;width:auto !important;height:auto !important;padding:7px 11px;font:600 12px 'Inter Tight','Inter',sans-serif;color:#0a1410;text-decoration:none;line-height:1.2;white-space:nowrap;display:block}
+.gfc .leaflet-control-layers-toggle::after{content:'Fond de carte'}
+.gfc .leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}
 .gfc-print{display:none}
 @media print{
 body.gfc-printing > *:not(#gfc-print){display:none !important}
@@ -260,7 +263,7 @@ function svgPlan (t, w, h) {
 
 function mount (root, opt) {
   injectCss()
-  const o = Object.assign({ mode: 'qualifie', terrains: [], actions: [], brand: true, sub: '', storeKey: null, intern: null, onReady: null, logo: null, printLogo: null }, opt)
+  const o = Object.assign({ mode: 'qualifie', terrains: [], actions: [], brand: true, sub: '', storeKey: null, intern: null, onReady: null, logo: null, printLogo: null, openCrm: null }, opt)
   let MODE = o.mode
   let D = []
   const selLocal = new Set()
@@ -292,7 +295,7 @@ function mount (root, opt) {
     '<label>Superficie<select data-f="s"><option value="">Toutes</option><option value="0-5000">Moins de 5 000 m²</option><option value="5000-20000">5 000 à 20 000 m²</option><option value="20000-100000">2 à 10 ha</option><option value="100000-">Plus de 10 ha</option></select></label>' +
     '<label>Budget<select data-f="b"><option value="">Tous</option><option value="0-10000000">Moins de 10 MDH</option><option value="10000000-30000000">10 à 30 MDH</option><option value="30000000-100000000">30 à 100 MDH</option><option value="100000000-">Plus de 100 MDH</option><option value="nd">Prix sur demande</option></select></label>' +
     '<label class="gfc-full">Zonage<div class="gfc-chips"></div></label>' +
-    '<label class="gfc-full">Trier par<select data-f="o"><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></label>' +
+    '<label class="gfc-full">Trier par<select data-f="o"><option value="rec">Recommandé</option><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></label>' +
     '</div>' +
     '<div class="gfc-count"><span class="gfc-n"></span><span><button class="gfc-link" data-a="onlysel">Ma sélection</button> · <button class="gfc-link" data-a="reset">Réinitialiser</button></span></div>' +
     '<div class="gfc-list"></div></aside>' +
@@ -429,6 +432,11 @@ function mount (root, opt) {
       (b ? (b === 'nd' ? !pfv(t) : (pfv(t) ? inRange(pfv(t), b) : false)) : true))
     const ord = f('o')
     const big = 1e15
+    if (ord === 'rec') {
+      // Terrains complets d'abord : contour et prix connus, puis par superficie, les terrains à vérifier en fin de liste
+      const score = t => (INT() && t.warn ? 0 : 4) + (t.g && t.g.length ? 2 : 0) + (pfv(t) ? 1 : 0)
+      shown.sort((x, y) => (score(y) - score(x)) ? (score(y) - score(x)) : ((y.s ? y.s : 0) - (x.s ? x.s : 0)))
+    }
     if (ord === 's-') shown.sort((x, y) => (y.s ? y.s : 0) - (x.s ? x.s : 0))
     if (ord === 's+') shown.sort((x, y) => (x.s ? x.s : big) - (y.s ? y.s : big))
     if (ord === 'p+') shown.sort((x, y) => (pfv(x) ? pfv(x) : big) - (pfv(y) ? pfv(y) : big))
@@ -446,7 +454,7 @@ function mount (root, opt) {
     $('[data-a="onlysel"]').textContent = onlySel ? 'Tous les terrains' : 'Ma sélection'
     $('.gfc-list').innerHTML = shown.length ? shown.map(t => {
       const on = sel.has(t.key)
-      const tags = (INT() && t.warn ? '<span class="gfc-tag w">à vérifier</span>' : '') + (INT() && t.statut && t.statut !== 'Disponible' ? '<span class="gfc-tag">' + esc(t.statut) + '</span>' : '')
+      const tags = (INT() && t.warn ? '<span class="gfc-tag w">à vérifier</span>' : '') + (INT() && t.statut && !['Disponible', 'À qualifier'].includes(t.statut) ? '<span class="gfc-tag">' + esc(t.statut) + '</span>' : '')
       const meta = esc(t.id) + ' · ' + surfTxt(t) + (t.z ? ' · ' + esc(t.z) : '') + (INT() && t.tf ? ' · TF ' + esc(t.tf) : '')
       const p2 = pm2(t)
       return '<div class="gfc-card' + (current === t.key ? ' sel' : '') + '" data-k="' + esc(t.key) + '">' +
@@ -516,15 +524,20 @@ function mount (root, opt) {
       '<div class="gfc-sec"><h3>Distances à vol d\'oiseau</h3>' + dists + '</div>' + intern +
       '<div class="gfc-sec"><p class="gfc-note">' + MODES[MODE].note + '</p></div>' +
       '<div class="gfc-acts"><button class="gfc-btn ' + (on ? 'gfc-b3' : 'gfc-b4') + '" data-a="tsel">' + (on ? '✓ Dans ma sélection' : 'Ajouter à ma sélection') + '</button>' +
-      (DEC() ? '' : '<a class="gfc-btn gfc-b3" target="_blank" rel="noopener" href="' + escUrl(gm) + '">Google Maps</a>') + '</div>'
+      (DEC() ? '' : '<a class="gfc-btn gfc-b3" target="_blank" rel="noopener" href="' + escUrl(gm) + '">Google Maps</a>') +
+      (INT() && o.openCrm ? '<button class="gfc-btn gfc-b3" data-a="crm">Fiche CRM</button>' : '') + '</div>'
     $('.gfc-detail').classList.add('on')
     $('[data-a="close"]').addEventListener('click', closeDetail)
     $('[data-a="tsel"]').addEventListener('click', () => toggleSel(t.key))
+    const crmB = $('[data-a="crm"]')
+    if (crmB) crmB.addEventListener('click', () => o.openCrm(t))
     if (mob()) $('.gfc').classList.add('dopen')
     $('.gfc-detail').scrollTop = 0
     if (!keepView) {
       const h = $('.gfc-map').clientHeight
-      const pad = mob() ? { paddingTopLeft: [30, o.brand ? 110 : 70], paddingBottomRight: [30, Math.round(Math.min(h * 0.64, $('.gfc-detail').offsetHeight)) + 20] } : { paddingTopLeft: [40, 70], paddingBottomRight: [380, 40] }
+      const sb = $('.gfc-selbar')
+      const topPad = sb && sb.offsetHeight ? sb.offsetTop + sb.offsetHeight + 14 : (o.brand ? 110 : 70)
+      const pad = mob() ? { paddingTopLeft: [30, topPad], paddingBottomRight: [30, Math.round(Math.min(h * 0.64, $('.gfc-detail').offsetHeight)) + 20] } : { paddingTopLeft: [40, 70], paddingBottomRight: [380, 40] }
       map.fitBounds(bounds[key], Object.assign({ maxZoom: DEC() ? 15 : 17, animate: !instant }, pad))
     }
     $$('.gfc-card').forEach(el => el.classList.toggle('sel', el.dataset.k === key))
@@ -593,6 +606,7 @@ function mount (root, opt) {
   $('[data-f="txt"]').addEventListener('input', () => render())
   $('[data-a="reset"]').addEventListener('click', () => {
     const RKEYS = ['txt', 'q', 's', 'b']
+    $('[data-f="o"]').value = 'rec'
     RKEYS.forEach(k => { $('[data-f="' + k + '"]').value = '' })
     FAM.forEach(f => active.add(f.k))
     onlySel = false
@@ -678,7 +692,15 @@ function mount (root, opt) {
     render()
     if (fit && D.length) {
       const withShape = D.filter(t => t.g && t.g.length)
-      const pts = (withShape.length >= 3 ? withShape : D).map(t => [t.lat, t.lng])
+      const base = withShape.length >= 3 ? withShape : D
+      let pts = base.map(t => [t.lat, t.lng])
+      if (pts.length >= 10) {
+        // Cadre sur la zone dense : on écarte les 10 % de terrains les plus excentrés de chaque côté
+        const q = (arr, f) => arr[Math.min(arr.length - 1, Math.max(0, Math.round(f * (arr.length - 1))))]
+        const la = pts.map(p => p[0]).sort((a, b) => a - b)
+        const ln = pts.map(p => p[1]).sort((a, b) => a - b)
+        pts = [[q(la, 0.1), q(ln, 0.1)], [q(la, 0.9), q(ln, 0.9)]]
+      }
       map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, o.brand ? 110 : 70], paddingBottomRight: [24, Math.round(side.offsetHeight) + 16], animate: false } : { padding: [40, 40], animate: false })
     }
   }

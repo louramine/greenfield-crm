@@ -94,8 +94,9 @@ function buildTerrains () {
 
 function dataFor (m) {
   const all = buildTerrains()
-  const base = all.filter(t => (m === 'interne' && withSold) ? true : t.statut !== 'Vendu')
-  if (m === 'interne') return base
+  if (m === 'interne') return all.filter(t => withSold ? true : t.statut !== 'Vendu')
+  // Versions prospect : uniquement les terrains au statut Disponible
+  const base = all.filter(t => t.statut === 'Disponible')
   if (m === 'qualifie') return base.map(t => ({ key: t.key, id: t.id, q: t.q, z: t.z, s: t.s, pm: t.pm, pf: t.pf, g: t.g, lat: t.lat, lng: t.lng, pt: t.pt }))
   return base.map(t => GFCarte.versDecouverte(t))
 }
@@ -161,6 +162,10 @@ function normTel (t) {
 
 function createLink (selected, presetId) {
   const n = selected.length
+  const stById = {}
+  const tl0 = state.terrains ? state.terrains : []
+  tl0.forEach(t => { stById[String(t.id)] = t.statut })
+  const nonDispo = selected.filter(t => stById[t.key] !== 'Disponible').length
   const defV = mode === 'decouverte' ? 'decouverte' : 'qualifie'
   const achs = (state.acheteurs ? state.acheteurs : []).filter(a => a.nom).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
   let chosen = presetId ? achs.find(a => String(a.id) === String(presetId)) : null
@@ -168,10 +173,13 @@ function createLink (selected, presetId) {
     '<label>Promoteur (obligatoire)</label><input id="lk-q" placeholder="Rechercher un promoteur ou un contact" autocomplete="off">' +
     '<div id="lk-list" class="lk-list"></div><div id="lk-ch" class="lk-ch"></div>' +
     '<label>Version</label><select id="lk-v"><option value="decouverte"' + (defV === 'decouverte' ? ' selected' : '') + '>Découverte (formes et prix approximatifs)</option><option value="qualifie"' + (defV === 'qualifie' ? ' selected' : '') + '>Acheteur qualifié (contours exacts, sans TF)</option></select>' +
-    '<label>Terrains</label><select id="lk-t">' + (n ? '<option value="sel">Les ' + n + ' terrain' + (n > 1 ? 's' : '') + ' de ma sélection</option>' : '') + '<option value="all">Tous les terrains non vendus</option></select>' +
+    '<label>Terrains</label><select id="lk-t">' + (n ? '<option value="sel">Les ' + n + ' terrain' + (n > 1 ? 's' : '') + ' de ma sélection</option>' : '') + '<option value="all">Tous les terrains disponibles</option></select>' +
+    (nonDispo ? '<p id="lk-w" class="lk-m" style="color:#b25a00">' + nonDispo + ' terrain' + (nonDispo > 1 ? 's' : '') + ' de la sélection ne ' + (nonDispo > 1 ? 'sont' : 'est') + ' pas au statut Disponible : ' + (nonDispo > 1 ? 'ils seront' : 'il sera') + ' quand même visible' + (nonDispo > 1 ? 's' : '') + ' par le promoteur.</p>' : '') +
     '<label>Durée de validité</label><select id="lk-d">' + DUREES.map(([v, l]) => '<option value="' + v + '"' + (v === '168' ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
     '<label>Note interne (facultatif)</label><input id="lk-n">' +
     '<div class="gfc-acts"><button class="gfc-btn gfc-b3" data-m="close">Annuler</button><button class="gfc-btn gfc-b4" id="lk-go">Créer le lien</button></div>', (box, close) => {
+    const lkw = box.querySelector('#lk-w')
+    if (lkw) box.querySelector('#lk-t').addEventListener('change', e => { lkw.style.display = e.target.value === 'sel' ? '' : 'none' })
     const q = box.querySelector('#lk-q')
     const list = box.querySelector('#lk-list')
     const ch = box.querySelector('#lk-ch')
@@ -407,6 +415,7 @@ async function carteInit () {
     host.innerHTML = ''
     api = GFCarte.mount(host, {
       mode, terrains: dataFor(mode), brand: false, sel, intern: internRows,
+      openCrm: t => { if (typeof openTerrainDetail === 'function') openTerrainDetail(Number(t.key)) },
       printSub: typeof currentAssocie !== 'undefined' && currentAssocie ? 'Contact : ' + currentAssocie : '',
       printLogo: location.origin + '/teaser/logo-pied-clair.png',
       actions: [{ label: 'Créer un lien prospect', short: 'Lien', cls: 'gfc-b1', always: true, onClick: s => createLink(s) }]

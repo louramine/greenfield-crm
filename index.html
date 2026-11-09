@@ -1035,11 +1035,12 @@ body:not(.role-admin) .admin-only{display:none !important}
         <div class="card">
           <div class="card-title">Réseaux et formats</div>
           <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:14px">
-            <label><input type="checkbox" class="mk-net" value="linkedin" checked onchange="mkNetChange()"> LinkedIn</label>
-            <label><input type="checkbox" class="mk-net" value="instagram" checked onchange="mkNetChange()"> Instagram</label>
-            <label><input type="checkbox" class="mk-net" value="facebook" checked onchange="mkNetChange()"> Facebook</label>
+            <label><input type="checkbox" class="mk-net" value="linkedin" onchange="mkNetChange()"> LinkedIn</label>
+            <label><input type="checkbox" class="mk-net" value="instagram" onchange="mkNetChange()"> Instagram</label>
+            <label><input type="checkbox" class="mk-net" value="facebook" onchange="mkNetChange()"> Facebook</label>
             <label><input type="checkbox" class="mk-net" value="teaser" onchange="mkNetChange()"> Teaser terrain</label>
           </div>
+          <div id="mk-vide" style="display:none;font-size:13px;color:#4f6a5c">Cochez un réseau ou Teaser terrain pour commencer.</div>
           <div id="mk-social-wrap">
           <div class="card-title">Source du post</div>
           <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -3970,8 +3971,11 @@ function mkNetChange() {
   document.getElementById('mk-out-col').style.display = social ? '' : 'none'
   document.querySelector('#page-marketing .mk-grid').classList.toggle('tz-mode', !social)
   document.getElementById('mk-teaser').style.display = teaser ? '' : 'none'
+  const vide = document.getElementById('mk-vide'); if (vide) vide.style.display = social || teaser ? 'none' : '';
   if (teaser && typeof window.tzOpen === 'function') window.tzOpen()
 }
+// Au chargement, aucun réseau n'est coché : la page se cale sur cet état
+try { mkNetChange(); } catch (e) {}
 
 // ═══════════════════════════════════════════════════════════════
 // INIT

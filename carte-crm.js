@@ -354,18 +354,20 @@ async function importContours (file) {
       text = await file.text()
     }
     const all = JSON.parse(text)
-    // On ne garde que les contours des TF présents dans le CRM (table légère)
+    // On ne garde que les contours des TF présents dans le CRM (table légère),
+    // et ceux rattachés directement à un terrain par sa référence (parcelle trouvée par position, dessin MyMaps)
     const keys = new Set()
     const tl = state.terrains ? state.terrains : []
-    tl.forEach(t => tfCles(t.tf).forEach(k => keys.add(k)))
+    tl.forEach(t => { tfCles(t.tf).forEach(k => keys.add(k))
+      if (t.ref) keys.add(t.ref) })
     const rows = all.filter(r => keys.has(r.cle))
     const total = rows.length
     if (!total) {
-      showNotif('Aucun contour de ce fichier ne correspond à un TF du CRM (' + all.length.toLocaleString('fr-FR') + ' parcelles lues).', true)
+      showNotif('Aucun contour de ce fichier ne correspond à un terrain du CRM (' + all.length.toLocaleString('fr-FR') + ' parcelles lues).', true)
       return
     }
     let done = 0
-    api.modal('<h3>Import des contours</h3><p class="lk-m">' + total.toLocaleString('fr-FR') + ' contours correspondent à des TF du CRM, sur ' + all.length.toLocaleString('fr-FR') + ' parcelles dans le fichier.</p><p id="imp-p">0 sur ' + total.toLocaleString('fr-FR') + '</p>')
+    api.modal('<h3>Import des contours</h3><p class="lk-m">' + total.toLocaleString('fr-FR') + ' contours correspondent à des terrains du CRM, sur ' + all.length.toLocaleString('fr-FR') + ' parcelles dans le fichier.</p><p id="imp-p">0 sur ' + total.toLocaleString('fr-FR') + '</p>')
     const pEl = document.getElementById('imp-p')
     for (let i = 0; i < total; i += 500) {
       const chunk = rows.slice(i, i + 500)

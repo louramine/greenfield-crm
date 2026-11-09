@@ -5,6 +5,8 @@
 
 with garder as materialized (
   select distinct unnest(public.tf_cles(tf)) as cle from public.terrains
+  union
+  select ref from public.terrains where ref is not null   -- contours rattachés par la référence du terrain
 )
 delete from public.terrain_contours c
  where not exists (select 1 from garder g where g.cle = c.cle);

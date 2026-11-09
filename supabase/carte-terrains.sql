@@ -6,7 +6,8 @@
 create extension if not exists pgcrypto;
 
 -- ─── 1. Contours CADGIS (un enregistrement par titre ou réquisition) ───────────────
--- cle : 'T' ou 'R' + numéro + '/' + indice, par exemple T22853/33 ou R7123/C
+-- cle : 'T' ou 'R' + numéro + '/' + indice, par exemple T22853/33 ou R7123/C,
+--       ou la référence du terrain (GF-26-0936) pour un contour rattaché directement à un terrain
 -- geom : contour exact (liste d'anneaux [lat, lng]) ; geom_approx : forme volontairement approximative
 create table if not exists public.terrain_contours (
   cle text primary key,
@@ -49,6 +50,8 @@ language sql immutable as $$
 $$;
 
 -- Contours des terrains visibles par l'utilisateur connecté (les droits sur terrains s'appliquent)
+-- Un contour est rattaché par le TF. A défaut de contour pour le TF, on prend le contour enregistré
+-- sous la référence du terrain (cle = GF-26-0936) : parcelle retrouvée par position ou dessin de l'ancienne carte MyMaps.
 create or replace function public.carte_contours()
 returns table (terrain_id bigint, cle text, surface_plan numeric, geom jsonb, geom_approx jsonb,
                lat double precision, lng double precision, lat_approx double precision, lng_approx double precision)
@@ -57,6 +60,11 @@ language sql stable security invoker set search_path = public as $$
   from public.terrains t
   cross join lateral unnest(public.tf_cles(t.tf)) as k(cle)
   join public.terrain_contours c on c.cle = k.cle
+  union all
+  select t.id, c.cle, c.surface_plan, c.geom, c.geom_approx, c.lat, c.lng, c.lat_approx, c.lng_approx
+  from public.terrains t
+  join public.terrain_contours c on c.cle = t.ref
+  where not exists (select 1 from public.terrain_contours c2 where c2.cle = any(public.tf_cles(t.tf)))
 $$;
 grant execute on function public.carte_contours() to authenticated;
 
@@ -161,7 +169,10 @@ begin
     select t.id, t.ref, coalesce(nullif(t.quartier, ''), t.localisation) as quartier, t.urba,
            public.carte_num(t.superficie::text) as s, public.carte_num(t.prix::text) as pm,
            coalesce(public.carte_num(t.forfait::text), public.carte_num(t.prix::text) * public.carte_num(t.superficie::text)) as pf,
-           public.tf_cles(t.tf) as cles, public.gm_coords(t.google_map) as gm
+           -- contour du TF, sinon contour enregistré sous la référence du terrain
+           case when exists (select 1 from public.terrain_contours c0 where c0.cle = any(public.tf_cles(t.tf)))
+                then public.tf_cles(t.tf) else array[t.ref] end as cles,
+           public.gm_coords(t.google_map) as gm
       from public.terrains t
      where (l.terrain_ids is null and coalesce(t.statut, '') = 'Disponible')
         or (l.terrain_ids is not null and t.id = any(l.terrain_ids) and coalesce(t.statut, '') <> 'Vendu')

@@ -413,7 +413,7 @@ function createLink (selected, presetId) {
 
 function waText (row) {
   const d = new Date(row.expire_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
-  return 'Bonjour' + (row.prospect ? ' ' + row.prospect : '') + ', voici la sélection de terrains Greenfield : ' + linkUrl(row.token) + ' (lien valable jusqu\'au ' + d + ').'
+  return 'Bonjour' + (row.prospect ? ' ' + row.prospect : '') + ', voici votre sélection de terrains sur Greenfield Atlas : ' + linkUrl(row.token) + ' (lien valable jusqu\'au ' + d + ').'
 }
 
 function showLink (row, box, ach) {

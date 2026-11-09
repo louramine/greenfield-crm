@@ -289,7 +289,7 @@ function mount (root, opt) {
   root.innerHTML = '<div class="gfc">' +
     '<div class="gfc-mtop"></div>' +
     '<aside class="gfc-side">' +
-    (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
+    (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
     '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="filt">Filtres</button><button class="gfc-pill" data-a="onlysel2">Sélection</button></div></div>' +
     '<div class="gfc-filters">' +
     '<label class="gfc-full">Recherche<input type="search" data-f="txt" placeholder="Référence, zone, zonage"></label>' +
@@ -555,7 +555,7 @@ function mount (root, opt) {
     const list = selected()
     if (!list.length) return
     const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-    const head = '<div class="hd"><div class="w">GREENFIELD+</div><div class="r">Sélection de terrains · ' + MODES[MODE].label + '<br>' + today + (o.printSub ? '<br>' + esc(o.printSub) : '') + '</div></div>'
+    const head = '<div class="hd"><div class="w">GREENFIELD+</div><div class="r">Greenfield Atlas · Sélection de terrains · ' + MODES[MODE].label + '<br>' + today + (o.printSub ? '<br>' + esc(o.printSub) : '') + '</div></div>'
     const tot = list.reduce((a, t) => a + (t.s ? t.s : 0), 0)
     const rows = list.map(t => '<tr><td>' + esc(t.id) + '</td><td>' + esc(t.q) + '</td><td>' + esc(t.z) + '</td><td>' + surfTxt(t) + '</td><td>' + (pm2(t) ? pm2(t) : 'Sur demande') + '</td><td>' + pglob(t) + '</td>' + (INT() ? '<td>' + esc(t.tf) + '</td>' : '') + '</tr>').join('')
     const sum = '<div class="pg">' + head + '<h1>' + list.length + ' terrain' + (list.length > 1 ? 's' : '') + ' sélectionné' + (list.length > 1 ? 's' : '') + '</h1>' +
@@ -577,7 +577,7 @@ function mount (root, opt) {
     const logo = o.printLogo ? '<img src="' + escUrl(o.printLogo) + '" alt="Greenfield" style="height:30px">' : '<div class="w">GREENFIELD+</div>'
     const body = (sum + fiches.join('')).split('<div class="w">GREENFIELD+</div>').join(logo)
     const css = CSS.slice(CSS.indexOf('@media print{') + 13, CSS.lastIndexOf('}')).replace(/body\.gfc-printing [^{]*\{[^}]*\}/g, '').split('.gfc-print ').join('')
-    const doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Greenfield, sélection de terrains</title>' +
+    const doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Greenfield Atlas, sélection de terrains</title>' +
       '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&display=swap" rel="stylesheet">' +
       '<style>body{margin:0}body{font-family:"Inter Tight",Inter,system-ui,sans-serif}body{color:#0a1410}body{-webkit-print-color-adjust:exact}body{print-color-adjust:exact}' + css +
       '.bar{position:sticky}.bar{top:0}.bar{background:#0a1410}.bar{color:#7ee0a4}.bar{padding:10px 14px}.bar{display:flex}.bar{gap:10px}.bar{align-items:center}.bar{justify-content:space-between}.bar{font-size:13px}' +

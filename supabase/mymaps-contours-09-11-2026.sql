@@ -15,15 +15,19 @@ create or replace function public.carte_contours()
 returns table (terrain_id bigint, cle text, surface_plan numeric, geom jsonb, geom_approx jsonb,
                lat double precision, lng double precision, lat_approx double precision, lng_approx double precision)
 language sql stable security invoker set search_path = public as $$
-  select t.id, c.cle, c.surface_plan, c.geom, c.geom_approx, c.lat, c.lng, c.lat_approx, c.lng_approx
-  from public.terrains t
-  cross join lateral unnest(public.tf_cles(t.tf)) as k(cle)
-  join public.terrain_contours c on c.cle = k.cle
+  -- les contours par TF sont calculés une seule fois, puis complétés par les contours par référence
+  with par_tf as materialized (
+    select t.id as terrain_id, c.cle, c.surface_plan, c.geom, c.geom_approx, c.lat, c.lng, c.lat_approx, c.lng_approx
+    from public.terrains t
+    cross join lateral unnest(public.tf_cles(t.tf)) as k(cle)
+    join public.terrain_contours c on c.cle = k.cle
+  )
+  select * from par_tf
   union all
   select t.id, c.cle, c.surface_plan, c.geom, c.geom_approx, c.lat, c.lng, c.lat_approx, c.lng_approx
   from public.terrains t
   join public.terrain_contours c on c.cle = t.ref
-  where not exists (select 1 from public.terrain_contours c2 where c2.cle = any(public.tf_cles(t.tf)))
+  where t.id not in (select p.terrain_id from par_tf p)
 $$;
 grant execute on function public.carte_contours() to authenticated;
 
@@ -47,7 +51,7 @@ begin
            public.carte_num(t.superficie::text) as s, public.carte_num(t.prix::text) as pm,
            coalesce(public.carte_num(t.forfait::text), public.carte_num(t.prix::text) * public.carte_num(t.superficie::text)) as pf,
            -- contour du TF, sinon contour enregistré sous la référence du terrain
-           case when exists (select 1 from public.terrain_contours c0 where c0.cle = any(public.tf_cles(t.tf)))
+           case when exists (select 1 from unnest(public.tf_cles(t.tf)) as k0(cle) join public.terrain_contours c0 on c0.cle = k0.cle)
                 then public.tf_cles(t.tf) else array[t.ref] end as cles,
            public.gm_coords(t.google_map) as gm
       from public.terrains t

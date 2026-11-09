@@ -80,7 +80,7 @@ function buildTerrains () {
     const pf = num(t.forfait) ?? (pm && s ? pm * s : null)
     const o = {
       key: String(t.id), id: t.ref ? t.ref : 'Terrain ' + t.id, q: t.quartier ? t.quartier : t.localisation, z: t.urba,
-      s, pm, pf, tf: t.tf, statut: t.statut, sourceur: t.sourceur, notes: t.notes, gm: t.googleMap, pt: !cs
+      s, pm, pf, tf: t.tf, statut: t.statut, sourceur: t.sourceur, notes: t.notes, mymaps: t.mymaps, gm: t.googleMap, pt: !cs
     }
     if (cs) {
       o.g = cs.flatMap(c => c.geom)
@@ -89,6 +89,7 @@ function buildTerrains () {
       o.lng = cs.reduce((a, c) => a + c.lng, 0) / cs.length
       o.alat = cs.reduce((a, c) => a + c.lat_approx, 0) / cs.length
       o.alng = cs.reduce((a, c) => a + c.lng_approx, 0) / cs.length
+      o.spRef = cs.some(c => /^GF-/.test(c.cle))
       o.sp = cs.reduce((a, c) => a + Number(c.surface_plan ? c.surface_plan : 0), 0)
       if (s && o.sp) {
         const r = o.sp / s
@@ -113,7 +114,7 @@ function dataFor (m) {
 }
 
 function internRows (t) {
-  return [['TF', t.tf], ['Statut', t.statut], ['Sourceur', t.sourceur], ['Surface plan CADGIS', t.sp ? Math.round(t.sp).toLocaleString('fr-FR') + ' m²' : ''], ['À vérifier', t.warn], ['Notes', t.notes]]
+  return [['TF', t.tf], ['Statut', t.statut], ['Sourceur', t.sourceur], [t.spRef ? 'Surface du contour' : 'Surface plan CADGIS', t.sp ? Math.round(t.sp).toLocaleString('fr-FR') + ' m²' : ''], ['À vérifier', t.warn], ['Notes', t.notes], ['Infos MyMaps', t.mymaps, 'bloc']]
 }
 
 const sel = {

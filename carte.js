@@ -130,6 +130,8 @@ const CSS = `
 .gfc-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0}
 .gfc-row b{font-weight:600;text-align:right}
 .gfc-int{background:#fff6ec}
+.gfc-blk{font-size:13px;padding:6px 0 2px;border-top:1px solid #f0dcc4;margin-top:5px}
+.gfc-blk p{margin:3px 0 0;font-weight:600;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
 .gfc-note{font-size:11px;color:#5d7466;line-height:1.45;margin:0}
 .gfc-acts{display:flex;gap:8px;padding:12px 17px 15px;flex-wrap:wrap}
 .gfc-acts .gfc-btn{flex:1;text-align:center;padding:10px}
@@ -514,7 +516,7 @@ function mount (root, opt) {
     let intern = ''
     if (INT() && o.intern) {
       const rows = o.intern(t).filter(r => r[1])
-      intern = '<div class="gfc-sec gfc-int"><h3>Données internes</h3>' + rows.map(r => '<div class="gfc-row"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('') + '</div>'
+      intern = '<div class="gfc-sec gfc-int"><h3>Données internes</h3>' + rows.map(r => r[2] === 'bloc' ? '<div class="gfc-blk"><span>' + r[0] + '</span><p>' + esc(r[1]) + '</p></div>' : '<div class="gfc-row"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('') + '</div>'
     }
     const on = sel.has(t.key)
     const gm = INT() && t.gm ? t.gm : 'https://www.google.com/maps/search/?api=1&query=' + t.lat + ',' + t.lng

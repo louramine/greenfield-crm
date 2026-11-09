@@ -122,12 +122,163 @@ const sel = {
   toggle: async k => { await favToggle(Number(k)) }
 }
 
+// ─── Couche MyMaps : dessins de l'ancienne carte sans terrain dans le CRM (vue Interne, admins et associés) ───
+let MM = null
+let mmLayer = null
+let mmOn = false
+const mmPolys = {}
+const mmAllowed = () => typeof myRole !== 'undefined' && (myRole === 'admin' || myRole === 'associe')
+const mmNum = v => Math.round(Number(v)).toLocaleString('fr-FR')
+
+async function mmFetch () {
+  const r = await fetch(SUPA_URL + '/rest/v1/mymaps_dessins?select=id,nom,note,couleur,zonage,surface,surface_dessin,prix,tf_cadgis,lat,lng,geom&terrain_id=is.null&order=id.asc&limit=3000', { headers: H() })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+function mmLabel () {
+  const el = document.getElementById('ch-mm-n')
+  if (el) el.textContent = MM ? ' (' + MM.length.toLocaleString('fr-FR') + ')' : ''
+}
+function mmPopup (d) {
+  const rows = [
+    ['Surface du dessin', d.surface_dessin ? mmNum(d.surface_dessin) + ' m²' : ''],
+    ['TF CADGIS à cet endroit', d.tf_cadgis],
+    ['Prix lu dans la note', d.prix ? mmNum(d.prix) + ' DH/m²' : '']
+  ].filter(r => r[1])
+  return '<div class="mm-pop"><div class="mm-k">Ancienne carte MyMaps · hors CRM</div><b class="mm-n">' + esc(d.nom ? d.nom : 'Sans nom') + '</b>' +
+    (d.note ? '<p>' + esc(d.note) + '</p>' : '') +
+    rows.map(r => '<div class="mm-r"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>').join('') +
+    '<div class="mm-a"><button type="button" class="mm-b1" data-mm="' + d.id + '">Créer le terrain</button>' +
+    '<a class="mm-b2" target="_blank" rel="noopener" href="https://www.google.com/maps?q=' + d.lat + ',' + d.lng + '">Google Maps</a></div></div>'
+}
+function mmDraw () {
+  if (!api || !MM) return
+  if (!api.map.getPane('mymaps')) api.map.createPane('mymaps').style.zIndex = 390
+  if (mmLayer) api.map.removeLayer(mmLayer)
+  mmLayer = L.layerGroup()
+  MM.forEach(d => {
+    const noir = d.couleur === '#000000'
+    const poly = L.polygon(d.geom, { pane: 'mymaps', color: d.couleur, weight: 2, dashArray: '3 4', fillColor: d.couleur, fillOpacity: noir ? 0.35 : 0.22 })
+    poly.bindPopup(() => mmPopup(d), { maxWidth: 300, minWidth: 230 })
+    mmPolys[d.id] = poly
+    mmLayer.addLayer(poly)
+  })
+  mmLayer.addTo(api.map)
+}
+async function mmSync () {
+  if (!api) return
+  const want = mmOn && mode === 'interne' && mmAllowed()
+  if (!want) {
+    if (mmLayer) { api.map.removeLayer(mmLayer)
+      mmLayer = null }
+    return
+  }
+  try {
+    if (!MM) MM = await mmFetch()
+    mmLabel()
+    mmDraw()
+  } catch (e) {
+    mmOn = false
+    const ck = document.getElementById('ch-mm')
+    if (ck) ck.checked = false
+    showNotif('Couche MyMaps indisponible : exécutez supabase/mymaps-couche.sql dans Supabase.', true)
+  }
+}
+// Quartier du terrain du CRM le plus proche, proposé par défaut
+function mmQuartier (d) {
+  let best = null
+  buildTerrains().forEach(t => {
+    if (!t.q || t.lat == null) return
+    const dd = (t.lat - d.lat) ** 2 + ((t.lng - d.lng) * 0.83) ** 2
+    if (!best || dd < best[0]) best = [dd, t.q]
+  })
+  return best && best[0] < 0.0004 ? best[1] : ''
+}
+function mmCreate (id) {
+  const d = (MM ? MM : []).find(x => String(x.id) === String(id))
+  if (!d) return
+  api.map.closePopup()
+  const qs = [...new Set((state.terrains ? state.terrains : []).map(t => t.quartier ? t.quartier : t.localisation).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'))
+  const info = (d.nom ? d.nom : '') + (d.note ? ' : ' + d.note : '')
+  const v = x => String(x ?? '').replace(/"/g, '”')
+  api.modal('<h3>Créer le terrain</h3><p class="lk-m">' + esc(info) + '</p>' +
+    '<label>Quartier</label><input id="mm-q" list="mm-ql" value="' + v(mmQuartier(d)) + '" placeholder="Quartier ou commune"><datalist id="mm-ql">' + qs.map(q => '<option value="' + v(q) + '">').join('') + '</datalist>' +
+    '<label>Zonage</label><input id="mm-z" value="' + v(d.zonage) + '">' +
+    '<label>Superficie (m²)</label><input id="mm-s" type="number" min="0" value="' + v(d.surface ? d.surface : d.surface_dessin) + '">' +
+    '<label>Prix au m² (DH)</label><input id="mm-p" type="number" min="0" value="' + v(d.prix) + '" placeholder="Laisser vide si inconnu">' +
+    '<label>TF</label><input id="mm-tf" value="' + v(d.tf_cadgis) + '" placeholder="Titre foncier">' +
+    '<p class="lk-m">Le terrain est créé au statut « À qualifier ». Le dessin devient son contour sur la carte et sa note va dans la ligne Infos MyMaps.</p>' +
+    '<p id="mm-err" class="lk-m" style="color:#b3261e"></p>' +
+    '<div class="gfc-acts"><button class="gfc-btn gfc-b3" data-m="close">Annuler</button><button class="gfc-btn gfc-b4" id="mm-go">Créer le terrain</button></div>', (box, close) => {
+    const err = box.querySelector('#mm-err')
+    const go = box.querySelector('#mm-go')
+    go.addEventListener('click', async () => {
+      const q0 = box.querySelector('#mm-q').value.trim()
+      const q = typeof normQuartier === 'function' && q0 ? normQuartier(q0) : q0
+      const sup = parseFloat(box.querySelector('#mm-s').value)
+      const prix = parseFloat(box.querySelector('#mm-p').value)
+      if (!q || !sup) { err.textContent = 'Le quartier et la superficie sont obligatoires.'
+        return }
+      go.disabled = true
+      go.textContent = 'Création…'
+      const terrain = {
+        localisation: q, quartier: q, urba: box.querySelector('#mm-z').value.trim(), superficie: sup, prix: prix ? prix : null,
+        usage: 'Mixte', statut: 'À qualifier', tf: box.querySelector('#mm-tf').value.trim(), statut_juridique: 'Non renseigné',
+        google_map: 'https://www.google.com/maps?q=' + d.lat + ',' + d.lng, mymaps: info,
+        sourceur: typeof currentAssocie !== 'undefined' && currentAssocie ? currentAssocie : 'Équipe',
+        date_sourcing: new Date().toLocaleDateString('fr-FR')
+      }
+      try {
+        const r = await fetch(SUPA_URL + '/rest/v1/terrains', { method: 'POST', headers: H({ Prefer: 'return=representation' }), body: JSON.stringify(terrain) })
+        if (!r.ok) throw new Error((await r.text()).slice(0, 200))
+        const row = (await r.json())[0]
+        const l = await fetch(SUPA_URL + '/rest/v1/rpc/mymaps_lier_terrain', { method: 'POST', headers: H(), body: JSON.stringify({ p_dessin: d.id, p_terrain: row.id }) })
+        const lj = l.ok ? await l.json() : { ok: false, raison: (await l.text()).slice(0, 160) }
+        state.terrains.push({
+          id: row.id, localisation: row.localisation ? row.localisation : q, quartier: row.quartier ? row.quartier : q, urba: terrain.urba,
+          superficie: sup, prix: terrain.prix, forfait: null, tf: terrain.tf, usage: terrain.usage, statut: terrain.statut,
+          statut_juridique: terrain.statut_juridique, notes: '', commentaire: '', mymaps: info, sourceur: terrain.sourceur,
+          dateSourcing: terrain.date_sourcing, daysOld: 0, googleMap: terrain.google_map, ref: row.ref ? row.ref : ''
+        })
+        if (typeof logActivity === 'function') { try { await logActivity('Ajout terrain', 'terrain', row.id, q, 'Depuis la couche MyMaps') } catch (e) { /* journal facultatif */ } }
+        if (lj && lj.ok) {
+          MM = MM.filter(x => x.id !== d.id)
+          if (mmPolys[d.id] && mmLayer) mmLayer.removeLayer(mmPolys[d.id])
+          mmLabel()
+          try { CONTOURS = await fetchContours() } catch (e) { /* le contour apparaîtra au prochain chargement */ }
+        }
+        api.setData(mode, dataFor(mode))
+        close()
+        showNotif(lj && lj.ok ? 'Terrain ' + (row.ref ? row.ref : '') + ' créé avec son contour' : 'Terrain ' + (row.ref ? row.ref : '') + ' créé, mais le dessin n\'a pas pu être rattaché : ' + (lj && lj.raison ? lj.raison : 'erreur'), !(lj && lj.ok))
+      } catch (e) {
+        go.disabled = false
+        go.textContent = 'Créer le terrain'
+        err.textContent = 'Création impossible : ' + e.message
+      }
+    })
+  })
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest ? e.target.closest('[data-mm]') : null
+  if (b) mmCreate(b.dataset.mm)
+})
+function mmStyle () {
+  const st = document.createElement('style')
+  st.textContent = '.mm-pop{font-family:\'Inter Tight\',\'Inter\',system-ui,sans-serif;font-size:13px;color:#0a1410;line-height:1.4}' +
+    '.mm-k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#6b7f73;margin-bottom:3px}.mm-n{display:block;font-size:15px}' +
+    '.mm-pop p{margin:5px 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}.mm-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0}.mm-r span{color:#4f6a5c}' +
+    '.mm-a{display:flex;gap:8px;margin-top:10px}.mm-a>*{flex:1;text-align:center;border-radius:999px;padding:8px 10px;font-weight:600;font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:none}' +
+    '.mm-b1{background:#0a1410;color:#7ee0a4;border:0}.mm-b2{background:#e6f2ea;color:#0a1410 !important;border:0}'
+  document.head.appendChild(st)
+}
+mmStyle()
+
 function header () {
   const host = document.getElementById('carte-head')
   const isAdmin = typeof myRole !== 'undefined' && myRole === 'admin'
   host.innerHTML = '<div class="ch-seg">' +
     [['interne', 'Interne'], ['qualifie', 'Qualifié'], ['decouverte', 'Découverte']].map(([k, l]) => '<button data-m="' + k + '" class="' + (mode === k ? 'on' : '') + '">' + l + '</button>').join('') + '</div>' +
-    (mode === 'interne' ? '<label class="ch-ck"><input type="checkbox" id="ch-sold"' + (withSold ? ' checked' : '') + '> <span class="ch-lg">Inclure les </span>vendus</label>' : '<span class="ch-hint"><span class="ch-lg">Aperçu de ce que voit le prospect</span><span class="ch-sm">Vue prospect</span></span>') +
+    (mode === 'interne' ? '<label class="ch-ck"><input type="checkbox" id="ch-sold"' + (withSold ? ' checked' : '') + '> <span class="ch-lg">Inclure les </span>vendus</label>' + (mmAllowed() ? '<label class="ch-ck"><input type="checkbox" id="ch-mm"' + (mmOn ? ' checked' : '') + '> <span class="ch-lg">Couche </span>MyMaps<span id="ch-mm-n">' + (MM ? ' (' + MM.length.toLocaleString('fr-FR') + ')' : '') + '</span></label>' : '') : '<span class="ch-hint"><span class="ch-lg">Aperçu de ce que voit le prospect</span><span class="ch-sm">Vue prospect</span></span>') +
     '<span class="ch-sp"></span>' +
     '<button class="ch-btn" id="ch-links"><span class="ch-lg">Liens envoyés</span><span class="ch-sm">Liens</span><span id="ch-badge"></span></button>' +
     (isAdmin ? '<button class="ch-btn" id="ch-import">Importer les contours</button><input type="file" id="ch-file" accept=".json,.gz" hidden>' : '')
@@ -135,7 +286,13 @@ function header () {
     mode = b.dataset.m
     header()
     api.setData(mode, dataFor(mode))
+    mmSync()
   }))
+  const mmck = document.getElementById('ch-mm')
+  if (mmck) mmck.addEventListener('change', () => {
+    mmOn = mmck.checked
+    mmSync()
+  })
   const sold = document.getElementById('ch-sold')
   if (sold) sold.addEventListener('change', () => {
     withSold = sold.checked

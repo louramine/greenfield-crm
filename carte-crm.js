@@ -25,6 +25,17 @@ function gmCoords (u) {
   const q = s.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/)
   return q ? [Number(q[1]), Number(q[2])] : null
 }
+// Même règle que la fonction SQL tf_cles : '28536/53 - R 7123/C' donne T28536/53 et R7123/C
+function tfCles (txt) {
+  const out = new Set()
+  const re = /(\bR\s*\.?\s*)?([0-9]{2,7})\s*\/\s*([A-Za-z0-9]+)/gi
+  let m = re.exec(String(txt ?? ''))
+  while (m) {
+    out.add((m[1] ? 'R' : 'T') + String(Number(m[2])) + '/' + m[3].toUpperCase())
+    m = re.exec(String(txt ?? ''))
+  }
+  return [...out]
+}
 const H = extra => Object.assign({}, SUPA_HEADERS, extra ? extra : {})
 
 function loadScript (src) {
@@ -342,10 +353,19 @@ async function importContours (file) {
     } else {
       text = await file.text()
     }
-    const rows = JSON.parse(text)
+    const all = JSON.parse(text)
+    // On ne garde que les contours des TF présents dans le CRM (table légère)
+    const keys = new Set()
+    const tl = state.terrains ? state.terrains : []
+    tl.forEach(t => tfCles(t.tf).forEach(k => keys.add(k)))
+    const rows = all.filter(r => keys.has(r.cle))
     const total = rows.length
+    if (!total) {
+      showNotif('Aucun contour de ce fichier ne correspond à un TF du CRM (' + all.length.toLocaleString('fr-FR') + ' parcelles lues).', true)
+      return
+    }
     let done = 0
-    api.modal('<h3>Import des contours</h3><p id="imp-p">0 sur ' + total.toLocaleString('fr-FR') + '</p>')
+    api.modal('<h3>Import des contours</h3><p class="lk-m">' + total.toLocaleString('fr-FR') + ' contours correspondent à des TF du CRM, sur ' + all.length.toLocaleString('fr-FR') + ' parcelles dans le fichier.</p><p id="imp-p">0 sur ' + total.toLocaleString('fr-FR') + '</p>')
     const pEl = document.getElementById('imp-p')
     for (let i = 0; i < total; i += 500) {
       const chunk = rows.slice(i, i + 500)
@@ -355,6 +375,8 @@ async function importContours (file) {
       pEl.textContent = done.toLocaleString('fr-FR') + ' sur ' + total.toLocaleString('fr-FR')
     }
     pEl.textContent = total.toLocaleString('fr-FR') + ' contours importés.'
+    pEl.insertAdjacentHTML('afterend', '<div class="gfc-acts"><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>')
+    pEl.parentElement.querySelector('[data-m="close"]').addEventListener('click', () => pEl.closest('.gfc-modal').classList.remove('on'))
     CONTOURS = await fetchContours()
     api.setData(mode, dataFor(mode))
     showNotif(total.toLocaleString('fr-FR') + ' contours importés')

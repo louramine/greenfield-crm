@@ -2976,12 +2976,30 @@ function openGmap() {
   else showNotif('Aucun lien Google Maps renseigné, et terrain absent de la carte Atlas', true);
 }
 
-function confirmDeleteTerrain() {
-  if (!confirm('Supprimer ce terrain définitivement ?')) return;
-  const t = state.terrains.find(t => t.id === currentDetailId);
-  state.terrains = state.terrains.filter(t => t.id !== currentDetailId);
-  state.deals = state.deals.filter(d => d.terrainId !== currentDetailId);
-  addActivity(`Terrain supprimé : ${t?.localisation}`);
+async function confirmDeleteTerrain() {
+  const id = currentDetailId;
+  const t = state.terrains.find(t => t.id === id);
+  if (!t || !confirm('Supprimer ce terrain définitivement ?')) return;
+  // La suppression est d'abord faite dans la base : sans cela le terrain revenait à la connexion suivante.
+  if (typeof supabaseReady !== 'undefined' && supabaseReady) {
+    let supprime = false, raison = '';
+    try {
+      const res = await fetch(`${SUPA_URL}/rest/v1/terrains?id=eq.${id}`, { method: 'DELETE', headers: SUPA_HEADERS });
+      if (!res.ok) raison = (await res.text()).slice(0, 160);
+      else { const rows = await res.json().catch(() => []); supprime = Array.isArray(rows) && rows.length > 0; }
+    } catch (e) { raison = e.message; }
+    if (!supprime) {
+      console.warn('Suppression terrain refusée :', raison);
+      showNotif(raison && /foreign key|violates/i.test(raison)
+        ? 'Suppression impossible : ce terrain est encore lié à un deal, un document ou une proposition.'
+        : 'Suppression impossible : la base a refusé (droits insuffisants ou connexion).', true);
+      return;
+    }
+    if (typeof logActivity === 'function') { try { logActivity('Suppression terrain', 'terrain', id, (t.ref ? t.ref + ' ' : '') + (t.localisation || '')); } catch (e) { /* journal facultatif */ } }
+  }
+  state.terrains = state.terrains.filter(x => x.id !== id);
+  state.deals = state.deals.filter(d => d.terrainId !== id);
+  addActivity(`Terrain supprimé : ${t.localisation || t.ref || ''}`);
   saveState();
   closeModal('modal-terrain-detail');
   filterTerrains();

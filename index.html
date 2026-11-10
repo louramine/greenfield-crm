@@ -628,6 +628,7 @@ body:not(.role-admin) .admin-only{display:none !important}
 #modal-terrain-detail .td-foot>div{flex:1;min-width:0;gap:6px !important}
 #modal-terrain-detail .td-foot>div .btn{padding:9px 6px;flex:1 1 0;min-width:0;font-size:12px}
 #modal-terrain-detail .td-foot>.btn{font-size:12px !important}
+
 #modal-share .modal{max-height:92vh;max-height:92dvh}
 }
 
@@ -681,6 +682,36 @@ body:not(.role-admin) .admin-only{display:none !important}
 .mvf-t td{padding:6px 8px;border-bottom:1px solid #eef3f0}
 .mvf-t .r{text-align:right}
 @media(max-width:760px){.mv-grid,.mvf-cols{grid-template-columns:1fr}.mvf-kpis{grid-template-columns:1fr 1fr}.mv-doc{flex-wrap:wrap}.mv-doc-l{flex-basis:100%}}
+</style>
+<style id="td-css">
+/* Fiche terrain : en-tête, chiffres clés, sections */
+#modal-terrain-detail .td-tt{flex:1;min-width:0}
+#modal-terrain-detail .td-meta{flex:1 1 100%;display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:6px;min-height:18px}
+#modal-terrain-detail .td-ref{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:#1f7a4d;letter-spacing:.04em}
+#modal-terrain-detail .td-chip{font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:#eef3f0;color:#4f6a5c}
+#modal-terrain-detail .td-chip:empty{display:none}
+#modal-terrain-detail .td-zones{display:inline-flex;gap:5px;flex-wrap:wrap}
+#modal-terrain-detail .td-zones:empty{display:none}
+#modal-terrain-detail .td-zones span{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;color:#0a1410;padding:2px 7px;border-radius:5px}
+#modal-terrain-detail .td-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+#modal-terrain-detail .td-kpi>div{background:#f4f9f5;border:1px solid #e3ede7;border-radius:12px;padding:10px 12px;min-width:0}
+#modal-terrain-detail .td-kpi span{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#4f6a5c;margin-bottom:3px}
+#modal-terrain-detail .td-kpi b{display:block;font-size:15.5px;font-weight:700;color:#0a1410;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#modal-terrain-detail .td-kpi b.td-kg{color:#1f7a4d}
+#modal-terrain-detail .td-comp{font-size:12.5px;color:#4f6a5c;line-height:1.45;margin-bottom:6px}
+#modal-terrain-detail .td-comp:empty{display:none}
+#modal-terrain-detail .td-comp i{display:block;height:5px;border-radius:3px;background:#e3ede7;margin-bottom:6px;overflow:hidden}
+#modal-terrain-detail .td-comp i u{display:block;height:100%;background:#1f7a4d;border-radius:3px}
+#modal-terrain-detail .td-comp b{color:#0a1410;font-weight:600}
+#modal-terrain-detail .td-sec{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#1f7a4d;margin:20px 0 12px;padding-top:16px;border-top:1px solid #e8f0ec}
+#modal-terrain-detail .td-det{margin-top:10px}
+#modal-terrain-detail .td-det summary{cursor:pointer;list-style:none;display:inline-block;font-size:13px;font-weight:600;color:#1f7a4d;border:1.5px solid #cfe3d7;border-radius:999px;padding:8px 14px;background:#fff}
+#modal-terrain-detail .td-det summary::-webkit-details-marker{display:none}
+#modal-terrain-detail .td-det[open] summary{margin-bottom:12px}
+#modal-terrain-detail .td-del{display:block;margin:26px 0 0;background:none;border:none;color:#b3392d;font-size:13px;text-decoration:underline;cursor:pointer;padding:8px 0}
+#modal-terrain-detail .td-full{grid-column:1 / -1}
+#modal-terrain-detail .td-date{display:flex;gap:8px;align-items:center}
+#modal-terrain-detail .td-date input{flex:0 1 190px;min-width:0}
 </style>
 </head>
 <body class="on-dashboard">
@@ -1495,45 +1526,60 @@ body:not(.role-admin) .admin-only{display:none !important}
 <!-- Modal Terrain Détail -->
 <div class="modal-overlay" id="modal-terrain-detail">
   <div class="modal" style="width:600px;">
-    <div class="td-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
-      <div class="modal-title" id="detail-title" style="margin-bottom:0">Détail Terrain</div>
+    <div class="td-head" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="td-meta"><span class="td-ref" id="d-ref"></span><span class="td-chip" id="d-chip"></span><span class="td-zones" id="d-zones"></span></div>
+      <div class="td-tt">
+        <div class="modal-title" id="detail-title" style="margin-bottom:0">Détail Terrain</div>
+      </div>
       <button type="button" id="fav-detail-btn" class="fav-detail" onclick="favToggle(currentDetailId, event)" title="Ajouter aux favoris">☆</button>
       <button type="button" class="btn btn-sm" onclick="shOpen()" style="margin-left:8px;margin-right:12px;background:#25D366;color:#fff;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12 0C5.4 0 .1 5.3.1 11.9c0 2.1.6 4.1 1.6 5.9L0 24l6.4-1.7a12 12 0 0 0 5.6 1.4c6.6 0 11.9-5.3 11.9-11.9 0-3.2-1.2-6.200-3.4-8.300zM12 21.700c-1.800 0-3.500-.5-5-1.400l-.4-.2-3.800 1 1-3.700-.2-.4A9.800 9.800 0 0 1 2.200 12C2.200 6.600 6.600 2.200 12 2.200c2.600 0 5.100 1 6.900 2.900A9.700 9.700 0 0 1 21.800 12c0 5.400-4.400 9.700-9.800 9.700zm5.400-7.300c-.3-.1-1.700-.8-2-.9-.3-.1-.5-.1-.7.1l-.9 1.100c-.2.200-.3.200-.6.100-1.700-.8-2.800-1.500-3.900-3.400-.3-.5.300-.5.900-1.600.1-.2.100-.4 0-.5l-.9-2.100c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.100-.8.400-.3.300-1 1-1 2.500s1.100 2.900 1.200 3.100c.1.200 2.100 3.200 5.100 4.500 1.900.8 2.600.9 3.500.7.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.2-.3-.3-.6-.4z"/></svg><span class="td-wa-l">Partager</span></button>
-      <button onclick="closeModal('modal-terrain-detail')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#4f6a5c;line-height:1">✕</button>
+      <button onclick="tdClose()" aria-label="Fermer la fiche" style="background:none;border:none;font-size:20px;cursor:pointer;color:#4f6a5c;line-height:1;padding:8px">✕</button>
     </div>
 
-    <!-- Info fixes -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8faf9;border-radius:12px;padding:16px;margin-bottom:18px;">
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Localisation</div><div style="font-size:13.5px;font-weight:700;color:#0e1f17" id="d-info-loc">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Def. Urba.</div><div style="font-size:13.5px;font-weight:700;color:#1f7a4d" id="d-info-urba">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Superficie</div><div style="font-size:13.5px;font-weight:600;color:#0e1f17" id="d-info-sup">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Prix forfaitaire</div><div style="font-size:13.5px;font-weight:700;color:#2d9e5f" id="d-info-forfait">—</div></div>
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#4f6a5c;font-weight:600;margin-bottom:3px">Prix au m²</div><div style="font-size:13.5px;color:#0e1f17" id="d-info-prix">—</div></div>
+    <!-- Chiffres clés, recalculés pendant la saisie -->
+    <div class="td-kpi">
+      <div><span>Superficie</span><b id="d-info-sup">n.c.</b></div>
+      <div><span>Prix au m²</span><b id="d-info-prix">n.c.</b></div>
+      <div><span>Prix global</span><b id="d-info-forfait" class="td-kg">n.c.</b></div>
     </div>
+    <div class="td-comp" id="d-complet"></div>
 
-    <!-- Champs éditables -->
+    <div class="td-sec">Terrain</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Superficie (m²)</label>
+        <label class="form-label" for="d-loc">Quartier ou nom du terrain</label>
+        <input class="form-input" id="d-loc" list="t-loc-list" autocomplete="off" placeholder="Ex : Dar Bouazza">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="d-urba">Zonage</label>
+        <input class="form-input" id="d-urba" autocomplete="off" placeholder="Ex : B5, E3, I2S1">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="d-sup">Superficie (m²)</label>
         <input class="form-input" id="d-sup" type="number" min="0" step="any" inputmode="decimal" oninput="tdPrixPreview()">
       </div>
       <div class="form-group">
-        <label class="form-label">Prix au m² (MAD)</label>
+        <label class="form-label" for="d-prix">Prix au m² (MAD)</label>
         <input class="form-input" id="d-prix" type="number" min="0" step="any" inputmode="decimal" oninput="tdPrixPreview()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Titre Foncier (TF)</label>
-        <input class="form-input" id="d-tf" placeholder="Ex: 22063/C">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date de Sourcing</label>
-        <input class="form-input" id="d-date" type="text" placeholder="JJ/MM/AAAA">
       </div>
     </div>
 
+    <div class="td-sec">Suivi</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Sourceur</label>
+        <label class="form-label" for="d-statut">Statut</label>
+        <select class="form-select" id="d-statut">
+          <option value="À qualifier">À qualifier</option>
+          <option value="Disponible">Disponible</option>
+          <option value="Contact établi">Contact établi</option>
+          <option value="Visite effectuée">Visite effectuée</option>
+          <option value="Étude technique">Étude technique</option>
+          <option value="Négociation">Négociation</option>
+          <option value="Vendu">Vendu</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="d-sourceur">Sourceur</label>
         <select class="form-select" id="d-sourceur">
               <option value="Ayoub">Ayoub</option>
               <option value="Hachim">Hachim</option>
@@ -1543,63 +1589,64 @@ body:not(.role-admin) .admin-only{display:none !important}
               <option value="Autre">Autre</option>
             </select>
       </div>
+      <div class="form-group td-full">
+        <label class="form-label" for="d-date">Date de sourcing</label>
+        <div class="td-date">
+          <input class="form-input" id="d-date" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="tdAujourdhui()" style="white-space:nowrap;flex-shrink:0">Aujourd'hui</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="td-sec">Foncier</div>
+    <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Statut</label>
-        <select class="form-select" id="d-statut">
-          <option value="À qualifier">À qualifier</option>
-          <option value="Contact établi">Contact établi</option>
-          <option value="Visite effectuée">Visite effectuée</option>
-          <option value="Étude technique">Étude technique</option>
-          <option value="Négociation">Négociation</option>
-          <option value="Vendu">Vendu</option>
+        <label class="form-label" for="d-tf">Titre foncier (TF)</label>
+        <input class="form-input" id="d-tf" placeholder="Ex : 22063/C">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="d-statut-jur">Statut juridique</label>
+        <select class="form-select" id="d-statut-jur">
+          <option value="Non renseigné">Non renseigné</option>
+          <option value="Propre">Propre : TF clair, propriétaire unique</option>
+          <option value="Indivision">Indivision : plusieurs héritiers ou copropriétaires</option>
+          <option value="Litige">Litige : contentieux en cours</option>
+          <option value="TF en cours">TF en cours : immatriculation non finalisée</option>
+          <option value="Hypothèque">Hypothèque : bien gagé</option>
+          <option value="Réquisition">Réquisition : procédure en attente</option>
         </select>
       </div>
     </div>
-
-    <div class="form-group">
-      <label class="form-label">Lien Google Maps</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="form-input" id="d-gmap" placeholder="https://maps.google.com/..." style="flex:1;" oninput="tdAtlasHint()">
-        <button id="d-gmap-btn" onclick="openSurAtlas()" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0">🗺 Ouvrir sur Atlas</button>
-      </div>
-      <div id="d-gmap-hint" style="display:none;font-size:12px;color:#4f6a5c;margin-top:5px;">Ce terrain n'est pas encore placé sur la carte Atlas : il lui faut un TF connu des plans ou un lien Google Maps.</div>
-    </div>
-
     <div class="form-group">
       <label class="form-label">Documents du terrain <span style="color:#4f6a5c;font-weight:400">(PDF ou image, 10 Mo max)</span></label>
       <div id="td-docs" style="border:1px solid #dfe9e3;border-radius:10px;overflow:hidden"></div>
       <input type="file" id="td-file" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="tdUploadChosen(this)">
     </div>
 
+    <div class="td-sec">Localisation</div>
+    <div class="form-group">
+      <label class="form-label" for="d-gmap">Lien Google Maps</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="form-input" id="d-gmap" placeholder="https://maps.google.com/..." style="flex:1;min-width:0" oninput="tdAtlasHint()">
+        <button id="d-gmap-btn" onclick="openSurAtlas()" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0">🗺 Ouvrir sur Atlas</button>
+      </div>
+      <div id="d-gmap-hint" style="display:none;font-size:12px;color:#4f6a5c;margin-top:5px;">Ce terrain n'est pas encore placé sur la carte Atlas : il lui faut un TF connu des plans ou un lien Google Maps.</div>
+    </div>
+
+    <div class="td-sec">Notes</div>
+    <div class="form-group">
+      <label class="form-label" for="d-commentaire">Commentaire</label>
+      <textarea class="form-textarea" id="d-commentaire" placeholder="Notes, remarques, informations complémentaires..." style="min-height:90px;"></textarea>
+    </div>
     <div class="form-group" id="d-mymaps-wrap" style="display:none">
       <label class="form-label">Infos MyMaps <span style="color:#4f6a5c;font-weight:400">(ancienne carte)</span></label>
       <div id="d-mymaps" style="border:1px solid #dfe9e3;border-radius:10px;background:#f6faf7;padding:10px 12px;font-size:13px;line-height:1.45;color:#22382d;white-space:pre-wrap;overflow-wrap:anywhere"></div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Commentaire</label>
-      <textarea class="form-textarea" id="d-commentaire" placeholder="Notes, remarques, informations complémentaires..." style="min-height:90px;"></textarea>
-    </div>
-
-    <!-- Feature E — Statut juridique -->
-    <div class="form-group">
-      <label class="form-label">⚖️ Statut Juridique</label>
-      <select class="form-select" id="d-statut-jur">
-        <option value="Non renseigné">Non renseigné</option>
-        <option value="Propre">✅ Propre — TF clair, propriétaire unique</option>
-        <option value="Indivision">⚠️ Indivision — plusieurs héritiers / copropriétaires</option>
-        <option value="Litige">🔴 Litige — contentieux en cours</option>
-        <option value="TF en cours">🔄 TF en cours — immatriculation foncière non finalisée</option>
-        <option value="Hypothèque">🔒 Hypothèque — bien gagé</option>
-        <option value="Réquisition">📋 Réquisition — procédure en attente</option>
-      </select>
-    </div>
-
-    <!-- Feature A — Historique interactions -->
-    <div style="margin-top:20px;border-top:1.5px solid #e8f0ec;padding-top:18px;">
-      <div style="font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;color:#1f7a4d;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">📞 Historique des interactions</div>
-
-      <!-- Formulaire ajout interaction -->
+    <div class="td-sec">Historique des interactions</div>
+    <div id="interactions-list"></div>
+    <details class="td-det" id="d-inter-form">
+      <summary>+ Ajouter une interaction</summary>
       <div style="background:#f8faf9;border-radius:12px;padding:14px;margin-bottom:14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div>
@@ -1642,16 +1689,14 @@ body:not(.role-admin) .admin-only{display:none !important}
         </div>
         <button onclick="saveInteraction()" class="btn btn-primary" style="width:100%;font-size:12.5px;padding:9px;">+ Enregistrer l'interaction</button>
       </div>
+    </details>
 
-      <!-- Liste interactions -->
-      <div id="interactions-list"></div>
-    </div>
+    <button type="button" class="td-del" onclick="confirmDeleteTerrain()">Supprimer ce terrain</button>
 
-    <div class="modal-actions td-foot" style="justify-content:space-between;margin-top:20px;">
-      <button class="btn" onclick="confirmDeleteTerrain()" style="background:#fdf2f2;color:#c0392b;border:1.5px solid #fad7d0;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer;">🗑 Supprimer</button>
+    <div class="modal-actions td-foot" style="justify-content:flex-end;margin-top:20px;">
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" onclick="mvFromTerrain(currentDetailId)">Analyser</button>
-        <button class="btn btn-ghost" onclick="closeModal('modal-terrain-detail')">Annuler</button>
+        <button class="btn btn-ghost" onclick="tdClose()">Annuler</button>
         <button class="btn btn-primary" onclick="saveTerrainDetail()">Enregistrer</button>
       </div>
     </div>
@@ -2785,22 +2830,24 @@ function openTerrainDetail(id) {
   if (!t) { console.warn('openTerrainDetail: terrain not found', id); return; }
   currentDetailId = id;
 
-  document.getElementById('detail-title').textContent = t.localisation;
-  document.getElementById('d-info-loc').textContent = t.localisation || '—';
-  document.getElementById('d-info-urba').textContent = t.urba || '—';
-  document.getElementById('d-info-sup').textContent = t.superficie ? Number(t.superficie).toLocaleString('fr-FR') + ' m²' : '—';
-  const forfait = t.forfait || Math.round((t.superficie * t.prix) / 1000000);
-  document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait + ' M MAD' : '—';
-  document.getElementById('d-info-prix').textContent = t.prix > 0 ? Number(t.prix).toLocaleString('fr-FR') + ' MAD/m²' : '—';
-
+  document.getElementById('d-ref').textContent = t.ref || '';
+  document.getElementById('d-loc').value = t.localisation || '';
+  document.getElementById('d-urba').value = t.urba || '';
+  if (typeof mkQuartierList === 'function') mkQuartierList();
   document.getElementById('d-sup').value = t.superficie > 0 ? t.superficie : '';
   document.getElementById('d-prix').value = t.prix > 0 ? t.prix : '';
+  { const f = document.getElementById('d-inter-form'); if (f) f.open = false; }
 
   document.getElementById('d-tf').value = t.tf && t.tf !== 'nan' ? t.tf : '';
   document.getElementById('d-date').value = t.dateSourcing || '';
   { const ds = document.getElementById('d-sourceur'); fillSourceurSelect(ds, t.sourceur || ''); ds.disabled = myRole === 'sourceur'; }
-  document.getElementById('d-statut').value = t.statut || 'À qualifier';
+  { // un statut absent de la liste (ancienne valeur) est ajouté : sinon il serait effacé à l'enregistrement
+    const ss = document.getElementById('d-statut'), v = t.statut || 'À qualifier';
+    if (![...ss.options].some(o => o.value === v)) ss.add(new Option(v, v));
+    ss.value = v;
+  }
   document.getElementById('d-gmap').value = t.googleMap || '';
+  tdEntete(); tdPrixPreview();
   tdAtlasPret = tdAtlasLoad(t);
   document.getElementById('d-commentaire').value = t.commentaire || '';
   { const mw = document.getElementById('d-mymaps-wrap'); if (mw) { document.getElementById('d-mymaps').textContent = t.mymaps || ''; mw.style.display = t.mymaps ? '' : 'none'; } }
@@ -2813,6 +2860,7 @@ function openTerrainDetail(id) {
   const diEl = document.getElementById('i-date');
   if (diEl) diEl.value = new Date().toISOString().slice(0,10);
 
+  tdInstantane = tdValeurs();
   openModal('modal-terrain-detail');
   tdLoad(id);
   favSyncDetail();
@@ -2840,6 +2888,7 @@ async function tdLoad(terrainId) {
 }
 function tdRender() {
   const box = document.getElementById('td-docs'); if (!box) return;
+  setTimeout(() => { if (typeof tdComplet === 'function' && currentDetailId != null) tdComplet(); }, 0);
   if (tdUnavailable) { box.innerHTML = '<div style="padding:12px;color:#4f6a5c;font-size:13px">Documents indisponibles (la configuration Supabase des documents n\'est pas encore faite).</div>'; return; }
   box.innerHTML = TD_TYPES.map((t, i) => {
     const d = tdDocs[t.k];
@@ -2973,6 +3022,7 @@ function tdAtlasHint() {
   if (!h) return;
   const vide = !document.getElementById('d-gmap').value.trim();
   h.style.display = (tdAtlasCherche && vide && !tdAtlasPos) ? '' : 'none';
+  if (typeof tdComplet === 'function') tdComplet();
 }
 
 // Bouton Ouvrir sur Atlas : va sur la page Atlas et ouvre la fiche du terrain sur la carte
@@ -2984,6 +3034,7 @@ async function openSurAtlas() {
   const lien = document.getElementById('d-gmap').value.trim() || (t.googleMap || '').trim();
   if (tdAtlasCherche && !tdAtlasPos && !lien) { showNotif('Ce terrain n\'est pas encore placé sur la carte Atlas.', true); return; }
   if (typeof carteOuvrir !== 'function') { showNotif('La carte Atlas n\'est pas disponible. Rechargez la page.', true); return; }
+  if (tdModifiee() && !confirm('Quitter la fiche sans enregistrer vos modifications ?')) return;
   closeModal('modal-terrain-detail');
   mGo('carte');
   const ok = await carteOuvrir(id);
@@ -3209,21 +3260,79 @@ function tdPrixPreview() {
   const sup = Number(document.getElementById('d-sup').value) || 0;
   const prix = Number(document.getElementById('d-prix').value) || 0;
   const changed = sup !== (Number(t.superficie) || 0) || prix !== (Number(t.prix) || 0);
-  const forfait = changed ? Math.round(sup * prix / 1e6) : (t.forfait || Math.round(sup * prix / 1e6));
-  document.getElementById('d-info-sup').textContent = sup ? sup.toLocaleString('fr-FR') + ' m²' : '—';
-  document.getElementById('d-info-prix').textContent = prix ? prix.toLocaleString('fr-FR') + ' MAD/m²' : '—';
-  document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait + ' M MAD' : '—';
+  // prix global en millions : une décimale sous 10 M, pour qu'un terrain à 600 000 MAD ne s'affiche pas « 1 M »
+  const brut = (!changed && t.forfait) ? Number(t.forfait) : sup * prix / 1e6;
+  const forfait = brut >= 10 ? Math.round(brut) : Math.round(brut * 10) / 10;
+  document.getElementById('d-info-sup').textContent = sup ? sup.toLocaleString('fr-FR') + ' m²' : 'n.c.';
+  document.getElementById('d-info-prix').textContent = prix ? prix.toLocaleString('fr-FR') + ' MAD' : 'n.c.';
+  document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait.toLocaleString('fr-FR') + ' M MAD' : 'n.c.';
+  tdComplet();
 }
+
+// En-tête de la fiche : titre, pastille de statut, plaques de zonage (suivent la saisie)
+const TD_STATUT_COL = { 'À qualifier': ['#eef3f0', '#4f6a5c'], 'Disponible': ['#e8f7ef', '#1f7a4d'], 'Contact établi': ['#e3f0ff', '#1d5fa8'], 'Visite effectuée': ['#e8f5e9', '#2e7d32'], 'Étude technique': ['#fdf0d9', '#8a5a00'], 'Négociation': ['#fbe3e0', '#b3392d'], 'Vendu': ['#ede7f6', '#4527a0'] };
+const TD_ZONE_COL = { A: '#78d6cb', B: '#7ee0a4', C: '#c3b2ff', D: '#cde88f', E: '#9fcaff', I: '#f2b860', R: '#e2cf9e' };
+function tdEntete() {
+  const g = id => document.getElementById(id);
+  g('detail-title').textContent = g('d-loc').value.trim() || 'Terrain sans localisation';
+  const st = g('d-statut').value, c = TD_STATUT_COL[st] || ['#eef3f0', '#4f6a5c'], chip = g('d-chip');
+  chip.textContent = st; chip.style.background = c[0]; chip.style.color = c[1];
+  g('d-zones').innerHTML = g('d-urba').value.split(/[\s\/,]+/).filter(Boolean).slice(0, 6)
+    .map(z => '<span style="background:' + (TD_ZONE_COL[z.charAt(0).toUpperCase()] || '#d3dcd6') + '">' + escH(z) + '</span>').join('');
+}
+
+// Ce qui manque à la fiche, pour guider la saisie
+function tdComplet() {
+  const box = document.getElementById('d-complet'); if (!box) return;
+  const v = id => document.getElementById(id).value.trim();
+  const docs = typeof tdDocs === 'object' && tdDocs ? Object.values(tdDocs).filter(Boolean).length : 0;
+  const pts = [['quartier', v('d-loc')], ['zonage', v('d-urba')], ['superficie', Number(v('d-sup')) > 0], ['prix', Number(v('d-prix')) > 0], ['TF', v('d-tf')],
+    ['date de sourcing', v('d-date')], ['localisation (lien Maps ou contour Atlas)', v('d-gmap') || tdAtlasPos], ['documents', docs > 0]];
+  const manque = pts.filter(p => !p[1]).map(p => p[0]);
+  const pc = Math.round((pts.length - manque.length) / pts.length * 100);
+  box.innerHTML = '<i><u style="width:' + pc + '%"></u></i>' + (manque.length ? '<b>Fiche complète à ' + pc + ' %.</b> À renseigner : ' + manque.join(', ') + '.' : '<b>Fiche complète.</b>');
+}
+
+function tdAujourdhui() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  document.getElementById('d-date').value = p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear();
+  tdComplet();
+}
+
+// Fermeture : on prévient si des champs ont été modifiés sans être enregistrés
+let tdInstantane = '';
+function tdValeurs() {
+  return ['d-loc', 'd-urba', 'd-sup', 'd-prix', 'd-statut', 'd-sourceur', 'd-date', 'd-tf', 'd-statut-jur', 'd-gmap', 'd-commentaire']
+    .map(id => { const e = document.getElementById(id); return e ? e.value : ''; }).join('\u0001');
+}
+function tdModifiee() { return tdValeurs() !== tdInstantane; }
+function tdClose() {
+  if (tdModifiee() && !confirm('Fermer sans enregistrer vos modifications ?')) return;
+  closeModal('modal-terrain-detail');
+}
+document.addEventListener('input', e => {
+  if (!e.target.closest || !e.target.closest('#modal-terrain-detail')) return;
+  if (['d-loc', 'd-urba'].includes(e.target.id)) tdEntete();
+  if (['d-loc', 'd-urba', 'd-tf', 'd-date'].includes(e.target.id)) tdComplet();
+});
+document.addEventListener('change', e => { if (e.target && e.target.id === 'd-statut') tdEntete(); });
 
 const _origSaveTerrainDetail = saveTerrainDetail;
 saveTerrainDetail = async function() {
   const t = state.terrains.find(t => t.id === currentDetailId);
   if (!t) return;
-  const newSup = Number(document.getElementById('d-sup').value);
-  const newPrix = Number(document.getElementById('d-prix').value);
-  if (!(newSup > 0) || !(newPrix > 0)) { showNotif('Superficie et prix au m² doivent être supérieurs à 0.', true); return; }
+  // Superficie et prix peuvent rester vides (terrain à qualifier) : seules les valeurs négatives sont refusées
+  const newSup = Number(document.getElementById('d-sup').value) || 0;
+  const newPrix = Number(document.getElementById('d-prix').value) || 0;
+  if (newSup < 0 || newPrix < 0) { showNotif('Superficie et prix au m² ne peuvent pas être négatifs.', true); return; }
   const oldSup = Number(t.superficie) || 0, oldPrix = Number(t.prix) || 0;
   const prixChange = newSup !== oldSup || newPrix !== oldPrix;
+  const newLoc = normQuartier(document.getElementById('d-loc').value), oldLoc = t.localisation || '';
+  const newUrba = document.getElementById('d-urba').value.replace(/\s+/g, ' ').trim(), oldUrba = t.urba || '';
+  const idChange = newLoc !== oldLoc || newUrba !== oldUrba;
+  if (!newLoc && oldLoc) { showNotif('Indiquez le quartier ou le nom du terrain.', true); return; }
+  // le quartier normalisé suit la localisation seulement s'il lui était identique (ou vide)
+  const qSuit = !t.quartier || String(t.quartier).trim().toLowerCase() === oldLoc.trim().toLowerCase();
   t.tf = document.getElementById('d-tf').value.trim();
   t.dateSourcing = document.getElementById('d-date').value.trim();
   t.sourceur = document.getElementById('d-sourceur').value;
@@ -3238,7 +3347,9 @@ saveTerrainDetail = async function() {
   if (supabaseReady) {
     const patch = { tf: t.tf, date_sourcing: t.dateSourcing, sourceur: t.sourceur, statut: t.statut, statut_juridique: t.statut_juridique, google_map: t.googleMap, commentaire: t.commentaire, days_old: t.daysOld };
     // Un forfait saisi a la main n'est plus valable si la superficie ou le prix change : il redevient calcule
-    if (prixChange) Object.assign(patch, { superficie: newSup, prix: newPrix, forfait: null });
+    if (prixChange) Object.assign(patch, { superficie: newSup || null, prix: newPrix || null, forfait: null });
+    if (newLoc !== oldLoc) { patch.localisation = newLoc; if (qSuit) patch.quartier = newLoc; }
+    if (newUrba !== oldUrba) patch.urba = newUrba;
     const resT = await supaPatch('terrains', t.id, patch);
     if (!resT || !resT.length) { showNotif('Modification refusée : vous ne pouvez modifier que vos propres terrains.', true); loadFromSupabase(); return; }
     if (prixChange) {
@@ -3250,8 +3361,17 @@ saveTerrainDetail = async function() {
     } else {
       await logActivity('Modif terrain', 'terrain', t.id, t.localisation);
     }
+    if (idChange) {
+      const det = [];
+      if (newLoc !== oldLoc) det.push(`quartier « ${oldLoc} » vers « ${newLoc} »`);
+      if (newUrba !== oldUrba) det.push(`zonage « ${oldUrba} » vers « ${newUrba} »`);
+      await logActivity('Modif terrain', 'terrain', t.id, `${t.ref ? t.ref + ' ' : ''}${newLoc} : ${det.join(', ')}`);
+    }
   }
   if (prixChange) { t.superficie = newSup; t.prix = newPrix; t.forfait = null; }
+  if (newLoc !== oldLoc) { t.localisation = newLoc; if (qSuit) t.quartier = newLoc; }
+  if (newUrba !== oldUrba) t.urba = newUrba;
+  if (idChange && typeof carteRefresh === 'function') { try { carteRefresh(); } catch (e) { /* carte non ouverte */ } }
   saveState(); closeModal('modal-terrain-detail'); filterTerrains(); showNotif('✓ Terrain mis à jour !');
 }
 
@@ -6064,7 +6184,7 @@ function mBuild() {
   if (foot) {
     const del = foot.querySelector('button[onclick="confirmDeleteTerrain()"]');
     if (del) del.innerHTML = '🗑<span class="m-hide"> Supprimer</span>';
-    const cancel = [...foot.querySelectorAll('button')].find(b => /closeModal/.test(b.getAttribute('onclick') || ''));
+    const cancel = [...foot.querySelectorAll('button')].find(b => /closeModal|tdClose/.test(b.getAttribute('onclick') || ''));
     if (cancel) cancel.classList.add('m-hide');
     const an = foot.querySelector('button[onclick^="mvFromTerrain"]');
     if (an) an.insertAdjacentHTML('beforebegin', '<button class="btn btn-ghost m-only" onclick="mPropose(currentDetailId)">Proposer</button>');
@@ -6583,6 +6703,10 @@ openDealEdit = function (id) {
   #modal-terrain-detail .td-head .btn{padding:8px 12px !important;gap:6px}
   #modal-terrain-detail .td-head .td-wa-l{font-size:13px}
   #modal-terrain-detail #d-commentaire{min-height:70px !important}
+  #modal-terrain-detail .td-kpi{gap:6px}
+  #modal-terrain-detail .td-kpi>div{padding:8px 9px}
+  #modal-terrain-detail .td-kpi b{font-size:14px}
+  #modal-terrain-detail .td-sec{margin:16px 0 10px;padding-top:14px}
   .td-iform{display:none}
   .td-iform.open{display:block}
   .td-inote{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:12px;padding:12px;border-radius:999px;border:1.5px solid #cfe0d6;background:#fff;color:#1f7a4d;font:600 14px var(--gf-body)}

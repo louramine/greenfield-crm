@@ -1559,9 +1559,10 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="form-group">
       <label class="form-label">Lien Google Maps</label>
       <div style="display:flex;gap:8px;align-items:center;">
-        <input class="form-input" id="d-gmap" placeholder="https://maps.google.com/..." style="flex:1;">
+        <input class="form-input" id="d-gmap" placeholder="https://maps.google.com/..." style="flex:1;" oninput="tdAtlasHint()">
         <button id="d-gmap-btn" onclick="openGmap()" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0">🗺 Ouvrir</button>
       </div>
+      <div id="d-gmap-hint" style="display:none;font-size:12px;color:#4f6a5c;margin-top:5px;">Aucun lien saisi : « Ouvrir » affiche la position du terrain sur la carte Atlas.</div>
     </div>
 
     <div class="form-group">
@@ -2800,6 +2801,7 @@ function openTerrainDetail(id) {
   { const ds = document.getElementById('d-sourceur'); fillSourceurSelect(ds, t.sourceur || ''); ds.disabled = myRole === 'sourceur'; }
   document.getElementById('d-statut').value = t.statut || 'À qualifier';
   document.getElementById('d-gmap').value = t.googleMap || '';
+  tdAtlasLoad(t);
   document.getElementById('d-commentaire').value = t.commentaire || '';
   { const mw = document.getElementById('d-mymaps-wrap'); if (mw) { document.getElementById('d-mymaps').textContent = t.mymaps || ''; mw.style.display = t.mymaps ? '' : 'none'; } }
 
@@ -2927,10 +2929,51 @@ function saveTerrainDetail() {
   showNotif('✓ Terrain mis à jour !');
 }
 
+// Position du terrain sur la carte Atlas (centre du contour), cherchée à l'ouverture de la fiche.
+// Elle sert au bouton Ouvrir quand aucun lien Google Maps n'est saisi. Rien n'est écrit en base.
+let tdAtlasPos = null;
+// Clés de contour d'un TF saisi librement : '28536/53 - R 7123/C' donne T28536/53 et R7123/C (même règle que la carte)
+function tdTfCles(txt) {
+  const out = new Set();
+  const re = /(\bR\s*\.?\s*)?([0-9]{2,7})\s*\/\s*([A-Za-z0-9]+)/gi;
+  let m = re.exec(String(txt ?? ''));
+  while (m) {
+    out.add((m[1] ? 'R' : 'T') + String(Number(m[2])) + '/' + m[3].toUpperCase());
+    m = re.exec(String(txt ?? ''));
+  }
+  return [...out];
+}
+async function tdAtlasLoad(t) {
+  tdAtlasPos = null;
+  tdAtlasHint();
+  if (!t) return;
+  const tfKeys = tdTfCles(t.tf);
+  const keys = t.ref ? tfKeys.concat([t.ref]) : tfKeys;
+  if (!keys.length) return;
+  try {
+    const liste = keys.map(k => '"' + String(k).replace(/"/g, '') + '"').join(',');
+    const rows = await supaGet('terrain_contours', 'select=cle,surface_plan,lat,lng&cle=in.(' + encodeURIComponent(liste) + ')');
+    if (currentDetailId !== t.id) return;
+    const ok = rows.filter(r => r.lat != null && r.lng != null);
+    // contour du TF en priorité (le plus grand si plusieurs titres), sinon contour rattaché à la référence
+    const parTf = ok.filter(r => tfKeys.includes(r.cle)).sort((a, b) => (Number(b.surface_plan) || 0) - (Number(a.surface_plan) || 0));
+    const c = parTf[0] || ok.find(r => r.cle === t.ref);
+    if (c) tdAtlasPos = { lat: Number(c.lat), lng: Number(c.lng) };
+  } catch (e) { /* carte non installée ou hors ligne : le bouton garde son comportement habituel */ }
+  tdAtlasHint();
+}
+function tdAtlasHint() {
+  const h = document.getElementById('d-gmap-hint');
+  if (!h) return;
+  const vide = !document.getElementById('d-gmap').value.trim();
+  h.style.display = (vide && tdAtlasPos) ? '' : 'none';
+}
+
 function openGmap() {
   const url = document.getElementById('d-gmap').value.trim();
   if (url) window.open(url, '_blank');
-  else showNotif('⚠ Aucun lien Google Maps renseigné', true);
+  else if (tdAtlasPos) window.open('https://www.google.com/maps?q=' + tdAtlasPos.lat.toFixed(6) + ',' + tdAtlasPos.lng.toFixed(6), '_blank');
+  else showNotif('Aucun lien Google Maps renseigné, et terrain absent de la carte Atlas', true);
 }
 
 function confirmDeleteTerrain() {

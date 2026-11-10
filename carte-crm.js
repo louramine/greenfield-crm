@@ -615,6 +615,32 @@ function carteRefresh () {
   if (api) api.setData(mode, dataFor(mode))
 }
 
+// Ouvre la fiche d'un terrain sur la carte, en vue Interne (appelé par le bouton Ouvrir sur Atlas de la fiche terrain).
+// Renvoie false si le terrain n'est pas sur la carte.
+async function carteOuvrir (id) {
+  await carteInit()
+  // carteInit rend la main quand un chargement est déjà en cours : on attend que la carte soit montée
+  for (let i = 0; i < 150 && !api; i++) await new Promise(resolve => setTimeout(resolve, 100))
+  if (!api) return false
+  const key = String(id)
+  const t = (state.terrains ? state.terrains : []).find(x => String(x.id) === key)
+  let change = false
+  if (mode !== 'interne') { mode = 'interne'; change = true }
+  if (t && t.statut === 'Vendu' && !withSold) { withSold = true; change = true }
+  if (change) {
+    header()
+    api.setData(mode, dataFor(mode))
+    mmSync()
+  }
+  if (!dataFor('interne').some(x => x.key === key)) return false
+  // après le redimensionnement de la carte lancé par carteInit
+  await new Promise(resolve => setTimeout(resolve, 160))
+  api.map.invalidateSize()
+  api.select(key, true)
+  return true
+}
+
 window.carteInit = carteInit
+window.carteOuvrir = carteOuvrir
 window.carteRefresh = carteRefresh
 })()

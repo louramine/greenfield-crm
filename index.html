@@ -1560,9 +1560,9 @@ body:not(.role-admin) .admin-only{display:none !important}
       <label class="form-label">Lien Google Maps</label>
       <div style="display:flex;gap:8px;align-items:center;">
         <input class="form-input" id="d-gmap" placeholder="https://maps.google.com/..." style="flex:1;" oninput="tdAtlasHint()">
-        <button id="d-gmap-btn" onclick="openGmap()" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0">🗺 Ouvrir</button>
+        <button id="d-gmap-btn" onclick="openSurAtlas()" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0">🗺 Ouvrir sur Atlas</button>
       </div>
-      <div id="d-gmap-hint" style="display:none;font-size:12px;color:#4f6a5c;margin-top:5px;">Aucun lien saisi : « Ouvrir » affiche la position du terrain sur la carte Atlas.</div>
+      <div id="d-gmap-hint" style="display:none;font-size:12px;color:#4f6a5c;margin-top:5px;">Ce terrain n'est pas encore placé sur la carte Atlas : il lui faut un TF connu des plans ou un lien Google Maps.</div>
     </div>
 
     <div class="form-group">
@@ -2801,7 +2801,7 @@ function openTerrainDetail(id) {
   { const ds = document.getElementById('d-sourceur'); fillSourceurSelect(ds, t.sourceur || ''); ds.disabled = myRole === 'sourceur'; }
   document.getElementById('d-statut').value = t.statut || 'À qualifier';
   document.getElementById('d-gmap').value = t.googleMap || '';
-  tdAtlasLoad(t);
+  tdAtlasPret = tdAtlasLoad(t);
   document.getElementById('d-commentaire').value = t.commentaire || '';
   { const mw = document.getElementById('d-mymaps-wrap'); if (mw) { document.getElementById('d-mymaps').textContent = t.mymaps || ''; mw.style.display = t.mymaps ? '' : 'none'; } }
 
@@ -2929,9 +2929,11 @@ function saveTerrainDetail() {
   showNotif('✓ Terrain mis à jour !');
 }
 
-// Position du terrain sur la carte Atlas (centre du contour), cherchée à l'ouverture de la fiche.
-// Elle sert au bouton Ouvrir quand aucun lien Google Maps n'est saisi. Rien n'est écrit en base.
+// Présence du terrain sur la carte Atlas, cherchée à l'ouverture de la fiche (contour du TF ou contour rattaché à la référence).
+// Elle sert au bouton Ouvrir sur Atlas et au message affiché quand le terrain n'y est pas. Rien n'est écrit en base.
 let tdAtlasPos = null;
+let tdAtlasPret = Promise.resolve();
+let tdAtlasCherche = false;
 // Clés de contour d'un TF saisi librement : '28536/53 - R 7123/C' donne T28536/53 et R7123/C (même règle que la carte)
 function tdTfCles(txt) {
   const out = new Set();
@@ -2945,35 +2947,47 @@ function tdTfCles(txt) {
 }
 async function tdAtlasLoad(t) {
   tdAtlasPos = null;
+  tdAtlasCherche = false;
   tdAtlasHint();
   if (!t) return;
   const tfKeys = tdTfCles(t.tf);
   const keys = t.ref ? tfKeys.concat([t.ref]) : tfKeys;
-  if (!keys.length) return;
   try {
-    const liste = keys.map(k => '"' + String(k).replace(/"/g, '') + '"').join(',');
-    const rows = await supaGet('terrain_contours', 'select=cle,surface_plan,lat,lng&cle=in.(' + encodeURIComponent(liste) + ')');
-    if (currentDetailId !== t.id) return;
-    const ok = rows.filter(r => r.lat != null && r.lng != null);
-    // contour du TF en priorité (le plus grand si plusieurs titres), sinon contour rattaché à la référence
-    const parTf = ok.filter(r => tfKeys.includes(r.cle)).sort((a, b) => (Number(b.surface_plan) || 0) - (Number(a.surface_plan) || 0));
-    const c = parTf[0] || ok.find(r => r.cle === t.ref);
-    if (c) tdAtlasPos = { lat: Number(c.lat), lng: Number(c.lng) };
-  } catch (e) { /* carte non installée ou hors ligne : le bouton garde son comportement habituel */ }
+    if (keys.length) {
+      const liste = keys.map(k => '"' + String(k).replace(/"/g, '') + '"').join(',');
+      const rows = await supaGet('terrain_contours', 'select=cle,surface_plan,lat,lng&cle=in.(' + encodeURIComponent(liste) + ')');
+      if (currentDetailId !== t.id) return;
+      const ok = rows.filter(r => r.lat != null && r.lng != null);
+      // contour du TF en priorité (le plus grand si plusieurs titres), sinon contour rattaché à la référence
+      const parTf = ok.filter(r => tfKeys.includes(r.cle)).sort((a, b) => (Number(b.surface_plan) || 0) - (Number(a.surface_plan) || 0));
+      const c = parTf[0] || ok.find(r => r.cle === t.ref);
+      if (c) tdAtlasPos = { lat: Number(c.lat), lng: Number(c.lng) };
+    }
+    tdAtlasCherche = true;
+  } catch (e) { /* carte non installée ou hors ligne : pas de message, le bouton essaiera quand même */ }
   tdAtlasHint();
 }
+// Message sous le champ : seulement quand la recherche a abouti, sans contour et sans lien Google Maps
 function tdAtlasHint() {
   const h = document.getElementById('d-gmap-hint');
   if (!h) return;
   const vide = !document.getElementById('d-gmap').value.trim();
-  h.style.display = (vide && tdAtlasPos) ? '' : 'none';
+  h.style.display = (tdAtlasCherche && vide && !tdAtlasPos) ? '' : 'none';
 }
 
-function openGmap() {
-  const url = document.getElementById('d-gmap').value.trim();
-  if (url) window.open(url, '_blank');
-  else if (tdAtlasPos) window.open('https://www.google.com/maps?q=' + tdAtlasPos.lat.toFixed(6) + ',' + tdAtlasPos.lng.toFixed(6), '_blank');
-  else showNotif('Aucun lien Google Maps renseigné, et terrain absent de la carte Atlas', true);
+// Bouton Ouvrir sur Atlas : va sur la page Atlas et ouvre la fiche du terrain sur la carte
+async function openSurAtlas() {
+  const id = currentDetailId;
+  const t = state.terrains.find(x => x.id === id);
+  if (!t) return;
+  await tdAtlasPret;
+  const lien = document.getElementById('d-gmap').value.trim() || (t.googleMap || '').trim();
+  if (tdAtlasCherche && !tdAtlasPos && !lien) { showNotif('Ce terrain n\'est pas encore placé sur la carte Atlas.', true); return; }
+  if (typeof carteOuvrir !== 'function') { showNotif('La carte Atlas n\'est pas disponible. Rechargez la page.', true); return; }
+  closeModal('modal-terrain-detail');
+  mGo('carte');
+  const ok = await carteOuvrir(id);
+  if (!ok) showNotif('Ce terrain n\'apparaît pas sur la carte Atlas (ni contour, ni lien Google Maps lisible).', true);
 }
 
 async function confirmDeleteTerrain() {

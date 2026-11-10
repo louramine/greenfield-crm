@@ -55,10 +55,17 @@ function loadCss (href) {
   document.head.appendChild(l)
 }
 
+// Supabase renvoie 1 000 lignes au plus par appel : les contours sont lus par pages, dans un ordre stable
 async function fetchContours () {
-  const r = await fetch(SUPA_URL + '/rest/v1/rpc/carte_contours', { method: 'POST', headers: H(), body: '{}' })
-  if (!r.ok) throw new Error(await r.text())
-  return r.json()
+  const all = []
+  for (let offset = 0; offset < 50000; offset += 1000) {
+    const r = await fetch(SUPA_URL + '/rest/v1/rpc/carte_contours?order=terrain_id.asc,cle.asc&limit=1000&offset=' + offset, { method: 'POST', headers: H(), body: '{}' })
+    if (!r.ok) throw new Error(await r.text())
+    const page = await r.json()
+    all.push(...page)
+    if (page.length < 1000) break
+  }
+  return all
 }
 
 function buildTerrains () {

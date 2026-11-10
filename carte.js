@@ -148,7 +148,7 @@ const CSS = `
 .gfc-box label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:#4f6a5c;margin:10px 0 4px}
 .gfc-box input,.gfc-box select,.gfc-box textarea{width:100%;font:inherit;font-size:14px;padding:9px 10px;border:1px solid #cfdcd2;border-radius:10px}
 .gfc-box .gfc-acts{padding:14px 0 0}
-.gfc-sh,.gfc-mtop{display:none}
+.gfc-sh,.gfc-mtop,.gfc-see{display:none}
 .gfc-zlo .gfc-poi{font-size:0;padding:4px;border-width:2px;line-height:0}
 @media (max-width:900px){
 .gfc{font-size:15px}
@@ -167,6 +167,11 @@ const CSS = `
 .gfc-pill b{display:inline-block;min-width:18px;margin-left:5px;padding:0 5px;border-radius:9px;background:#7ee0a4;color:#0a1410;font-size:11.5px;line-height:18px;text-align:center}
 .gfc-filters{display:none}
 .gfc-side.fopen .gfc-filters{display:grid}
+.gfc-side.fopen{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.gfc-side.fopen>*{flex-shrink:0}
+.gfc-side.fopen .gfc-list{flex:none;overflow:visible}
+.gfc-side.fopen .gfc-sh{position:sticky;top:0;z-index:3;background:#f4f9f5;border-radius:18px 18px 0 0}
+.gfc-side.fopen .gfc-see{display:block;grid-column:1/3;font:inherit;font-size:15px;font-weight:700;border:none;border-radius:12px;background:#0a1410;color:#7ee0a4;padding:13px;margin:4px 0 6px;cursor:pointer}
 .gfc-filters select,.gfc-filters input,.gfc-box input,.gfc-box select,.gfc-box textarea{font-size:16px;padding:10px}
 .gfc-count{display:none}
 .gfc-side.fopen .gfc-count{display:flex}
@@ -298,6 +303,7 @@ function mount (root, opt) {
     '<label>Budget<select data-f="b"><option value="">Tous</option><option value="0-10000000">Moins de 10 MDH</option><option value="10000000-30000000">10 à 30 MDH</option><option value="30000000-100000000">30 à 100 MDH</option><option value="100000000-">Plus de 100 MDH</option><option value="nd">Prix sur demande</option></select></label>' +
     '<label class="gfc-full">Zonage<div class="gfc-chips"></div></label>' +
     '<label class="gfc-full">Trier par<select data-f="o"><option value="rec">Recommandé</option><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></label>' +
+    '<button class="gfc-see" data-a="see"></button>' +
     '</div>' +
     '<div class="gfc-count"><span class="gfc-n"></span><span><button class="gfc-link" data-a="onlysel">Ma sélection</button> · <button class="gfc-link" data-a="reset">Réinitialiser</button></span></div>' +
     '<div class="gfc-list"></div></aside>' +
@@ -451,6 +457,7 @@ function mount (root, opt) {
     const nf = ['txt', 'q', 's', 'b'].filter(k => $('[data-f="' + k + '"]').value).length + (active.size < FAM.length ? 1 : 0)
     $('[data-a="filt"]').innerHTML = 'Filtres' + (nf ? '<b>' + nf + '</b>' : '')
     $('[data-a="filt"]').classList.toggle('on', $('.gfc-side').classList.contains('fopen'))
+    $('[data-a="see"]').textContent = shown.length ? 'Voir ' + (shown.length > 1 ? 'les ' + shown.length + ' terrains' : 'le terrain') : 'Aucun terrain'
     $('[data-a="onlysel2"]').innerHTML = 'Sélection' + (selected().length ? '<b>' + selected().length + '</b>' : '')
     $('[data-a="onlysel2"]').classList.toggle('on', onlySel)
     $('[data-a="onlysel"]').textContent = onlySel ? 'Tous les terrains' : 'Ma sélection'
@@ -665,7 +672,15 @@ function mount (root, opt) {
   })
   $('[data-a="filt"]').addEventListener('click', () => {
     const open = side.classList.toggle('fopen')
+    side.scrollTop = 0
     if (open) setSheet('full')
+    render()
+  })
+  $('[data-a="see"]').addEventListener('click', e => {
+    e.preventDefault()
+    side.classList.remove('fopen')
+    side.scrollTop = 0
+    setSheet('full')
     render()
   })
   $('[data-a="onlysel2"]').addEventListener('click', () => {

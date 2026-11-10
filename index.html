@@ -685,18 +685,23 @@ body:not(.role-admin) .admin-only{display:none !important}
 </style>
 <style id="td-css">
 /* Fiche terrain : en-tête, chiffres clés, sections */
-#modal-terrain-detail .td-tt{flex:1;min-width:0}
-#modal-terrain-detail .td-meta{flex:1 1 100%;display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:6px;min-height:18px}
+#modal-terrain-detail .td-tt{flex:1 1 90px;min-width:0}
+#modal-terrain-detail .td-meta{flex:0 0 100%;display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:6px;min-height:18px}
 #modal-terrain-detail .td-ref{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:#1f7a4d;letter-spacing:.04em}
 #modal-terrain-detail .td-chip{font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:#eef3f0;color:#4f6a5c}
 #modal-terrain-detail .td-chip:empty{display:none}
 #modal-terrain-detail .td-zones{display:inline-flex;gap:5px;flex-wrap:wrap}
 #modal-terrain-detail .td-zones:empty{display:none}
 #modal-terrain-detail .td-zones span{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;color:#0a1410;padding:2px 7px;border-radius:5px}
-#modal-terrain-detail .td-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-#modal-terrain-detail .td-kpi>div{background:#f4f9f5;border:1px solid #e3ede7;border-radius:12px;padding:10px 12px;min-width:0}
-#modal-terrain-detail .td-kpi span{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#4f6a5c;margin-bottom:3px}
-#modal-terrain-detail .td-kpi b{display:block;font-size:15.5px;font-weight:700;color:#0a1410;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#modal-terrain-detail .td-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+#modal-terrain-detail .td-kpi>div{background:#f4f9f5;border:1px solid #e3ede7;border-radius:14px;padding:16px 18px 17px;min-width:0}
+#modal-terrain-detail .td-kpi span{display:block;font-family:var(--gf-body);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:#4f6a5c;margin-bottom:6px}
+#modal-terrain-detail .td-kpi b{display:block;font-size:23px;line-height:1.15;font-weight:700;letter-spacing:-.01em;color:#0a1410;font-variant-numeric:tabular-nums}
+#modal-terrain-detail .td-kpi b small{display:inline-block;white-space:nowrap;font-size:.58em;font-weight:600;letter-spacing:0;color:#4f6a5c;margin-left:.3em}
+#modal-terrain-detail .td-kpi b.td-kg small{color:#1f7a4d}
+/* Libellés des champs : même police que le reste de la fiche (Inter Tight), en capitales grises, plus compacts que la police à chasse fixe */
+#modal-terrain-detail .form-label{font-family:var(--gf-body) !important;font-size:11px !important;font-weight:600 !important;text-transform:uppercase;letter-spacing:.02em !important;color:#4f6a5c !important}
+#modal-terrain-detail .form-label span{text-transform:none;letter-spacing:0}
 #modal-terrain-detail .td-kpi b.td-kg{color:#1f7a4d}
 #modal-terrain-detail .td-comp{font-size:12.5px;color:#4f6a5c;line-height:1.45;margin-bottom:6px}
 #modal-terrain-detail .td-comp:empty{display:none}
@@ -1547,7 +1552,7 @@ body:not(.role-admin) .admin-only{display:none !important}
     <div class="td-sec">Terrain</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label" for="d-loc">Quartier ou nom du terrain</label>
+        <label class="form-label" for="d-loc">Quartier ou nom</label>
         <input class="form-input" id="d-loc" list="t-loc-list" autocomplete="off" placeholder="Ex : Dar Bouazza">
       </div>
       <div class="form-group">
@@ -3263,9 +3268,11 @@ function tdPrixPreview() {
   // prix global en millions : une décimale sous 10 M, pour qu'un terrain à 600 000 MAD ne s'affiche pas « 1 M »
   const brut = (!changed && t.forfait) ? Number(t.forfait) : sup * prix / 1e6;
   const forfait = brut >= 10 ? Math.round(brut) : Math.round(brut * 10) / 10;
-  document.getElementById('d-info-sup').textContent = sup ? sup.toLocaleString('fr-FR') + ' m²' : 'n.c.';
-  document.getElementById('d-info-prix').textContent = prix ? prix.toLocaleString('fr-FR') + ' MAD' : 'n.c.';
-  document.getElementById('d-info-forfait').textContent = forfait > 0 ? forfait.toLocaleString('fr-FR') + ' M MAD' : 'n.c.';
+  // le nombre en grand, l'unité en petit à côté (elle passe à la ligne si la case est étroite)
+  const kpi = (id, n, u) => { document.getElementById(id).innerHTML = n > 0 ? n.toLocaleString('fr-FR') + '<small>' + u + '</small>' : 'n.c.'; };
+  kpi('d-info-sup', sup, 'm²');
+  kpi('d-info-prix', prix, 'MAD');
+  kpi('d-info-forfait', forfait, 'M MAD');
   tdComplet();
 }
 
@@ -6703,9 +6710,9 @@ openDealEdit = function (id) {
   #modal-terrain-detail .td-head .btn{padding:8px 12px !important;gap:6px}
   #modal-terrain-detail .td-head .td-wa-l{font-size:13px}
   #modal-terrain-detail #d-commentaire{min-height:70px !important}
-  #modal-terrain-detail .td-kpi{gap:6px}
-  #modal-terrain-detail .td-kpi>div{padding:8px 9px}
-  #modal-terrain-detail .td-kpi b{font-size:14px}
+  #modal-terrain-detail .td-kpi{gap:7px}
+  #modal-terrain-detail .td-kpi>div{padding:12px 10px 13px}
+  #modal-terrain-detail .td-kpi b{font-size:17.5px}
   #modal-terrain-detail .td-sec{margin:16px 0 10px;padding-top:14px}
   .td-iform{display:none}
   .td-iform.open{display:block}

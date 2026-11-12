@@ -39,6 +39,9 @@
           ['pv', 'Prix de vente logement', 'DH/m²', 12500, 'E'],
           ['pp', 'Prix d’une place de parking', 'DH', 50000, 'E'],
           ['cible', 'Marge cible promoteur', '% CA', 20, 'H']
+        ]},
+        { title: 'Fiscalité', params: [
+          ['duree', 'Durée de l\u2019opération', 'exercices', 3, 'H']
         ]}
       ],
       land: 'prix', sale: ['pv', 'pp']
@@ -71,6 +74,9 @@
           ['pl', 'Prix de vente des lots', 'DH/m²', 3800, 'H'],
           ['com', 'Commercialisation', '% CA', 3, 'H'],
           ['cible', 'Marge cible lotisseur', '% CA', 20, 'H']
+        ]},
+        { title: 'Fiscalité', params: [
+          ['duree', 'Durée de l\u2019opération', 'exercices', 2, 'H']
         ]}
       ],
       land: 'prix', sale: ['pl']
@@ -104,6 +110,9 @@
           ['loy', 'Loyer entrepôt', 'DH/m²/mois', 40, 'H'],
           ['com', 'Commercialisation', '% CA', 3, 'H'],
           ['cible', 'Marge cible', '% CA', 20, 'H']
+        ]},
+        { title: 'Fiscalité', params: [
+          ['duree', 'Durée de la vente des lots', 'exercices', 2, 'H']
         ]}
       ],
       land: 'prix', sale: ['pl', 'loy']
@@ -146,6 +155,35 @@
     if (/^(ZI|I|PBC)/.test(c)) return 'indus';
     if (/^(D|E)/.test(c)) return 'lot';
     return 'promo';
+  }
+
+  /* ---------- fiscalité (CGI 2026) ----------
+     IS : 20 % si le bénéfice annuel est inférieur à 100 M DH, 35 % au-delà, sur la totalité.
+     Contribution sociale de solidarité (2026 à 2028), non déductible : 1,5 % de 1 à 5 M DH,
+     2,5 % de 5 à 10 M DH, 3,5 % de 10 à 40 M DH, 5 % au-delà, sur la totalité du bénéfice.
+     Cotisation minimale : 0,25 % du CA HT, due si elle dépasse l'IS (3 000 DH minimum).
+     Le résultat de l'opération est réparti à parts égales sur sa durée (exercices). */
+  var DUREE_DEF = { promo: 3, lot: 2, indus: 2 };
+  function cssRate(b) { return b < 1e6 ? 0 : b <= 5e6 ? 0.015 : b <= 10e6 ? 0.025 : b <= 40e6 ? 0.035 : 0.05; }
+  function taxes(marge, ca, duree) {
+    duree = Math.max(1, Math.round(duree) || 1);
+    var bY = marge / duree, caY = ca / duree;
+    var cmY = Math.max(3000, 0.0025 * caY);
+    var isRate = bY >= 100e6 ? 0.35 : 0.20;
+    var isY = bY > 0 ? isRate * bY : 0;
+    var cmApplies = cmY > isY;
+    var dueY = Math.max(isY, cmY);
+    var cR = bY > 0 ? cssRate(bY) : 0;
+    var cssY = cR * Math.max(0, bY);
+    var is = dueY * duree, css = cssY * duree;
+    var net = marge - is - css;
+    return { is: is, css: css, net: net, isRate: isRate, cssRate: cR, cmApplies: cmApplies, duree: duree, bY: bY,
+      rentNet: net / ca, tauxEff: marge > 0 ? (is + css) / marge : NaN };
+  }
+  function withTax(res, cat, v) {
+    var d = num(v, 'duree') || DUREE_DEF[cat];
+    res.tax = taxes(res.ca - res.cost, res.ca, d);
+    return res;
   }
 
   /* ---------- calculs ---------- */
@@ -225,7 +263,11 @@
       extra: { sVoie: sVoie, bati: bati, nbLots: nbLots, kvaTot: n('kva') * surf / 10000 }
     };
   }
-  var COMPUTE = { promo: computePromo, lot: computeLot, indus: computeIndus };
+  var COMPUTE = {
+    promo: function (v) { return withTax(computePromo(v), 'promo', v); },
+    lot: function (v) { return withTax(computeLot(v), 'lot', v); },
+    indus: function (v) { return withTax(computeIndus(v), 'indus', v); }
+  };
 
   /* ---------- état ---------- */
   var S = { terrainId: REF_ID, cat: 'promo', version: 'gf', vals: null, terrain: null };
@@ -314,20 +356,21 @@
         return '<button type="button" role="tab" class="rd-cat' + (c === S.cat ? ' active' : '') + '" aria-selected="' + (c === S.cat) + '" data-cat="' + c + '">' +
           '<span class="rd-cat-t">' + DEFS[c].label + (c === S.cat ? '<em>Actif</em>' : '') + '</span>' +
           '<span class="rd-cat-d">' + DEFS[c].desc + '</span>' +
-          '<span class="rd-cat-r">Rentabilité estimée <b data-rent="' + c + '"></b></span></button>';
+          '<span class="rd-cat-r">Brute <b data-rent="' + c + '"></b><span class="rd-sep"></span>Après impôt <b data-rentnet="' + c + '"></b></span></button>';
       }).join('') + '</div>' +
       '<div class="rd-kpis" id="rd-kpis"></div>' +
       '<div class="rd-verdict" id="rd-verdict"></div>' +
       '<div class="rd-body">' +
         '<div class="rd-params card" id="rd-params"></div>' +
         '<div class="rd-results">' +
-          '<div class="card"><div class="card-title">Bilan ' + DEFS[S.cat].short + '<span class="rd-tot" id="rd-tot"></span></div><div id="rd-costs"></div></div>' +
+          '<div class="card"><div class="card-title">Bilan ' + DEFS[S.cat].short + '<span class="rd-tot" id="rd-tot"></span></div><div id="rd-costs"></div>' +
+            '<div class="rd-gt rd-tax-t">Après impôt</div><div id="rd-tax"></div></div>' +
           '<div class="rd-two">' +
             '<div class="card"><div class="card-title">Spécifications ' + DEFS[S.cat].short + '</div><div id="rd-specs"></div></div>' +
             '<div class="card"><div class="card-title" id="rd-watch-t"></div><div id="rd-watch"></div></div>' +
           '</div>' +
-          '<div class="card"><div class="card-title">Sensibilité de la rentabilité</div>' +
-            '<div class="rd-note">Prix du foncier en lignes, prix de vente en colonnes. Vert : marge cible atteinte.</div>' +
+          '<div class="card"><div class="card-title">Sensibilité de la rentabilité après impôt</div>' +
+            '<div class="rd-note">Prix du foncier en lignes, prix de vente en colonnes. Vert : marge brute cible atteinte.</div>' +
             '<div class="rd-sens-w"><div class="rd-sens" id="rd-sens"></div></div></div>' +
         '</div>' +
       '</div>';
@@ -439,11 +482,18 @@
 
     CATS.forEach(function (c) {
       var b = root().querySelector('[data-rent="' + c + '"]');
-      if (b) b.textContent = pct(COMPUTE[c](S.vals[c]).rent);
+      var rc = COMPUTE[c](S.vals[c]);
+      if (b) b.textContent = pct(rc.rent);
+      var bn = root().querySelector('[data-rentnet="' + c + '"]');
+      if (bn) bn.textContent = pct(rc.tax.rentNet);
     });
 
-    document.getElementById('rd-kpis').innerHTML = res.kpis.map(function (k, i) {
-      return '<div class="kpi-card' + (i === 0 ? ' rd-kpi-main' : '') + '"><div class="kpi-label">' + k[0] + '</div>' +
+    var tx = res.tax;
+    var netK = [cat === 'indus' ? 'Rentabilité lots après impôt' : 'Rentabilité après impôt', pct(tx.rentNet),
+      'Résultat net ' + mdh(tx.net) + (isFinite(tx.tauxEff) ? ', impôts ' + pct(tx.tauxEff) + ' de la marge' : ', cotisation minimale due')];
+    var kp = res.kpis.slice(); kp.splice(1, 0, netK);
+    document.getElementById('rd-kpis').innerHTML = kp.map(function (k, i) {
+      return '<div class="kpi-card' + (i === 1 ? ' rd-kpi-main' : '') + '"><div class="kpi-label">' + k[0] + '</div>' +
         '<div class="kpi-value">' + k[1] + '</div><div class="kpi-sub">' + k[2] + '</div></div>';
     }).join('');
 
@@ -462,6 +512,18 @@
       return '<div class="rd-cost"><div class="rd-cost-l"><span>' + c[0] + '</span><span><b>' + mdh(c[1]) + '</b> <i>' + pct(c[1] / total) + '</i></span></div>' +
         '<div class="rd-bar"><div style="width:' + Math.max(0, c[1] / max * 100).toFixed(1) + '%;background:' + pal[i % pal.length] + '"></div></div></div>';
     }).join('');
+
+    var marge = res.ca - res.cost;
+    var trows = [
+      ['Marge brute (résultat avant impôt)', mdh(marge), ''],
+      ['IS ' + (tx.cmApplies ? '(cotisation minimale 0,25 % du CA)' : pct(tx.isRate)), '- ' + mdh(tx.is), ''],
+      ['Contribution sociale de solidarité ' + (tx.cssRate ? pct(tx.cssRate) : '(non due)'), '- ' + mdh(tx.css), ''],
+      ['Résultat net après impôt', mdh(tx.net), 'net']
+    ];
+    document.getElementById('rd-tax').innerHTML = trows.map(function (r) {
+      return '<div class="rd-tx' + (r[2] ? ' rd-tx-net' : '') + '"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>';
+    }).join('') + '<div class="rd-note">Bénéfice réparti sur ' + tx.duree + ' exercice' + (tx.duree > 1 ? 's' : '') + ', soit ' + mdh(Math.max(0, tx.bY)) +
+      ' par an. Barèmes 2026 : IS 20 % sous 100 M DH de bénéfice annuel, 35 % au-delà. La contribution de solidarité n\u2019est pas déductible. Estimation à valider avec votre expert-comptable.</div>';
 
     document.getElementById('rd-specs').innerHTML = specsFor(cat, vals, res.extra).map(function (s) {
       return '<div class="rd-spec"><span>' + esc(s[0]) + '</span><b>' + esc(s[1]) + '</b></div>';
@@ -482,8 +544,8 @@
         var v2 = Object.assign({}, vals);
         v2[def.land] = String(num(vals, def.land) * (1 + l));
         def.sale.forEach(function (k) { v2[k] = String(num(vals, k) * (1 + s)); });
-        var r = COMPUTE[cat](v2).rent;
-        var cls = r >= res.cible ? 'ok' : (r >= 0 ? 'mid' : 'ko');
+        var rr = COMPUTE[cat](v2), r = rr.tax.rentNet;
+        var cls = rr.rent >= res.cible ? 'ok' : (r >= 0 ? 'mid' : 'ko');
         h += '<span class="rd-sc ' + cls + (l === 0 && s === 0 ? ' cur' : '') + '">' + pct(r) + '</span>';
       });
     });

@@ -145,9 +145,20 @@
     DEFS[cat].groups.forEach(function (g) { g.params.forEach(function (p) { o[p[0]] = fmtIn(p[3]); }); });
     return o;
   }
+  // Terrains du CRM hors vendus, du plus récent au plus ancien : même règle que le tri
+  // « Plus récents (réf.) » de la page Terrains (référence GF-AA-NNNN décroissante, sans réf. à la fin).
   function terrains() {
-    try { return (window.state && state.terrains) ? state.terrains.filter(function (t) { return t.statut !== 'Vendu'; }) : []; }
+    var list;
+    try { list = (window.state && state.terrains) ? state.terrains.filter(function (t) { return t.statut !== 'Vendu'; }) : []; }
     catch (e) { return []; }
+    return list.slice().sort(function (a, b) {
+      var x = String(a.ref || ''), y = String(b.ref || '');
+      if (x && y) {
+        var c = y.localeCompare(x, 'fr', { numeric: true, sensitivity: 'base' });
+        if (c) return c;
+      } else if (x || y) return x ? -1 : 1;
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
   }
   function catFromUrba(code) {
     var c = String(code || '').trim().toUpperCase();
@@ -330,11 +341,13 @@
   function renderAll() {
     var el = root();
     if (!el) return;
-    var opts = '<option value="' + REF_ID + '"' + (S.terrainId === REF_ID ? ' selected' : '') + '>Étude de référence J-ONE Promo, TF 104996/63</option>' +
-      terrains().map(function (t) {
+    var mine = terrains();
+    var opts = (mine.length ? '<optgroup label="Mes terrains (' + mine.length + '), du plus récent au plus ancien">' +
+      mine.map(function (t) {
         var lab = typeof terrainLabel === 'function' ? terrainLabel(t) : (t.ref || '') + ' / ' + (t.localisation || '');
         return '<option value="' + esc(t.id) + '"' + (String(t.id) === String(S.terrainId) ? ' selected' : '') + '>' + esc(lab) + '</option>';
-      }).join('');
+      }).join('') + '</optgroup>' : '') +
+      '<optgroup label="Exemple"><option value="' + REF_ID + '"' + (S.terrainId === REF_ID ? ' selected' : '') + '>Étude de référence J-ONE Promo, TF 104996/63</option></optgroup>';
 
     var t = S.terrain;
     var facts = t
@@ -594,7 +607,12 @@
 
   /* ---------- API publique ---------- */
   window.rdInit = function () {
-    if (!S.vals) selectTerrain(REF_ID);
+    if (!S.vals) {
+      var first = terrains()[0];
+      selectTerrain(first ? String(first.id) : REF_ID);
+    } else if (S.terrainId !== REF_ID && !S.terrain) {
+      selectTerrain(S.terrainId); // données du CRM arrivées après la première ouverture
+    }
     renderAll();
   };
   window.rdFromTerrain = function (id) {

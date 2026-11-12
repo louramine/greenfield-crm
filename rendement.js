@@ -133,7 +133,7 @@
     if (!isFinite(x)) return 'n.d.';
     return x.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
-  function mdh(x) { return nf(x / 1e6, 2) + ' M DH'; }
+  function mdh(x) { if (Math.abs(x) < 5000) x = 0; return nf(x / 1e6, 2) + ' M DH'; }
   function pct(x) { if (!isFinite(x)) return 'n.d.'; if (Math.abs(x) < 0.0005) x = 0; return nf(x * 100, 1) + ' %'; }
   function fmtIn(x) { return String(Math.round(x * 100) / 100).replace('.', ','); }
   function num(vals, k) {
@@ -490,8 +490,10 @@
 
     var tx = res.tax;
     var netK = [cat === 'indus' ? 'Rentabilité lots après impôt' : 'Rentabilité après impôt', pct(tx.rentNet),
-      'Résultat net ' + mdh(tx.net) + (isFinite(tx.tauxEff) ? ', impôts ' + pct(tx.tauxEff) + ' de la marge' : ', cotisation minimale due')];
+      isFinite(tx.tauxEff) ? 'Impôts : ' + pct(tx.tauxEff) + ' de la marge brute' : 'Cotisation minimale due, résultat déficitaire'];
     var kp = res.kpis.slice(); kp.splice(1, 0, netK);
+    var mNet = ['Marge nette', mdh(tx.net), 'Après IS et contribution de solidarité, ' + pct(tx.net / (res.cost || 1)) + ' du coût'];
+    kp.splice(cat === 'indus' ? 2 : 3, 0, mNet);
     document.getElementById('rd-kpis').innerHTML = kp.map(function (k, i) {
       return '<div class="kpi-card' + (i === 1 ? ' rd-kpi-main' : '') + '"><div class="kpi-label">' + k[0] + '</div>' +
         '<div class="kpi-value">' + k[1] + '</div><div class="kpi-sub">' + k[2] + '</div></div>';

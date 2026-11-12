@@ -149,7 +149,8 @@
   // « Plus récents (réf.) » de la page Terrains (référence GF-AA-NNNN décroissante, sans réf. à la fin).
   function terrains() {
     var list;
-    try { list = (window.state && state.terrains) ? state.terrains.filter(function (t) { return t.statut !== 'Vendu'; }) : []; }
+    // « state » est déclaré avec let dans index.html : il n'est pas sur window, on le lit directement.
+    try { list = (typeof state !== 'undefined' && state && Array.isArray(state.terrains)) ? state.terrains.filter(function (t) { return t.statut !== 'Vendu'; }) : []; }
     catch (e) { return []; }
     return list.slice().sort(function (a, b) {
       var x = String(a.ref || ''), y = String(b.ref || '');
@@ -281,7 +282,7 @@
   };
 
   /* ---------- état ---------- */
-  var S = { terrainId: REF_ID, cat: 'promo', version: 'gf', vals: null, terrain: null };
+  var S = { terrainId: REF_ID, cat: 'promo', version: 'gf', vals: null, terrain: null, picked: false };
 
   function loadSaved() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { return {}; } }
   function save() {
@@ -569,7 +570,7 @@
 
   function bind() {
     var el = root();
-    el.querySelector('#rd-terrain').addEventListener('change', function () { selectTerrain(this.value); renderAll(); });
+    el.querySelector('#rd-terrain').addEventListener('change', function () { S.picked = true; selectTerrain(this.value); renderAll(); });
     el.querySelectorAll('.rd-cat').forEach(function (b) {
       b.addEventListener('click', function () { S.cat = b.getAttribute('data-cat'); renderAll(); });
     });
@@ -607,8 +608,8 @@
 
   /* ---------- API publique ---------- */
   window.rdInit = function () {
-    if (!S.vals) {
-      var first = terrains()[0];
+    var first = terrains()[0];
+    if (!S.vals || (!S.picked && S.terrainId === REF_ID && first)) {
       selectTerrain(first ? String(first.id) : REF_ID);
     } else if (S.terrainId !== REF_ID && !S.terrain) {
       selectTerrain(S.terrainId); // données du CRM arrivées après la première ouverture
@@ -618,6 +619,7 @@
   window.rdFromTerrain = function (id) {
     if (typeof closeModal === 'function') closeModal('modal-terrain-detail');
     var nav = document.querySelector('.sidebar .nav-item[onclick*="\'rendement\'"]');
+    S.picked = true;
     selectTerrain(String(id));
     if (nav && typeof showPage === 'function') showPage('rendement', nav);
     else renderAll();

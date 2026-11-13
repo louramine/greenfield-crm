@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Test fonds de carte : Esri et Mapbox</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0a1410;color:#0a1410;font-family:-apple-system,system-ui,sans-serif}
+header{color:#7ee0a4;padding:calc(10px + env(safe-area-inset-top)) 14px 8px;font-weight:800;font-size:17px}
+header small{display:block;font-weight:400;font-size:12px;color:#c8e6d3;margin-top:3px}
+.maps{display:grid;grid-template-columns:1fr;gap:6px;padding:0 6px}
+@media (min-width:800px){.maps{grid-template-columns:1fr 1fr}}
+.mw{position:relative;height:36vh;min-height:220px;border-radius:12px;overflow:hidden;background:#222}
+@media (min-width:800px){.mw{height:60vh}}
+.m{position:absolute;inset:0}
+.tag{position:absolute;left:8px;top:8px;z-index:500;background:#0a1410;color:#7ee0a4;font-weight:700;font-size:13px;padding:5px 10px;border-radius:999px}
+.tag span{color:#fff;font-weight:400;margin-left:6px}
+.ctl{background:#f4f9f5;margin:8px 6px;border-radius:14px;padding:12px}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+button,select{font:inherit;font-size:15px;border:1px solid #cfdcd2;background:#fff;border-radius:10px;padding:9px 12px}
+button.go{background:#0a1410;color:#7ee0a4;border-color:#0a1410;font-weight:700;width:100%;padding:13px}
+button:disabled{opacity:.5}
+#st{font-size:13px;color:#4f6a5c;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{padding:6px 4px;border-bottom:1px solid #dfe8e1;text-align:right}
+th:first-child,td:first-child{text-align:left}
+.win{font-weight:700;color:#1f7a4d}
+h3{font-size:15px;margin:14px 0 4px}
+</style>
+</head><body>
+<header>Test des fonds satellite<small>Haut : Esri (actuel). Bas : Mapbox. Les deux cartes bougent ensemble.</small></header>
+<div class="maps">
+  <div class="mw"><div class="m" id="mA"></div><div class="tag">Esri<span id="tA"></span></div></div>
+  <div class="mw"><div class="m" id="mB"></div><div class="tag">Mapbox<span id="tB"></span></div></div>
+</div>
+<div class="ctl">
+  <div class="row"><select id="pt"></select>
+    <button data-z="13">Zoom 13</button><button data-z="16">Zoom 16</button><button data-z="18">Zoom 18</button></div>
+  <button class="go" id="go">Lancer le test de vitesse (environ 1 minute)</button>
+  <div id="st">Le test charge 15 vues (5 lieux, 3 zooms) sur chaque fond, sans cache, comme pour un prospect qui ouvre la carte pour la première fois.</div>
+  <div id="res"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const TOKEN = decodeURIComponent(location.hash.slice(1)) || prompt('Clé publique Mapbox (pk.…)') || ''
+const PTS = [
+  ['Casablanca centre', 33.5850, -7.6320],
+  ['Bouskoura', 33.4490, -7.6480],
+  ['Dar Bouazza', 33.5230, -7.8170],
+  ['Had Soualem', 33.4230, -7.8500],
+  ['Mediouna', 33.4520, -7.5150]
+]
+const ZOOMS = [13, 16, 18]
+const $ = s => document.querySelector(s)
+$('#pt').innerHTML = PTS.map((p, i) => '<option value="' + i + '">' + p[0] + '</option>').join('')
+
+const opt = { zoomControl: false, attributionControl: true, fadeAnimation: false }
+const mA = L.map('mA', opt).setView([PTS[0][1], PTS[0][2]], 16)
+const mB = L.map('mB', opt).setView([PTS[0][1], PTS[0][2]], 16)
+const lA = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?cb={cb}', { maxZoom: 19, cb: 0, attribution: 'Esri, Maxar, Earthstar Geographics' }).addTo(mA)
+const lB = L.tileLayer('https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=' + TOKEN + '&cb={cb}', { maxZoom: 19, cb: 0, attribution: '© Mapbox © Maxar' }).addTo(mB)
+
+// Synchronisation des deux cartes pour la comparaison à l'oeil
+let syncing = false
+function sync (a, b) {
+  a.on('move', () => { if (syncing) return; syncing = true; b.setView(a.getCenter(), a.getZoom(), { animate: false }); syncing = false })
+}
+sync(mA, mB); sync(mB, mA)
+
+function goTo (i, z) { mA.setView([PTS[i][1], PTS[i][2]], z, { animate: false }) }
+$('#pt').onchange = () => goTo(+$('#pt').value, mA.getZoom())
+document.querySelectorAll('[data-z]').forEach(b => { b.onclick = () => goTo(+$('#pt').value, +b.dataset.z) })
+
+// Mesure : temps pour charger toutes les tuiles visibles d'une vue
+function track (layer) {
+  const st = {}
+  const r = { tiles: [], err: 0 }
+  layer.on('tileloadstart', e => { st[e.coords.x + ':' + e.coords.y + ':' + e.coords.z] = performance.now() })
+  layer.on('tileload', e => { const k = e.coords.x + ':' + e.coords.y + ':' + e.coords.z; if (st[k]) r.tiles.push(performance.now() - st[k]) })
+  layer.on('tileerror', () => { r.err++ })
+  return r
+}
+const rA = track(lA)
+const rB = track(lB)
+
+function measure (map, layer, lat, lng, z) {
+  return new Promise(resolve => {
+    const t0 = performance.now()
+    let done = false
+    const fin = v => { if (done) return; done = true; layer.off('load', onL); resolve(v) }
+    const onL = () => fin(performance.now() - t0)
+    layer.on('load', onL)
+    setTimeout(() => fin(null), 20000)
+    map.setView([lat, lng], z, { animate: false })
+  })
+}
+
+const med = a => { const s = a.filter(v => v != null).sort((x, y) => x - y); return s.length ? s[Math.floor((s.length - 1) / 2)] : null }
+const avg = a => { const s = a.filter(v => v != null); return s.length ? s.reduce((x, y) => x + y, 0) / s.length : null }
+const sec = v => v == null ? 'échec' : (v / 1000).toFixed(2).replace('.', ',') + ' s'
+const ms = v => v == null ? '' : Math.round(v) + ' ms'
+
+let txt = ''
+$('#go').onclick = async () => {
+  $('#go').disabled = true
+  syncing = true
+  rA.tiles.length = 0; rB.tiles.length = 0; rA.err = 0; rB.err = 0
+  const run = Date.now()
+  lA.options.cb = run; lB.options.cb = run
+  const out = []
+  let n = 0
+  const total = PTS.length * ZOOMS.length
+  for (const z of ZOOMS) {
+    for (const [name, lat, lng] of PTS) {
+      n++
+      $('#st').textContent = 'Vue ' + n + ' sur ' + total + ' : ' + name + ', zoom ' + z
+      const first = n % 2 ? 'A' : 'B'
+      let a, b
+      if (first === 'A') { a = await measure(mA, lA, lat, lng, z); b = await measure(mB, lB, lat, lng, z) } else { b = await measure(mB, lB, lat, lng, z); a = await measure(mA, lA, lat, lng, z) }
+      $('#tA').textContent = sec(a); $('#tB').textContent = sec(b)
+      out.push({ name, z, a, b })
+    }
+  }
+  syncing = false
+  const A = out.map(o => o.a)
+  const B = out.map(o => o.b)
+  const w = (x, y) => x != null && (y == null || x < y) ? ' class="win"' : ''
+  let h = '<h3>Temps pour afficher une vue complète</h3><table><tr><th></th><th>Esri</th><th>Mapbox</th></tr>' +
+    '<tr><td>Médiane</td><td' + w(med(A), med(B)) + '>' + sec(med(A)) + '</td><td' + w(med(B), med(A)) + '>' + sec(med(B)) + '</td></tr>' +
+    '<tr><td>Moyenne</td><td' + w(avg(A), avg(B)) + '>' + sec(avg(A)) + '</td><td' + w(avg(B), avg(A)) + '>' + sec(avg(B)) + '</td></tr>' +
+    '<tr><td>Tuile (médiane)</td><td>' + ms(med(rA.tiles)) + '</td><td>' + ms(med(rB.tiles)) + '</td></tr>' +
+    '<tr><td>Tuiles en erreur</td><td>' + rA.err + '</td><td>' + rB.err + '</td></tr></table>'
+  h += '<h3>Par zoom (médiane)</h3><table><tr><th>Zoom</th><th>Esri</th><th>Mapbox</th></tr>'
+  ZOOMS.forEach(z => {
+    const a = med(out.filter(o => o.z === z).map(o => o.a))
+    const b = med(out.filter(o => o.z === z).map(o => o.b))
+    h += '<tr><td>' + z + '</td><td' + w(a, b) + '>' + sec(a) + '</td><td' + w(b, a) + '>' + sec(b) + '</td></tr>'
+  })
+  h += '</table><h3>Détail</h3><table><tr><th>Vue</th><th>Esri</th><th>Mapbox</th></tr>' +
+    out.map(o => '<tr><td>' + o.name + ', z' + o.z + '</td><td' + w(o.a, o.b) + '>' + sec(o.a) + '</td><td' + w(o.b, o.a) + '>' + sec(o.b) + '</td></tr>').join('') + '</table>' +
+    '<p><button class="go" id="cp">Copier les résultats pour Claude</button></p>'
+  $('#res').innerHTML = h
+  const c = navigator.connection
+  txt = 'Test fonds ' + new Date().toLocaleString('fr-FR') + ' , réseau ' + (c && c.effectiveType ? c.effectiveType : 'inconnu') + ' , écran x' + devicePixelRatio + '\n' +
+    'Esri : médiane ' + sec(med(A)) + ', moyenne ' + sec(avg(A)) + ', tuile ' + ms(med(rA.tiles)) + ', erreurs ' + rA.err + '\n' +
+    'Mapbox : médiane ' + sec(med(B)) + ', moyenne ' + sec(avg(B)) + ', tuile ' + ms(med(rB.tiles)) + ', erreurs ' + rB.err + '\n' +
+    out.map(o => o.name + ' z' + o.z + ' : Esri ' + sec(o.a) + ', Mapbox ' + sec(o.b)).join('\n')
+  $('#cp').onclick = async () => {
+    try { await navigator.clipboard.writeText(txt); $('#cp').textContent = 'Copié, colle-le dans la conversation' } catch (e) { prompt('Copie ce texte :', txt) }
+  }
+  $('#st').textContent = 'Test terminé. Compare aussi la netteté en zoomant sur chaque lieu avec les boutons.'
+  $('#go').disabled = false
+  $('#go').textContent = 'Relancer le test'
+}
+</script>
+</body></html>

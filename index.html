@@ -6873,9 +6873,14 @@ function tgHere() {
 .lk-ch{font-size:13.5px;margin-top:6px;color:#0a1410}
 .ch-sm{display:none}
 .ch-dot{display:none}
+/* Atlas en grand : sans l'en-tête du CRM (titre, déconnexion) */
+body.on-carte .topbar{display:none !important}
+body.on-carte .content{padding:12px 16px !important}
+body.on-carte .carte-head{margin-bottom:10px}
+body.on-carte .gfc-host{height:calc(100vh - 76px);height:calc(100dvh - 76px)}
 @media (max-width:900px){
 body.on-carte .content{padding-bottom:0 !important}
-body.on-carte .carte-head{position:fixed;left:0;right:0;top:54px;z-index:60;margin:0;padding:6px 10px;gap:8px;flex-wrap:nowrap;overflow-x:auto;background:#0e1f17;border-bottom:1px solid rgba(126,224,164,0.15);scrollbar-width:none}
+body.on-carte .carte-head{position:fixed;left:0;right:0;top:54px;z-index:60;margin:0;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;gap:8px;flex-wrap:nowrap;overflow-x:auto;background:#0e1f17;border-bottom:1px solid rgba(126,224,164,0.15);scrollbar-width:none}
 body.on-carte .carte-head::-webkit-scrollbar{display:none}
 body.on-carte .gfc-host{position:fixed;left:0;right:0;top:104px;bottom:calc(60px + max(4px, env(safe-area-inset-bottom) - 18px));height:auto;min-height:0;border-radius:0;border:none;box-shadow:none;z-index:50}
 .ch-seg{flex:none}

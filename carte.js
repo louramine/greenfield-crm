@@ -92,7 +92,41 @@ const CSS = `
 .gfc-chip{font-family:'Inter Tight','Inter',sans-serif;font-size:11.5px;text-transform:none;letter-spacing:0;border:1px solid #cfdcd2;background:#fff;border-radius:999px;padding:3px 9px 3px 6px;cursor:pointer;display:flex;align-items:center;gap:5px;color:#0a1410}
 .gfc-chip i,.gfc-legend i,.gfc-zone i{width:10px;height:10px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
 .gfc-chip.off{opacity:.35}
-.gfc-count{padding:8px 14px;font-size:12px;color:#4f6a5c;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gfc-count{padding:8px 14px;font-size:12px;color:#4f6a5c;display:flex;align-items:center;gap:10px}
+.gfc-count .gfc-n{flex:1;white-space:nowrap}
+.gfc-count select{font:inherit;font-size:12px;color:#1f7a4d;background:transparent;border:none;padding:2px 0;cursor:pointer;max-width:150px}
+.gfc-fbar{position:absolute;left:386px;right:14px;top:14px;z-index:950;display:flex;gap:8px;align-items:center;flex-wrap:wrap;pointer-events:none}
+.gfc-fbar>*{pointer-events:auto}
+.gfc-srch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;min-width:230px;background:#0a1410;border:1px solid rgba(126,224,164,.35);border-radius:10px;color:#9cb3a3;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:text}
+.gfc-srch svg{flex:none}
+.gfc-srch input{flex:1;min-width:0;font:inherit;font-size:14px;color:#e8f2ea;background:none;border:none;outline:none;padding:0}
+.gfc-srch input::placeholder{color:#9cb3a3}
+.gfc-fp,.gfc-fr{font:inherit;font-size:14px;font-weight:600;height:40px;padding:0 13px;border-radius:10px;border:1px solid rgba(126,224,164,.35);background:#0a1410;color:#e8f2ea;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.3);max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.gfc-fp::after{content:'';flex:none;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+.gfc-fp.open::after{transform:translateY(1px) rotate(-135deg)}
+.gfc-fp.on{background:#7ee0a4;color:#0a1410;border-color:#7ee0a4}
+.gfc-fr{color:#9cb3a3}
+.gfc-fr.on{color:#e8f2ea}
+.gfc-pop{position:absolute;z-index:1300;width:330px;background:#fff;color:#0a1410;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.38);display:none;flex-direction:column;overflow:hidden}
+.gfc-pop.on{display:flex}
+.gfc-pb{padding:14px;overflow-y:auto;flex:1;min-height:0}
+.gfc-pf{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #e2ebe4;flex:none}
+.gfc-pf .gfc-btn{flex:1;padding:10px;font-size:14px}
+.gfc-ph{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#4f6a5c;margin:2px 0 8px}
+.gfc-pre{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.gfc-pre button{font:inherit;font-size:13.5px;border:1px solid #cfdcd2;background:#fff;color:#0a1410;border-radius:999px;padding:7px 12px;cursor:pointer}
+.gfc-pre button.on{background:#0a1410;color:#7ee0a4;border-color:#0a1410}
+.gfc-rg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gfc-rg label{font-size:12px;color:#4f6a5c;display:flex;flex-direction:column;gap:4px}
+.gfc-rg input,.gfc-pq{font:inherit;font-size:14px;color:#0a1410;padding:9px 10px;border:1px solid #cfdcd2;border-radius:10px;width:100%;background:#fff}
+.gfc-pq{margin-bottom:8px}
+.gfc-opts{display:flex;flex-direction:column}
+.gfc-opt{display:flex;align-items:center;gap:10px;padding:8px 6px;font-size:14px;border-radius:8px;cursor:pointer}
+.gfc-opt:hover{background:#f0f6f2}
+.gfc-opt input{width:18px;height:18px;margin:0;accent-color:#1f7a4d;flex:none}
+.gfc-opt i{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.gfc-opt span{flex:1}
+.gfc-opt small{color:#4f6a5c;font-size:12px}
 .gfc-link{font:inherit;font-size:12px;border:none;background:none;color:#1f7a4d;cursor:pointer;text-decoration:underline;padding:0}
 .gfc-list{flex:1;overflow-y:auto;padding:0 10px 14px}
 .gfc-card{background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;cursor:pointer;border:1px solid transparent;display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center}
@@ -107,14 +141,14 @@ const CSS = `
 .gfc-tag{font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;background:#ede7f6;color:#4527a0}
 .gfc-tag.w{background:#ff8c1a;color:#fff}
 .gfc-map{flex:1;height:100%}
-.gfc-selbar{position:absolute;left:386px;top:14px;z-index:900;background:#0a1410;color:#e8f2ea;border:1px solid rgba(126,224,164,.35);border-radius:999px;padding:6px 6px 6px 14px;display:flex;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.35);max-width:calc(100% - 400px);flex-wrap:wrap}
+.gfc-selbar{position:absolute;left:386px;bottom:14px;z-index:900;background:#0a1410;color:#e8f2ea;border:1px solid rgba(126,224,164,.35);border-radius:999px;padding:6px 6px 6px 14px;display:flex;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.35);max-width:calc(100% - 470px);flex-wrap:wrap}
 .gfc-selbar b{color:#7ee0a4}
 .gfc-btn{font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:999px;border:none;cursor:pointer;text-decoration:none;white-space:nowrap}
 .gfc-b1{background:#7ee0a4;color:#0a1410}
 .gfc-b2{background:rgba(126,224,164,.15);color:#e8f2ea;border:1px solid rgba(126,224,164,.35)}
 .gfc-b3{background:#e6f6ee;color:#0a1410}
 .gfc-b4{background:#0a1410;color:#7ee0a4}
-.gfc-detail{position:absolute;top:62px;right:14px;width:350px;max-height:calc(100% - 76px);overflow-y:auto;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:1000;display:none}
+.gfc-detail{position:absolute;top:66px;right:14px;width:350px;max-height:calc(100% - 76px);overflow-y:auto;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:1000;display:none}
 .gfc-detail.on{display:block}
 .gfc-dh{background:#0a1410;color:#fff;padding:15px 17px;border-radius:16px 16px 0 0;position:relative}
 .gfc-dh .id{color:#7ee0a4;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em}
@@ -137,7 +171,7 @@ const CSS = `
 .gfc-acts .gfc-btn{flex:1;text-align:center;padding:10px}
 .gfc-poi{background:#0a1410;color:#7ee0a4;font-size:11px;font-weight:600;padding:3px 8px;border-radius:12px;white-space:nowrap;border:1px solid #7ee0a4;transform:translate(-50%,-50%);display:inline-block}
 .gfc .leaflet-tooltip.gfc-lab{background:#0a1410;color:#fff;border:none;font-weight:600;font-size:11.5px}
-.gfc-warn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:450;pointer-events:none;background:#0a1410;color:#7ee0a4;font-size:12.5px;padding:8px 14px;border-radius:999px;display:none;max-width:90%;text-align:center}
+.gfc-warn{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:450;pointer-events:none;background:#0a1410;color:#7ee0a4;font-size:12.5px;padding:8px 14px;border-radius:999px;display:none;max-width:90%;text-align:center}
 .gfc-warn.on{display:block}
 .gfc-toggle{display:none}
 .gfc-empty{padding:30px 16px;text-align:center;color:#4f6a5c;font-size:13px}
@@ -165,16 +199,22 @@ const CSS = `
 .gfc-pill{font:inherit;font-size:13.5px;font-weight:600;border:1px solid #cfdcd2;background:#fff;color:#0a1410;border-radius:999px;padding:8px 13px;cursor:pointer;white-space:nowrap}
 .gfc-pill.on{background:#0a1410;color:#7ee0a4;border-color:#0a1410}
 .gfc-pill b{display:inline-block;min-width:18px;margin-left:5px;padding:0 5px;border-radius:9px;background:#7ee0a4;color:#0a1410;font-size:11.5px;line-height:18px;text-align:center}
-.gfc-filters{display:none}
-.gfc-side.fopen .gfc-filters{display:grid}
-.gfc-side.fopen{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.gfc-side.fopen>*{flex-shrink:0}
-.gfc-side.fopen .gfc-list{flex:none;overflow:visible}
-.gfc-side.fopen .gfc-sh{position:sticky;top:0;z-index:3;background:#f4f9f5;border-radius:18px 18px 0 0}
-.gfc-side.fopen .gfc-see{display:block;grid-column:1/3;font:inherit;font-size:15px;font-weight:700;border:none;border-radius:12px;background:#0a1410;color:#7ee0a4;padding:13px;margin:4px 0 6px;cursor:pointer}
-.gfc-filters select,.gfc-filters input,.gfc-box input,.gfc-box select,.gfc-box textarea{font-size:16px;padding:10px}
-.gfc-count{display:none}
-.gfc-side.fopen .gfc-count{display:flex}
+.gfc-box input,.gfc-box select,.gfc-box textarea{font-size:16px;padding:10px}
+.gfc-count{display:flex;padding:8px 14px 2px}
+.gfc-count .gfc-link{display:none}
+.gfc-count select{font-size:16px;max-width:none}
+.gfc-fbar{left:0;right:0;top:8px;padding:0 8px 4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;-webkit-overflow-scrolling:touch}
+.gfc-fbar::-webkit-scrollbar{display:none}
+.gfc.hasbrand .gfc-fbar{top:calc(52px + env(safe-area-inset-top))}
+.gfc-srch{flex:none;min-width:0;width:150px;height:42px}
+.gfc-srch input{font-size:16px}
+.gfc-fp,.gfc-fr{flex:none;height:42px;font-size:14.5px;max-width:200px}
+.gfc-pop{left:8px;right:8px;width:auto}
+.gfc-pre button{font-size:15px;padding:9px 13px}
+.gfc-rg input,.gfc-pq{font-size:16px;padding:11px}
+.gfc-opt{font-size:15.5px;padding:11px 6px}
+.gfc-opt input{width:22px;height:22px}
+.gfc-pf .gfc-btn{padding:13px}
 .gfc-list{padding:8px 10px 18px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .gfc-card{grid-template-columns:34px 1fr auto;padding:12px;gap:10px}
 .gfc-card .t{font-size:15px}
@@ -186,8 +226,8 @@ const CSS = `
 .gfc-mtop .w{font-family:'Archivo','League Spartan',sans-serif;font-weight:900;font-size:18px}
 .gfc-mtop span{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;border:1px solid #7ee0a4;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .gfc-mtop span.red{border-color:#ffb36b;color:#ffb36b}
-.gfc-selbar{z-index:1050;left:8px;right:8px;top:8px;max-width:none;border-radius:16px;padding:6px 6px 6px 12px;flex-wrap:nowrap;gap:6px;font-size:13px}
-.gfc.hasbrand .gfc-selbar{top:calc(46px + env(safe-area-inset-top))}
+.gfc-selbar{z-index:1050;left:8px;right:8px;top:58px;bottom:auto;max-width:none;border-radius:16px;padding:6px 6px 6px 12px;flex-wrap:nowrap;gap:6px;font-size:13px}
+.gfc.hasbrand .gfc-selbar{top:calc(102px + env(safe-area-inset-top))}
 .gfc-selbar > span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gfc-selbar .gfc-btn{padding:8px 11px;font-size:13px}
 .gfc-selbar .gfc-lg{display:none}
@@ -197,11 +237,11 @@ const CSS = `
 .gfc-dh h2{font-size:20px}
 .gfc-dh .x{top:14px;right:8px;width:40px;height:40px;font-size:26px}
 .gfc-acts .gfc-btn{padding:13px 10px;font-size:14px}
-.gfc-warn{bottom:auto;top:60px;font-size:11.5px}
-.gfc.hasbrand .gfc-warn{top:100px}
+.gfc-warn{bottom:auto;top:112px;font-size:11.5px}
+.gfc.hasbrand .gfc-warn{top:calc(156px + env(safe-area-inset-top))}
 .gfc-modal{align-items:flex-end;padding:0;z-index:2000}
 .gfc-box{max-width:none;border-radius:18px 18px 0 0;max-height:92%;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
-.gfc .leaflet-control-layers{margin-top:62px}
+.gfc .leaflet-control-layers{margin-top:112px}
 .gfc .leaflet-control-attribution{font-size:9px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gfc.hasbrand .leaflet-control-layers{margin-top:100px}
 .gfc-toggle{display:none}
@@ -295,19 +335,14 @@ function mount (root, opt) {
     '<div class="gfc-mtop"></div>' +
     '<aside class="gfc-side">' +
     (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
-    '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="filt">Filtres</button><button class="gfc-pill" data-a="onlysel2">Sélection</button></div></div>' +
-    '<div class="gfc-filters">' +
-    '<label class="gfc-full">Recherche<input type="search" data-f="txt" placeholder="Référence, zone, zonage"></label>' +
-    '<label class="gfc-full">Zone<select data-f="q"></select></label>' +
-    '<label>Superficie<select data-f="s"><option value="">Toutes</option><option value="0-5000">Moins de 5 000 m²</option><option value="5000-20000">5 000 à 20 000 m²</option><option value="20000-100000">2 à 10 ha</option><option value="100000-">Plus de 10 ha</option></select></label>' +
-    '<label>Budget<select data-f="b"><option value="">Tous</option><option value="0-10000000">Moins de 10 MDH</option><option value="10000000-30000000">10 à 30 MDH</option><option value="30000000-100000000">30 à 100 MDH</option><option value="100000000-">Plus de 100 MDH</option><option value="nd">Prix sur demande</option></select></label>' +
-    '<label class="gfc-full">Zonage<div class="gfc-chips"></div></label>' +
-    '<label class="gfc-full">Trier par<select data-f="o"><option value="rec">Recommandé</option><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></label>' +
-    '<button class="gfc-see" data-a="see"></button>' +
-    '</div>' +
-    '<div class="gfc-count"><span class="gfc-n"></span><span><button class="gfc-link" data-a="onlysel">Ma sélection</button> · <button class="gfc-link" data-a="reset">Réinitialiser</button></span></div>' +
+    '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="onlysel2">Sélection</button></div></div>' +
+    '<div class="gfc-count"><span class="gfc-n"></span><button class="gfc-link" data-a="onlysel">Ma sélection</button><select data-f="o" aria-label="Trier par"><option value="rec">Tri : recommandé</option><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></div>' +
     '<div class="gfc-list"></div></aside>' +
     '<div class="gfc-map"></div>' +
+    '<div class="gfc-fbar"><label class="gfc-srch"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" data-f="txt" placeholder="Rechercher" aria-label="Rechercher une référence, une zone, un zonage"></label>' +
+    '<button class="gfc-fp" data-p="p">Prix</button><button class="gfc-fp" data-p="s">Superficie</button><button class="gfc-fp" data-p="q">Zones</button><button class="gfc-fp" data-p="z">Zonage</button>' +
+    '<button class="gfc-fr" data-a="reset"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Réinitialiser</button></div>' +
+    '<div class="gfc-pop"></div>' +
     '<div class="gfc-selbar"></div>' +
     '<div class="gfc-detail"></div>' +
     '<div class="gfc-warn">Le fond satellite ne se charge pas ici. Ouvrez la page dans Chrome, Safari ou Edge.</div>' +
@@ -369,7 +404,8 @@ function mount (root, opt) {
   let shown = []
   let current = null
   let onlySel = false
-  const active = new Set(FAM.map(f => f.k))
+  // Filtres : vides au départ (tout est affiché). Prix en MDH, superficie en ha.
+  const F = { p: [null, null], pnd: false, s: [null, null], q: new Set(), z: new Set() }
 
   function build () {
     Object.values(layers).forEach(l => map.removeLayer(l))
@@ -397,20 +433,8 @@ function mount (root, opt) {
       })
       layers[t.key] = L.featureGroup(shapes)
     })
-    const quartiers = [...new Set(D.map(t => t.q).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'))
-    const qs = $('[data-f="q"]')
-    const prev = qs.value
-    qs.innerHTML = '<option value="">Toutes les zones</option>' + quartiers.map(q => '<option>' + esc(q) + '</option>').join('')
-    if (quartiers.includes(prev)) qs.value = prev
-    const used = new Set(D.map(t => fam(t.z)))
-    $('.gfc-chips').innerHTML = FAM.filter(f => used.has(f.k)).map(f => '<span class="gfc-chip' + (active.has(f.k) ? '' : ' off') + '" data-k="' + f.k + '"><i style="background:' + f.col + '"></i>' + f.l + '</span>').join('')
-    $$('.gfc-chip').forEach(ch => ch.addEventListener('click', () => {
-      const k = ch.dataset.k
-      if (active.has(k)) active.delete(k)
-      else active.add(k)
-      ch.classList.toggle('off', !active.has(k))
-      render()
-    }))
+    const qset = new Set(D.map(t => t.q))
+    F.q.forEach(q => { if (!qset.has(q)) F.q.delete(q) })
     if (o.brand) {
       $('.gfc-sub').textContent = o.sub
       const b = $('.gfc-badge')
@@ -420,24 +444,38 @@ function mount (root, opt) {
     }
   }
 
-  const inRange = (v, r) => {
-    if (!r) return true
-    const [a, b] = r.split('-').map(Number)
-    return v >= a && (b ? v < b : true)
+  const between = (v, r) => (r[0] == null || v >= r[0]) && (r[1] == null || v <= r[1])
+  const okSurf = t => (F.s[0] == null && F.s[1] == null) ? true : (t.s ? between(t.s / 10000, F.s) : false)
+  const okPrix = t => {
+    if (F.pnd) return !pfv(t)
+    if (F.p[0] == null && F.p[1] == null) return true
+    return pfv(t) ? between(pfv(t) / 1e6, F.p) : false
+  }
+  const nb = v => String(Math.round(v * 100) / 100).replace('.', ',')
+  const rangeTxt = (r, u) => r[0] != null && r[1] != null ? nb(r[0]) + ' à ' + nb(r[1]) + ' ' + u : (r[0] != null ? 'Plus de ' + nb(r[0]) + ' ' + u : 'Moins de ' + nb(r[1]) + ' ' + u)
+  const hasR = r => r[0] != null || r[1] != null
+  function pills () {
+    const set = (k, on, label) => {
+      const b = $('[data-p="' + k + '"]')
+      b.classList.toggle('on', on)
+      b.textContent = label
+    }
+    set('p', F.pnd || hasR(F.p), F.pnd ? 'Prix sur demande' : (hasR(F.p) ? rangeTxt(F.p, 'MDH') : 'Prix'))
+    set('s', hasR(F.s), hasR(F.s) ? rangeTxt(F.s, 'ha') : 'Superficie')
+    set('q', F.q.size > 0, F.q.size === 1 ? [...F.q][0] : (F.q.size ? 'Zones (' + F.q.size + ')' : 'Zones'))
+    set('z', F.z.size > 0, F.z.size === 1 ? FAMC[[...F.z][0]].l.replace(/ \(.*\)/, '') : (F.z.size ? 'Zonage (' + F.z.size + ')' : 'Zonage'))
+    const busy = F.pnd || hasR(F.p) || hasR(F.s) || F.q.size || F.z.size || $('[data-f="txt"]').value
+    $('[data-a="reset"]').classList.toggle('on', !!busy)
   }
 
   function render () {
     const f = k => $('[data-f="' + k + '"]').value
     const txt = f('txt').trim().toLowerCase()
-    const q = f('q')
-    const s = f('s')
-    const b = f('b')
-    shown = D.filter(t => active.has(fam(t.z)) &&
-      (q ? t.q === q : true) &&
+    shown = D.filter(t => (F.z.size ? F.z.has(fam(t.z)) : true) &&
+      (F.q.size ? F.q.has(t.q) : true) &&
       (onlySel ? sel.has(t.key) : true) &&
       (txt ? [t.id, t.q, t.z, INT() ? t.tf : ''].join(' ').toLowerCase().includes(txt) : true) &&
-      inRange(t.s ? t.s : 0, s) &&
-      (b ? (b === 'nd' ? !pfv(t) : (pfv(t) ? inRange(pfv(t), b) : false)) : true))
+      okSurf(t) && okPrix(t))
     const ord = f('o')
     const big = 1e15
     if (ord === 'rec') {
@@ -454,10 +492,9 @@ function mount (root, opt) {
     shown.forEach(t => layers[t.key].addTo(map))
     $('.gfc-n').textContent = shown.length + ' terrain' + (shown.length > 1 ? 's' : '') + ' sur ' + D.length
     $('.gfc-n2').textContent = (onlySel ? 'Ma sélection : ' : '') + shown.length + ' terrain' + (shown.length > 1 ? 's' : '')
-    const nf = ['txt', 'q', 's', 'b'].filter(k => $('[data-f="' + k + '"]').value).length + (active.size < FAM.length ? 1 : 0)
-    $('[data-a="filt"]').innerHTML = 'Filtres' + (nf ? '<b>' + nf + '</b>' : '')
-    $('[data-a="filt"]').classList.toggle('on', $('.gfc-side').classList.contains('fopen'))
-    $('[data-a="see"]').textContent = shown.length ? 'Voir ' + (shown.length > 1 ? 'les ' + shown.length + ' terrains' : 'le terrain') : 'Aucun terrain'
+    pills()
+    const ps = $('[data-a="popsee"]')
+    if (ps) ps.textContent = shown.length ? 'Voir ' + (shown.length > 1 ? 'les ' + shown.length + ' terrains' : 'le terrain') : 'Aucun terrain'
     $('[data-a="onlysel2"]').innerHTML = 'Sélection' + (selected().length ? '<b>' + selected().length + '</b>' : '')
     $('[data-a="onlysel2"]').classList.toggle('on', onlySel)
     $('[data-a="onlysel"]').textContent = onlySel ? 'Tous les terrains' : 'Ma sélection'
@@ -610,18 +647,142 @@ function mount (root, opt) {
   }
 
   // Filtres et boutons
-  const FKEYS = ['q', 's', 'b', 'o']
-  FKEYS.forEach(k => $('[data-f="' + k + '"]').addEventListener('change', () => render()))
+  $('[data-f="o"]').addEventListener('change', () => render())
   $('[data-f="txt"]').addEventListener('input', () => render())
   $('[data-a="reset"]').addEventListener('click', () => {
-    const RKEYS = ['txt', 'q', 's', 'b']
     $('[data-f="o"]').value = 'rec'
-    RKEYS.forEach(k => { $('[data-f="' + k + '"]').value = '' })
-    FAM.forEach(f => active.add(f.k))
+    $('[data-f="txt"]').value = ''
+    F.p = [null, null]
+    F.pnd = false
+    F.s = [null, null]
+    F.q.clear()
+    F.z.clear()
     onlySel = false
-    build()
+    closePop()
     render()
   })
+
+  // Menus déroulants de la barre de filtres
+  const pop = $('.gfc-pop')
+  let popK = null
+  function closePop () {
+    popK = null
+    pop.classList.remove('on')
+    $$('.gfc-fp').forEach(b => b.classList.remove('open'))
+  }
+  const PRE = {
+    p: [['Moins de 10 MDH', null, 10], ['10 à 30 MDH', 10, 30], ['30 à 100 MDH', 30, 100], ['Plus de 100 MDH', 100, null]],
+    s: [['Moins de 0,5 ha', null, 0.5], ['0,5 à 2 ha', 0.5, 2], ['2 à 10 ha', 2, 10], ['Plus de 10 ha', 10, null]]
+  }
+  const num = v => {
+    const x = parseFloat(String(v).replace(/\s/g, '').replace(',', '.'))
+    return isFinite(x) && x >= 0 ? x : null
+  }
+  function popBody (k) {
+    if (k === 'p' || k === 's') {
+      const r = F[k]
+      const u = k === 'p' ? 'MDH' : 'ha'
+      const pre = PRE[k].map((x, i) => '<button data-pre="' + i + '" class="' + (!F.pnd && r[0] === x[1] && r[1] === x[2] ? 'on' : '') + '">' + x[0] + '</button>').join('') +
+        (k === 'p' ? '<button data-pre="nd" class="' + (F.pnd ? 'on' : '') + '">Sur demande</button>' : '')
+      return '<div class="gfc-ph">' + (k === 'p' ? 'Prix global' : 'Superficie') + '</div><div class="gfc-pre">' + pre + '</div>' +
+        '<div class="gfc-ph">Ou une fourchette</div><div class="gfc-rg">' +
+        '<label>Min (' + u + ')<input inputmode="decimal" data-r="0" placeholder="Pas de min" value="' + (r[0] != null && !F.pnd ? nb(r[0]) : '') + '"></label>' +
+        '<label>Max (' + u + ')<input inputmode="decimal" data-r="1" placeholder="Pas de max" value="' + (r[1] != null && !F.pnd ? nb(r[1]) : '') + '"></label></div>'
+    }
+    if (k === 'q') {
+      const n = {}
+      D.forEach(t => { if (t.q) n[t.q] = (n[t.q] ? n[t.q] : 0) + 1 })
+      const qs = Object.keys(n).sort((a, b) => a.localeCompare(b, 'fr'))
+      return '<input type="search" class="gfc-pq" placeholder="Chercher une zone">' +
+        '<div class="gfc-opts">' + qs.map(q => '<label class="gfc-opt" data-t="' + esc(q.toLowerCase()) + '"><input type="checkbox" value="' + esc(q) + '"' + (F.q.has(q) ? ' checked' : '') + '><span>' + esc(q) + '</span><small>' + n[q] + '</small></label>').join('') + '</div>'
+    }
+    const n = {}
+    D.forEach(t => { const f = fam(t.z); n[f] = (n[f] ? n[f] : 0) + 1 })
+    return '<div class="gfc-ph">Aucun choix : tous les zonages</div><div class="gfc-opts">' + FAM.filter(f => n[f.k]).map(f => '<label class="gfc-opt"><input type="checkbox" value="' + f.k + '"' + (F.z.has(f.k) ? ' checked' : '') + '><i style="background:' + f.col + '"></i><span>' + f.l + '</span><small>' + n[f.k] + '</small></label>').join('') + '</div>'
+  }
+  function openPop (k) {
+    if (popK === k) { closePop(); return }
+    popK = k
+    $$('.gfc-fp').forEach(b => b.classList.toggle('open', b.dataset.p === k))
+    pop.innerHTML = '<div class="gfc-pb">' + popBody(k) + '</div><div class="gfc-pf"><button class="gfc-btn gfc-b3" data-a="popclr">Effacer</button><button class="gfc-btn gfc-b4" data-a="popsee"></button></div>'
+    pop.classList.add('on')
+    const box = $('.gfc').getBoundingClientRect()
+    const bt = $('[data-p="' + k + '"]').getBoundingClientRect()
+    const top = $('.gfc-fbar').getBoundingClientRect().bottom - box.top + 6
+    pop.style.top = top + 'px'
+    pop.style.maxHeight = (box.height - top - 12) + 'px'
+    if (mob()) { pop.style.left = '8px' } else {
+      pop.style.left = Math.max(8, Math.min(bt.left - box.left, box.width - pop.offsetWidth - 8)) + 'px'
+    }
+    const body = pop.querySelector('.gfc-pb')
+    if (k === 'p' || k === 's') {
+      body.querySelectorAll('[data-pre]').forEach(b => b.addEventListener('click', () => {
+        if (b.dataset.pre === 'nd') { F.pnd = !F.pnd; F.p = [null, null] } else {
+          const x = PRE[k][Number(b.dataset.pre)]
+          const same = !F.pnd && F[k][0] === x[1] && F[k][1] === x[2]
+          F[k] = same ? [null, null] : [x[1], x[2]]
+          if (k === 'p') F.pnd = false
+        }
+        body.innerHTML = popBody(k)
+        openWire()
+        render()
+      }))
+      body.querySelectorAll('[data-r]').forEach(inp => inp.addEventListener('input', () => {
+        const r = [num(body.querySelector('[data-r="0"]').value), num(body.querySelector('[data-r="1"]').value)]
+        F[k] = r
+        if (k === 'p') F.pnd = false
+        body.querySelectorAll('[data-pre]').forEach(b => {
+          const x = b.dataset.pre === 'nd' ? null : PRE[k][Number(b.dataset.pre)]
+          b.classList.toggle('on', x ? (r[0] === x[1] && r[1] === x[2]) : false)
+        })
+        render()
+      }))
+    } else {
+      const set = k === 'q' ? F.q : F.z
+      body.querySelectorAll('input[type="checkbox"]').forEach(c => c.addEventListener('change', () => {
+        if (c.checked) set.add(c.value)
+        else set.delete(c.value)
+        render()
+      }))
+      const pq = body.querySelector('.gfc-pq')
+      if (pq) {
+        pq.addEventListener('input', () => {
+          const v = pq.value.trim().toLowerCase()
+          body.querySelectorAll('.gfc-opt').forEach(l => { l.style.display = !v || l.dataset.t.includes(v) ? '' : 'none' })
+        })
+        if (!touch) pq.focus()
+      }
+    }
+    function openWire () {
+      const kk = popK
+      popK = null
+      openPop(kk)
+    }
+    pop.querySelector('[data-a="popclr"]').addEventListener('click', () => {
+      if (k === 'p') { F.p = [null, null]; F.pnd = false }
+      if (k === 's') F.s = [null, null]
+      if (k === 'q') F.q.clear()
+      if (k === 'z') F.z.clear()
+      body.innerHTML = popBody(k)
+      openWire()
+      render()
+    })
+    pop.querySelector('[data-a="popsee"]').addEventListener('click', () => {
+      closePop()
+      if (mob() && side.dataset.st === 'peek') setSheet('half')
+    })
+    render()
+  }
+  $$('.gfc-fp').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation()
+    openPop(b.dataset.p)
+  }))
+  root.addEventListener('pointerdown', e => {
+    if (!popK) return
+    if (e.target.closest('.gfc-pop') || e.target.closest('.gfc-fp')) return
+    closePop()
+  })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && popK) closePop() })
   $('[data-a="onlysel"]').addEventListener('click', () => {
     onlySel = !onlySel
     render()
@@ -670,19 +831,6 @@ function mount (root, opt) {
     const st = side.dataset.st
     setSheet(st === 'peek' ? 'half' : (st === 'half' ? 'full' : 'half'))
   })
-  $('[data-a="filt"]').addEventListener('click', () => {
-    const open = side.classList.toggle('fopen')
-    side.scrollTop = 0
-    if (open) setSheet('full')
-    render()
-  })
-  $('[data-a="see"]').addEventListener('click', e => {
-    e.preventDefault()
-    side.classList.remove('fopen')
-    side.scrollTop = 0
-    setSheet('full')
-    render()
-  })
   $('[data-a="onlysel2"]').addEventListener('click', () => {
     onlySel = !onlySel
     if (side.dataset.st === 'peek') setSheet('half')
@@ -718,7 +866,7 @@ function mount (root, opt) {
         const ln = pts.map(p => p[1]).sort((a, b) => a - b)
         pts = [[q(la, 0.1), q(ln, 0.1)], [q(la, 0.9), q(ln, 0.9)]]
       }
-      map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, o.brand ? 110 : 70], paddingBottomRight: [24, Math.round(side.offsetHeight) + 16], animate: false } : { padding: [40, 40], animate: false })
+      map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, o.brand ? 160 : 116], paddingBottomRight: [24, Math.round(side.offsetHeight) + 16], animate: false } : { padding: [40, 40], animate: false })
     }
   }
 

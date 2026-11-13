@@ -94,19 +94,36 @@ const CSS = `
 .gfc-chip.off{opacity:.35}
 .gfc-count{padding:8px 14px;font-size:12px;color:#4f6a5c;display:flex;align-items:center;gap:10px}
 .gfc-count .gfc-n{flex:1;white-space:nowrap}
+.gfc-count .gfc-link{white-space:nowrap}
 .gfc-count select{font:inherit;font-size:12px;color:#1f7a4d;background:transparent;border:none;padding:2px 0;cursor:pointer;max-width:150px}
-.gfc-fbar{position:absolute;left:386px;right:14px;top:14px;z-index:950;display:flex;gap:8px;align-items:center;flex-wrap:wrap;pointer-events:none}
+.gfc-fbar{position:absolute;left:386px;right:244px;top:14px;z-index:950;display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;pointer-events:none}
+.gfc-fbar::-webkit-scrollbar{display:none}
 .gfc-fbar>*{pointer-events:auto}
-.gfc-srch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;min-width:230px;background:#0a1410;border:1px solid rgba(126,224,164,.35);border-radius:10px;color:#9cb3a3;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:text}
+.gfc-srch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;flex:1 1 200px;min-width:130px;max-width:300px;background:#0a1410;border:1px solid rgba(126,224,164,.35);border-radius:10px;color:#9cb3a3;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:text}
 .gfc-srch svg{flex:none}
 .gfc-srch input{flex:1;min-width:0;font:inherit;font-size:14px;color:#e8f2ea;background:none;border:none;outline:none;padding:0}
 .gfc-srch input::placeholder{color:#9cb3a3}
+.gfc-fp,.gfc-fr,.gfc-vw{flex:none}
 .gfc-fp,.gfc-fr{font:inherit;font-size:14px;font-weight:600;height:40px;padding:0 13px;border-radius:10px;border:1px solid rgba(126,224,164,.35);background:#0a1410;color:#e8f2ea;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.3);max-width:220px;overflow:hidden;text-overflow:ellipsis}
 .gfc-fp::after{content:'';flex:none;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
 .gfc-fp.open::after{transform:translateY(1px) rotate(-135deg)}
 .gfc-fp.on{background:#7ee0a4;color:#0a1410;border-color:#7ee0a4}
 .gfc-fr{color:#9cb3a3}
 .gfc-fr.on{color:#e8f2ea}
+.gfc-vw{position:absolute;right:14px;top:14px;z-index:950;display:flex;height:40px;padding:3px;border-radius:10px;background:#0a1410;border:1px solid rgba(126,224,164,.35);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.gfc-vw button{font:inherit;font-size:13.5px;font-weight:600;border:none;background:none;color:#9cb3a3;padding:0 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.gfc-vw button.on{background:#7ee0a4;color:#0a1410}
+.gfc.v-map .gfc-side{display:none}
+.gfc.v-map .gfc-fbar,.gfc.v-map .gfc-selbar{left:14px}
+.gfc.v-map .gfc-selbar{max-width:calc(100% - 100px)}
+.gfc.v-list .gfc-map{display:none}
+.gfc.v-list .gfc-side{width:100%;padding-top:66px;background:#0e1f17}
+.gfc.v-list .gfc-brand{display:none}
+.gfc.v-list .gfc-fbar{left:14px}
+.gfc.v-list .gfc-count{color:#c8e6d3;padding:4px 18px 10px}
+.gfc.v-list .gfc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px;align-content:start;padding:0 14px 76px}
+.gfc.v-list .gfc-card{margin:0}
+.gfc.v-list .gfc-selbar{left:14px}
 .gfc-pop{position:absolute;z-index:1300;width:330px;background:#fff;color:#0a1410;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.38);display:none;flex-direction:column;overflow:hidden}
 .gfc-pop.on{display:flex}
 .gfc-pb{padding:14px;overflow-y:auto;flex:1;min-height:0}
@@ -210,6 +227,14 @@ const CSS = `
 .gfc-srch input{font-size:16px}
 .gfc-fp,.gfc-fr{flex:none;height:42px;font-size:14.5px;max-width:200px}
 .gfc-pop{left:8px;right:8px;width:auto}
+.gfc-vw{display:none}
+.gfc.v-map .gfc-side,.gfc.v-list .gfc-side{display:flex;width:auto;padding-top:0;background:#f4f9f5}
+.gfc.v-list .gfc-map{display:block}
+.gfc.v-list .gfc-list{display:block;padding:8px 10px 18px}
+.gfc.v-list .gfc-card{margin-bottom:8px}
+.gfc.v-list .gfc-count{color:#4f6a5c;padding:8px 14px 2px}
+.gfc.v-map .gfc-fbar,.gfc.v-list .gfc-fbar{left:0}
+.gfc.v-map .gfc-selbar,.gfc.v-list .gfc-selbar{left:8px}
 .gfc-pre button{font-size:15px;padding:9px 13px}
 .gfc-rg input,.gfc-pq{font-size:16px;padding:11px}
 .gfc-opt{font-size:15.5px;padding:11px 6px}
@@ -342,6 +367,7 @@ function mount (root, opt) {
     '<div class="gfc-fbar"><label class="gfc-srch"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" data-f="txt" placeholder="Rechercher" aria-label="Rechercher une référence, une zone, un zonage"></label>' +
     '<button class="gfc-fp" data-p="p">Prix</button><button class="gfc-fp" data-p="s">Superficie</button><button class="gfc-fp" data-p="q">Zones</button><button class="gfc-fp" data-p="z">Zonage</button>' +
     '<button class="gfc-fr" data-a="reset"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Réinitialiser</button></div>' +
+    '<div class="gfc-vw" role="group" aria-label="Affichage"><button data-v="map">Carte</button><button data-v="split">Les deux</button><button data-v="list">Liste</button></div>' +
     '<div class="gfc-pop"></div>' +
     '<div class="gfc-selbar"></div>' +
     '<div class="gfc-detail"></div>' +
@@ -510,6 +536,11 @@ function mount (root, opt) {
     }).join('') : '<div class="gfc-empty">' + (onlySel ? 'Aucun terrain dans votre sélection. Cochez des terrains dans la liste ou sur leur fiche.' : 'Aucun terrain ne correspond aux filtres.') + '</div>'
     $$('.gfc-card').forEach(c => c.addEventListener('click', e => {
       if (e.target.closest('.gfc-ck')) return
+      if (VIEW === 'list' && !mob()) {
+        setView('split')
+        setTimeout(() => select(c.dataset.k), 60)
+        return
+      }
       select(c.dataset.k)
     }))
     $$('.gfc-ck').forEach(c => c.addEventListener('click', e => {
@@ -773,6 +804,21 @@ function mount (root, opt) {
     })
     render()
   }
+  // Affichage (ordinateur) : carte seule, carte et liste, liste seule. Choix mémorisé sur cet appareil.
+  let VIEW = 'split'
+  try { const v = localStorage.getItem('gfc-view'); if (['map', 'split', 'list'].includes(v)) VIEW = v } catch (e) { /* stockage indisponible */ }
+  function setView (v) {
+    VIEW = v
+    const g = $('.gfc')
+    g.classList.toggle('v-map', v === 'map')
+    g.classList.toggle('v-list', v === 'list')
+    $$('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v))
+    try { localStorage.setItem('gfc-view', v) } catch (e) { /* stockage indisponible */ }
+    closePop()
+    setTimeout(() => map.invalidateSize(), 30)
+  }
+  $$('[data-v]').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)))
+  setView(VIEW)
   $$('.gfc-fp').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation()
     openPop(b.dataset.p)

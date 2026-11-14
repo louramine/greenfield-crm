@@ -1573,6 +1573,7 @@ body:not(.role-admin) .admin-only{display:none !important}
         <input class="form-input" id="d-prix" type="number" min="0" step="any" inputmode="decimal" oninput="tdPrixPreview()">
       </div>
     </div>
+    <div class="form-group" id="d-pa-wrap" style="display:none"></div>
 
     <div class="td-sec">Suivi</div>
     <div class="form-grid">
@@ -2912,6 +2913,7 @@ function openTerrainDetail(id) {
   tdEntete(); tdPrixPreview();
   tdAtlasPret = tdAtlasLoad(t);
   document.getElementById('d-commentaire').value = t.commentaire || '';
+  if (typeof rdPlanFill === 'function') rdPlanFill(t, document.getElementById('d-pa-wrap'));
   { const mw = document.getElementById('d-mymaps-wrap'); if (mw) { document.getElementById('d-mymaps').textContent = t.mymaps || ''; mw.style.display = t.mymaps ? '' : 'none'; } }
 
   // Statut juridique
@@ -7066,6 +7068,26 @@ body.on-carte .gfc-host{position:fixed;left:0;right:0;top:104px;bottom:calc(60px
 .rd-sc{text-align:center;padding:11px 0;border-radius:10px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .rd-sc.ok{background:#e0f7ec;color:#1f7a4d}.rd-sc.mid{background:#fdf0d9;color:#7a5410}.rd-sc.ko{background:#fbe3e0;color:#a8322a}
 .rd-sc.cur{box-shadow:inset 0 0 0 2px var(--gf-ink)}
+.rd-pa{margin:0}
+.rd-pa .card-title{flex-wrap:wrap;gap:8px}
+.rd-pa-sel{width:auto;max-width:220px;min-height:36px;padding:6px 10px;font-size:12.5px}
+.rd-pa-sub{font-size:12.5px;color:#4f6a5c;margin:-4px 0 10px}
+.rd-pa-codes{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.rd-pa-codes button{min-height:34px;padding:4px 12px;border-radius:999px;border:1px solid #cfdfd5;background:#fff;color:#1f7a4d;font:600 12.5px var(--gf-body);cursor:pointer}
+.rd-pa-codes button.active{background:var(--gf-ink);border-color:var(--gf-ink);color:var(--gf-mint)}
+.rd-pa-sec{font-size:13px;color:var(--gf-ink);margin-bottom:8px}
+.rd-pa-sec span{color:#4f6a5c;font-size:12px}
+.rd-pa-facts{display:flex;flex-wrap:wrap;gap:10px 24px;margin-bottom:6px}
+.rd-pa-facts div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-pa-facts span{font-family:var(--gf-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#4f6a5c}
+.rd-pa-facts b{font-size:14px;font-weight:600;color:var(--gf-ink)}
+.rd-pa-al{font-size:12.5px;line-height:1.45;background:#fdf0d9;color:#7a5410;border-radius:10px;padding:8px 12px;margin:8px 0 0}
+.rd-pa-chk{background:#eef3fb;color:#2c4f80}
+.rd-pa-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+.rd-pa-links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px}
+.rd-pa-links a{color:#1f7a4d;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+#d-pa-wrap .rd-pa-mini{border:1px solid #dfe9e3;border-radius:10px;background:#f6faf7;padding:10px 12px}
+#d-pa-wrap .rd-pa-links{margin-top:8px}
 @media(max-width:1100px){.rd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){
   #page-rendement.active{gap:14px}
@@ -7076,6 +7098,6 @@ body.on-carte .gfc-host{position:fixed;left:0;right:0;top:104px;bottom:calc(60px
 }
 @media(max-width:480px){.rd-kpis{grid-template-columns:1fr 1fr}.rd-kpis .kpi-value{font-size:20px !important}}
 </style>
-<script src="/rendement.js?v=20261112e" defer></script>
+<script src="/rendement.js?v=20261114a" defer></script>
 </body>
 </html>

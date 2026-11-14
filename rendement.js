@@ -281,14 +281,102 @@
     indus: function (v) { return withTax(computeIndus(v), 'indus', v); }
   };
 
+  /* ---------- plans d'aménagement (référentiel Supabase, voir supabase/regles-urbanisme.sql) ---------- */
+  var PA = { p: null, ok: false, plans: {}, regles: [], locs: {} };
+  var PA_LS = 'gf-rendement-plan-v1';
+  function paLoad() {
+    if (PA.p) return PA.p;
+    if (typeof supaGet !== 'function') { PA.p = Promise.resolve(PA); return PA.p; }
+    PA.p = Promise.all([
+      supaGet('plans_amenagement', 'select=*&order=nom'),
+      supaGet('regles_urbanisme', 'select=*'),
+      supaGet('localisations_plan', 'select=*')
+    ]).then(function (r) {
+      PA.plans = {}; r[0].forEach(function (p) { PA.plans[p.code] = p; });
+      PA.regles = r[1] || [];
+      PA.locs = {}; (r[2] || []).forEach(function (l) { PA.locs[normLoc(l.localisation)] = l.plan; });
+      PA.ok = true;
+      return PA;
+    }).catch(function () { PA.ok = false; return PA; });
+    return PA.p;
+  }
+  function normLoc(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function planPicks() { try { return JSON.parse(localStorage.getItem(PA_LS) || '{}') || {}; } catch (e) { return {}; } }
+  function setPlanPick(id, code) {
+    try { var a = planPicks(); if (code) a[id] = code; else delete a[id]; localStorage.setItem(PA_LS, JSON.stringify(a)); } catch (e) { /* stockage indisponible */ }
+  }
+  // Codes de zonage saisis dans le CRM : « C2/D2S », « B3 E4 »... chaque morceau est un secteur.
+  function zoneCodes(urba) {
+    return String(urba || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+      .split(/[\s\/,;+&]+/).filter(function (c) { return /^[A-Z]{1,5}[0-9][A-Z0-9]*$|^[A-Z]{2,5}$/.test(c); });
+  }
+  function planOf(t) {
+    if (!t) return null;
+    var pick = planPicks()[t.id];
+    if (pick && PA.plans[pick]) return pick;
+    var p = PA.locs[normLoc(t.localisation)];
+    return p && PA.plans[p] ? p : null;
+  }
+  // Secteur exact, sinon le secteur le plus long qui commence le code (I2S1 trouve I2S1, puis I2), sinon la zone.
+  function findRegle(plan, code) {
+    if (!plan || !code) return null;
+    return findIn(plan, code) || findIn(plan + '-SECTORIEL', code); // le plan sectoriel complète le plan général
+  }
+  function findIn(plan, code) {
+    var list = PA.regles.filter(function (x) { return x.plan === plan; });
+    if (!list.length) return null;
+    var ex = list.filter(function (x) { return x.secteur === code; })[0];
+    if (ex) return { r: ex, exact: true };
+    var best = null;
+    list.forEach(function (x) { if (code.indexOf(x.secteur) === 0 && (!best || x.secteur.length > best.secteur.length)) best = x; });
+    return best ? { r: best, exact: false } : null;
+  }
+  function regleOf(t, code) {
+    var plan = planOf(t), codes = zoneCodes(t && t.urba);
+    var c = code && codes.indexOf(code) >= 0 ? code : null;
+    if (!c) for (var i = 0; i < codes.length; i++) { if (findRegle(plan, codes[i])) { c = codes[i]; break; } }
+    c = c || codes[0] || null;
+    return { plan: plan, codes: codes, code: c, m: findRegle(plan, c) };
+  }
+  function niveaux(rg) {
+    var m = /R\s*\+\s*(\d+)/i.exec(rg.niveaux || '');
+    if (m) return Number(m[1]) + 1;
+    if (/RDC/i.test(rg.niveaux || '')) return 1;
+    return rg.hauteur ? Math.max(1, Math.round((Number(rg.hauteur) - 0.5) / 3)) : null;
+  }
+  var EMP_DEF = 60; // emprise retenue quand le règlement ne fixe ni COS ni emprise (immeubles à l'alignement)
+  // Reporte les règles de la zone dans les paramètres. Renvoie l'origine de chaque valeur reprise.
+  function applyRegle(v, rg, surf) {
+    var src = { promo: {}, lot: {}, indus: {} };
+    if (!rg) return src;
+    var lv = niveaux(rg), cos = null;
+    if (rg.cos != null) { cos = Number(rg.cos); src.promo.cos = 'R'; }
+    else if (lv) { cos = (rg.emprise != null ? Number(rg.emprise) : EMP_DEF) / 100 * lv; src.promo.cos = 'H'; }
+    if (cos) {
+      v.promo.cos = fmtIn(Math.round(cos * 100) / 100);
+      if (surf) {
+        var sho = surf * cos, vend = sho * 0.84, nbLog = Math.max(1, Math.round(vend / 88));
+        v.promo.sho = fmtIn(Math.round(sho)); v.promo.vend = fmtIn(Math.round(vend));
+        v.promo.nbLog = fmtIn(nbLog); v.promo.nbPark = fmtIn(nbLog); v.promo.cons = fmtIn(Math.round(nbLog * 28900));
+        src.promo.sho = src.promo.vend = 'H';
+      }
+    }
+    if (rg.lot_min != null) { v.lot.lot = fmtIn(Number(rg.lot_min)); src.lot.lot = 'R'; }
+    if (rg.facade_min != null) { v.lot.fac = fmtIn(Number(rg.facade_min)); src.lot.fac = 'R'; }
+    if (rg.emprise != null) { v.indus.emp = fmtIn(Number(rg.emprise)); src.indus.emp = 'R'; }
+    if (rg.hauteur != null) { v.indus.ht = fmtIn(Number(rg.hauteur)); src.indus.ht = 'R'; }
+    if (rg.lot_min != null && /^I/.test(rg.zone)) { v.indus.lot = fmtIn(Number(rg.lot_min)); src.indus.lot = 'R'; }
+    return src;
+  }
+
   /* ---------- état ---------- */
-  var S = { terrainId: REF_ID, cat: 'promo', version: 'gf', vals: null, terrain: null, picked: false };
+  var S = { terrainId: REF_ID, cat: 'promo', version: 'gf', vals: null, terrain: null, picked: false, code: null, src: null };
 
   function loadSaved() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { return {}; } }
   function save() {
     try {
       var all = loadSaved();
-      all[S.terrainId] = { cat: S.cat, version: S.version, vals: S.vals, at: new Date().toISOString() };
+      all[S.terrainId] = { cat: S.cat, version: S.version, vals: S.vals, src: S.src, code: S.code, at: new Date().toISOString() };
       localStorage.setItem(LS_KEY, JSON.stringify(all));
       return true;
     } catch (e) { return false; }
@@ -314,6 +402,22 @@
     v.promo.cons = fmtIn(Math.round(nbLog * 28900));
     return v;
   }
+  // Valeurs de départ d'un terrain, avec les règles de son plan d'aménagement quand elles sont connues.
+  function startVals(t) {
+    var v = freshVals(t);
+    var src = { promo: {}, lot: {}, indus: {} };
+    if (t && PA.ok) {
+      var g = regleOf(t, S.code);
+      S.code = g.code;
+      if (g.m) src = applyRegle(v, g.m.r, Number(t.superficie) || 0);
+    }
+    if (t) { // sans règle connue, les valeurs « Règlement » par défaut ne sont que des hypothèses
+      [['promo', 'cos'], ['lot', 'lot'], ['lot', 'fac'], ['indus', 'emp'], ['indus', 'ht']].forEach(function (k) {
+        if (!src[k[0]][k[1]]) src[k[0]][k[1]] = 'H';
+      });
+    }
+    return { v: v, src: src };
+  }
 
   function selectTerrain(id) {
     S.terrainId = id;
@@ -321,13 +425,17 @@
     if (id !== REF_ID) t = terrains().filter(function (x) { return String(x.id) === String(id); })[0] || null;
     S.terrain = t;
     var saved = loadSaved()[id];
+    S.code = null;
     if (saved && saved.vals) {
       S.vals = saved.vals; S.cat = saved.cat || 'promo'; S.version = saved.version || 'gf';
+      S.src = saved.src || { promo: {}, lot: {}, indus: {} }; S.code = saved.code || null;
     } else {
-      S.vals = freshVals(t);
+      var st = startVals(t);
+      S.vals = st.v; S.src = st.src;
       S.cat = t ? catFromUrba(t.urba) : 'promo';
       S.version = 'gf';
     }
+    S.fresh = !(saved && saved.vals);
   }
 
   function promoFromRef() { return S.terrainId === REF_ID; }
@@ -366,6 +474,7 @@
           return '<div><span>' + esc(f[0]) + '</span><b>' + esc(f[1]) + '</b></div>';
         }).join('') + '</div>' +
       '</div>' +
+      (t ? '<div class="card rd-pa" id="rd-pa"></div>' : '') +
       '<div class="rd-cats" role="tablist" aria-label="Catégorie">' + CATS.map(function (c) {
         return '<button type="button" role="tab" class="rd-cat' + (c === S.cat ? ' active' : '') + '" aria-selected="' + (c === S.cat) + '" data-cat="' + c + '">' +
           '<span class="rd-cat-t">' + DEFS[c].label + (c === S.cat ? '<em>Actif</em>' : '') + '</span>' +
@@ -389,9 +498,108 @@
         '</div>' +
       '</div>';
 
+    renderPa();
     renderParams();
     renderResults();
     bind();
+  }
+
+  function fdate(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; }
+  function regleFacts(rg) {
+    var f = [];
+    if (rg.typologie) f.push(['Type', rg.typologie]);
+    f.push(['COS', rg.cos != null ? nf(Number(rg.cos), 2) : 'non fixé']);
+    f.push(['Emprise au sol', rg.emprise != null ? nf(Number(rg.emprise)) + ' %' : 'non fixée']);
+    if (rg.hauteur != null || rg.niveaux) f.push(['Hauteur', (rg.hauteur != null ? nf(Number(rg.hauteur), 2) + ' m' : '') + (rg.niveaux ? (rg.hauteur != null ? ', ' : '') + rg.niveaux : '')]);
+    if (rg.lot_min != null) f.push(['Lot minimum', nf(Number(rg.lot_min)) + ' m²' + (rg.facade_min != null ? ', façade ' + nf(Number(rg.facade_min)) + ' m' : '')]);
+    return f;
+  }
+  // Alerte quand le plan a plus de 10 ans (effets limités à 10 ans par la loi 12-90).
+  function paAlert(p) {
+    if (!p || !p.fin_effets) return '';
+    if (new Date(p.fin_effets + 'T00:00:00') > new Date()) return '';
+    return 'Plan publié au BO le ' + fdate(p.date_bo) + ' : plus de 10 ans. Vérifier auprès de l’AUC s’il s’applique encore (prorogé, en révision ou remplacé).';
+  }
+  // Bloc « Plan d'aménagement » réutilisé par la fiche terrain.
+  function paLinks(p, rg) {
+    var a = [];
+    var zu = rg && p && p.zones ? p.zones[rg.zone] : null;
+    if (zu) a.push('<a href="' + esc(zu) + '" target="_blank" rel="noopener">Règlement de la zone ' + esc(rg.zone) + '</a>');
+    if (p && p.planche_url) a.push('<a href="' + esc(p.planche_url) + '" target="_blank" rel="noopener">Plan graphique</a>');
+    if (p && p.reglement_url) a.push('<a href="' + esc(p.reglement_url) + '" target="_blank" rel="noopener">Règlement général</a>');
+    if (p && p.page_url) a.push('<a href="' + esc(p.page_url) + '" target="_blank" rel="noopener">Page AUC</a>');
+    return a.length ? '<div class="rd-pa-links">' + a.join('') + '</div>' : '';
+  }
+
+  function renderPa() {
+    var el = document.getElementById('rd-pa');
+    var t = S.terrain;
+    if (!el || !t) return;
+    if (!PA.ok) {
+      el.innerHTML = '<div class="card-title">Plan d’aménagement</div><div class="rd-note">' +
+        (PA.p ? 'Référentiel des plans indisponible : exécutez supabase/regles-urbanisme.sql dans Supabase.' : 'Chargement du référentiel…') + '</div>';
+      return;
+    }
+    var g = regleOf(t, S.code), p = g.plan ? PA.plans[g.plan] : null;
+    var opts = '<option value="">' + (p ? 'Changer de plan' : 'Choisir le plan') + '</option>' +
+      Object.keys(PA.plans).map(function (k) { return PA.plans[k]; }).sort(function (a, b) { return a.nom.localeCompare(b.nom, 'fr'); })
+        .map(function (x) { return '<option value="' + esc(x.code) + '"' + (p && x.code === p.code ? ' selected' : '') + '>' + esc(x.nom) + '</option>'; }).join('');
+    var h = '<div class="card-title">Plan d’aménagement' + (p ? ' de ' + esc(p.nom) : '') +
+      '<span class="rd-acts"><select class="form-select rd-pa-sel" id="rd-pa-plan" aria-label="Plan d’aménagement">' + opts + '</select></span></div>';
+    if (!p) {
+      h += '<div class="rd-note">La localisation « ' + esc(t.localisation || 'non renseignée') + ' » n’est rattachée à aucun plan. Choisissez le plan dans la liste, ou saisissez les règles de la note de renseignements.</div>';
+      el.innerHTML = h; return;
+    }
+    h += '<div class="rd-pa-sub">Décret ' + esc(p.decret || '') + ', BO du ' + fdate(p.date_bo) + '</div>';
+    if (g.codes.length > 1) {
+      h += '<div class="rd-pa-codes" role="group" aria-label="Secteur">' + g.codes.map(function (c) {
+        return '<button type="button" data-code="' + esc(c) + '" class="' + (c === g.code ? 'active' : '') + '" aria-pressed="' + (c === g.code) + '">' + esc(c) + '</button>';
+      }).join('') + '</div>';
+    }
+    var al = paAlert(p);
+    if (!g.m) {
+      h += '<div class="rd-note">' + (g.code ? 'Secteur « ' + esc(g.code) + ' » absent du référentiel pour ce plan.' : 'Zonage non renseigné sur la fiche du terrain.') +
+        ' Saisissez les règles de la note de renseignements.</div>' + (al ? '<div class="rd-pa-al">' + esc(al) + '</div>' : '') + paLinks(p, null);
+      el.innerHTML = h; return;
+    }
+    var rg = g.m.r;
+    h += '<div class="rd-pa-sec">Secteur <b>' + esc(rg.secteur) + '</b>' + (g.m.exact ? '' : ' <span>(règle la plus proche du code ' + esc(g.code) + ')</span>') + '</div>' +
+      '<div class="rd-pa-facts">' + regleFacts(rg).map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + esc(f[1]) + '</b></div>'; }).join('') + '</div>';
+    if (rg.remarque) h += '<div class="rd-note">' + esc(rg.remarque) + '</div>';
+    if (!rg.verifie) h += '<div class="rd-pa-al rd-pa-chk">Chiffres lus automatiquement sur le scan du règlement : à confirmer sur la note de renseignements.</div>';
+    if (al) h += '<div class="rd-pa-al">' + esc(al) + '</div>';
+    h += '<div class="rd-pa-foot">' + paLinks(p, rg) +
+      '<button type="button" class="btn btn-ghost btn-sm" id="rd-pa-apply">Reprendre ces règles dans le calcul</button></div>';
+    el.innerHTML = h;
+  }
+  function bindPa() {
+    var el = document.getElementById('rd-pa');
+    if (!el) return;
+    var sel = el.querySelector('#rd-pa-plan');
+    if (sel) sel.addEventListener('change', function () {
+      if (!S.terrain) return;
+      setPlanPick(S.terrain.id, sel.value || null);
+      S.code = null; reapply();
+    });
+    el.querySelectorAll('[data-code]').forEach(function (b) {
+      b.addEventListener('click', function () { S.code = b.getAttribute('data-code'); reapply(); });
+    });
+    var ap = el.querySelector('#rd-pa-apply');
+    if (ap) ap.addEventListener('click', function () { reapply(); });
+  }
+  // Applique les règles du secteur choisi aux trois catégories, sans toucher aux autres paramètres.
+  function reapply() {
+    var t = S.terrain;
+    if (t && PA.ok) {
+      var g = regleOf(t, S.code);
+      S.code = g.code;
+      if (g.m) {
+        var src = applyRegle(S.vals, g.m.r, num(S.vals[S.cat], 'surf') || Number(t.superficie) || 0);
+        S.src = S.src || { promo: {}, lot: {}, indus: {} };
+        CATS.forEach(function (c) { Object.keys(src[c]).forEach(function (k) { S.src[c][k] = src[c][k]; }); });
+      }
+    }
+    renderPa(); bindPa(); renderParams(); renderResults(); bindParams();
   }
 
   function renderParams() {
@@ -408,14 +616,18 @@
           ? 'Ajoute le sous-sol, les frais annexes, l’hypothèque et les frais financiers absents du fichier.'
           : 'Reprend exactement les chiffres du fichier, soit 41,3 % de rentabilité affichée.') + '</div>';
     } else if (S.cat === 'promo') {
-      h += '<div class="rd-note">Programme estimé à partir du COS et des ratios de l’étude de référence. Remplacez par la consistance réelle du projet.</div>';
+      var pc = S.src && S.src.promo && S.src.promo.cos;
+      h += '<div class="rd-note">' + (pc === 'R' ? 'Programme estimé à partir du COS du règlement de zone et des ratios de l’étude de référence.'
+        : pc === 'H' ? 'Le règlement ne fixe pas de COS : COS équivalent estimé avec l’emprise et le nombre de niveaux autorisés. Programme à remplacer par la consistance réelle du projet.'
+        : 'Programme estimé à partir du COS et des ratios de l’étude de référence. Remplacez par la consistance réelle du projet.') + '</div>';
     }
     h += '<div class="rd-legend">' + ['E', 'R', 'H'].map(function (s) { return '<span>' + srcDot(s) + SRC_LABEL[s] + '</span>'; }).join('') + '</div>';
     def.groups.forEach(function (g) {
       h += '<div class="rd-group"><div class="rd-gt">' + g.title + '</div>';
       g.params.forEach(function (p) {
         var id = 'rd-f-' + S.cat + '-' + p[0];
-        h += '<div class="rd-row">' + srcDot(p[4]) + '<label for="' + id + '">' + p[1] + '</label>' +
+        var so = (S.src && S.src[S.cat] && S.src[S.cat][p[0]]) || p[4];
+        h += '<div class="rd-row">' + srcDot(so) + '<label for="' + id + '">' + p[1] + '</label>' +
           '<div class="rd-in"><input class="form-input" id="' + id + '" data-k="' + p[0] + '" type="text" inputmode="decimal" autocomplete="off" value="' + esc(vals[p[0]]) + '"><span>' + p[2] + '</span></div></div>';
       });
       h += '</div>';
@@ -570,6 +782,7 @@
 
   function bind() {
     var el = root();
+    bindPa();
     el.querySelector('#rd-terrain').addEventListener('change', function () { S.picked = true; selectTerrain(this.value); renderAll(); });
     el.querySelectorAll('.rd-cat').forEach(function (b) {
       b.addEventListener('click', function () { S.cat = b.getAttribute('data-cat'); renderAll(); });
@@ -579,7 +792,7 @@
   function bindParams() {
     var el = root();
     el.querySelectorAll('#rd-params input[data-k]').forEach(function (inp) {
-      inp.addEventListener('input', function () { S.vals[S.cat][inp.getAttribute('data-k')] = inp.value; renderResults(); });
+      inp.addEventListener('input', function () { S.fresh = false; S.vals[S.cat][inp.getAttribute('data-k')] = inp.value; renderResults(); });
     });
     el.querySelectorAll('#rd-params [data-ver]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -591,8 +804,9 @@
     });
     var r = el.querySelector('#rd-reset');
     if (r) r.addEventListener('click', function () {
-      var f = freshVals(S.terrain);
-      S.vals[S.cat] = f[S.cat];
+      var st = startVals(S.terrain);
+      S.vals[S.cat] = st.v[S.cat];
+      if (S.src) S.src[S.cat] = st.src[S.cat];
       if (S.cat === 'promo') S.version = 'gf';
       renderParams(); renderResults(); bindParams();
     });
@@ -607,7 +821,13 @@
   }
 
   /* ---------- API publique ---------- */
+  function onPaReady() {
+    if (!root() || !root().classList.contains('active')) return;
+    if (S.terrain && S.fresh) { var st = startVals(S.terrain); S.vals = st.v; S.src = st.src; }
+    renderAll();
+  }
   window.rdInit = function () {
+    if (!PA.p) paLoad().then(onPaReady);
     var first = terrains()[0];
     if (!S.vals || (!S.picked && S.terrainId === REF_ID && first)) {
       selectTerrain(first ? String(first.id) : REF_ID);
@@ -616,7 +836,27 @@
     }
     renderAll();
   };
+  // Fiche terrain : bloc « Plan d'aménagement » (secteur, règles, liens), rempli quand le référentiel est chargé.
+  window.rdPlanFill = function (t, el) {
+    if (!el) return;
+    el.style.display = 'none';
+    paLoad().then(function () {
+      if (!PA.ok || !t) return;
+      var g = regleOf(t), p = g.plan ? PA.plans[g.plan] : null;
+      if (!p) return;
+      var rg = g.m ? g.m.r : null, al = paAlert(p);
+      var h = '<label class="form-label">Plan d’aménagement</label><div class="rd-pa-mini"><div class="rd-pa-sub">Plan de ' + esc(p.nom) + ', décret ' + esc(p.decret || '') + ', BO du ' + fdate(p.date_bo) + '</div>';
+      if (rg) h += '<div class="rd-pa-sec">Secteur <b>' + esc(rg.secteur) + '</b>' + (g.m.exact ? '' : ' <span>(règle la plus proche du code ' + esc(g.code) + ')</span>') + '</div>' +
+        '<div class="rd-pa-facts">' + regleFacts(rg).map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + esc(f[1]) + '</b></div>'; }).join('') + '</div>';
+      else h += '<div class="rd-note">' + (g.code ? 'Secteur « ' + esc(g.code) + ' » absent du référentiel.' : 'Zonage non renseigné.') + '</div>';
+      if (rg && !rg.verifie) h += '<div class="rd-pa-al rd-pa-chk">Lecture automatique du scan : à confirmer sur la note de renseignements.</div>';
+      if (al) h += '<div class="rd-pa-al">' + esc(al) + '</div>';
+      el.innerHTML = h + paLinks(p, rg) + '</div>';
+      el.style.display = '';
+    });
+  };
   window.rdFromTerrain = function (id) {
+    paLoad().then(onPaReady);
     if (typeof closeModal === 'function') closeModal('modal-terrain-detail');
     var nav = document.querySelector('.sidebar .nav-item[onclick*="\'rendement\'"]');
     S.picked = true;

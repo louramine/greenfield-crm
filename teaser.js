@@ -49,7 +49,8 @@ void (function () {
     reperes:[], decomposition:[], servitudes:[],
     rdt:{ voiesPct:40, lot:250, vrd:650, fraisLot:0, mode:'niveaux', constructible:null, vendablePct:83, coutConstr:3800, fraisPromo:8, pvBas:7000, pvHaut:8500, is:null, cible:20, prixMarche:null, loyer:null, vacance:5, charges:null, fraisAcq:6, commission:2.5 },
     tx:{ accroche:'', opp:'', sit:'', sitPhrase:'', urb:'' },
-    images:[], docText:{}
+    images:[], docText:{},
+    urba:'', typeManuel:false, geo:null, lambertSaisi:'', cons:{ cos:[null, null, null], cus:[null, null, null] }
   })
   let S = blank()
   const files = new Map()
@@ -136,6 +137,18 @@ void (function () {
 #mk-teaser .mkt table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 #mk-teaser .mkt td,#mk-teaser .mkt th{text-align:left;padding:4px 6px;border-top:1px solid var(--tz-line)}
 #mk-teaser .mkt .tw{overflow-x:auto;max-height:240px}
+#mk-teaser .tz-voc{background:#e7f6ed;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.4;margin:0}
+#mk-teaser .tz-voc.diff{background:#fdf0d9}
+#mk-teaser .tz-geo{border:1px solid var(--tz-line);background:var(--tz-raised);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45;display:flex;flex-direction:column;gap:6px}
+#mk-teaser .tz-geo b{font-weight:600}
+#mk-teaser .tz-geo .mono{font-family:'JetBrains Mono', monospace;font-size:12px}
+#mk-teaser .tz-geo.none{color:var(--tz-muted)}
+#mk-teaser .tz-cons{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+#mk-teaser .tz-cons th,#mk-teaser .tz-cons td{padding:4px 4px;text-align:left;vertical-align:middle}
+#mk-teaser .tz-cons th{font-family:'JetBrains Mono', monospace;font-size:11px;font-weight:500;color:var(--tz-muted);text-transform:uppercase}
+#mk-teaser .tz-cons td input{width:100%}
+#mk-teaser .tz-cons tr.out td{color:var(--tz-muted);font-size:12px}
+#mk-teaser .tz-cons th.r,#mk-teaser .tz-cons td.r{background:#e7f6ed}
 #tz-offstage{position:fixed;left:-30000px;top:0;width:1920px;height:1080px;overflow:hidden;pointer-events:none}
 .gf-slide{position:relative;width:1920px;height:1080px;overflow:hidden;box-sizing:border-box;line-height:normal}
 .gf-slide *{box-sizing:border-box;margin:0}
@@ -172,9 +185,12 @@ void (function () {
         <label><input type="radio" name="tz-type" value="reserve"><b>Réserve foncière</b><small>Terrain non ouvert, sans bilan</small></label>
         <label><input type="radio" name="tz-type" value="villa"><b>Lot à bâtir</b><small>Villa ou petit immeuble</small></label>
       </div>
+      <p class="tz-voc" id="tz-voc" hidden></p>
       <div class="row">${inp('nom', 'nom', 'Nom du terrain', 'Mejjatia E3')}${inp('ville', 'ville', 'Ville', 'Médiouna')}</div>
       <div class="row">${inp('quartier', 'quartier', 'Quartier ou zone', 'Ouled Taleb')}${inp('tf', 'tf', 'Titre foncier', 'TF 167227/12')}</div>
-      <label class="f"><span>Lien Google Maps</span><input type="url" id="tz-maps" data-k="maps" placeholder="https://maps.app.goo.gl/..."></label>
+      <span class="lab">Emplacement sur la carte Atlas</span>
+      <div class="tz-geo none" id="tz-geo">Choisissez un terrain du CRM : son contour Atlas et ses bornes en Lambert sont repris automatiquement.</div>
+      <div class="row">${inp('lam', 'lambertSaisi', 'Point Lambert X, Y (sans contour)', '295 873,47 327 622,52')}<label class="f"><span>Lien Google Maps</span><input type="url" id="tz-maps" data-k="maps" placeholder="vide = lien vers le centre du tracé"></label></div>
       ${sel('fam', 'famille', 'Famille de zonage (comparables)', [['', 'Déduite du zonage'], ['Immeuble', 'Immeuble (A, B, C)'], ['Villa', 'Villa (D, E)'], ['Industriel', 'Activités (I, ZI)'], ['Tourisme', 'Tourisme (BT, SD)'], ['Rural', 'Rural (RA)']])}
       <span class="note">Repères de situation, quatre au plus. Position qualitative sauf distance vérifiée.</span>
       <div class="rep" id="tz-rep-reperes"></div>
@@ -222,6 +238,17 @@ void (function () {
       <div class="row">${inp('rv', 'reculVoies', 'Recul sur voies (m)', '4')}${inp('rl', 'reculLimites', 'Limites séparatives', 'mitoyenneté')}</div>
       <label class="f"><span>Usages admis et interdits</span><textarea id="tz-usages" data-k="usages"></textarea></label>
       <label class="f"><span>Références (note, agence, décret)</span><textarea id="tz-refs" data-k="refs"></textarea></label>
+      <span class="lab">Constructibilité, trois hypothèses</span>
+      <p class="note" id="tz-cons-note">Renseignez la superficie pour estimer le COS et le CUS.</p>
+      <table class="tz-cons" id="tz-cons">
+        <thead><tr><th></th><th>Pessimiste</th><th class="r">Réaliste</th><th>Optimiste</th></tr></thead>
+        <tbody>
+          <tr><td>COS (%)</td>${[0, 1, 2].map(i => `<td${i === 1 ? ' class="r"' : ''}><input type="text" id="tz-cos${i}" data-k="cons.cos.${i}" data-num inputmode="decimal" aria-label="COS ${['pessimiste', 'réaliste', 'optimiste'][i]}"></td>`).join('')}</tr>
+          <tr><td>CUS</td>${[0, 1, 2].map(i => `<td${i === 1 ? ' class="r"' : ''}><input type="text" id="tz-cus${i}" data-k="cons.cus.${i}" data-num inputmode="decimal" aria-label="CUS ${['pessimiste', 'réaliste', 'optimiste'][i]}"></td>`).join('')}</tr>
+          <tr class="out"><td>Plancher</td>${[0, 1, 2].map(i => `<td${i === 1 ? ' class="r"' : ''} id="tz-pl${i}"></td>`).join('')}</tr>
+        </tbody>
+      </table>
+      <p class="note">Cases vides = valeurs calculées (grisées). COS en % d’emprise au sol, CUS = surface de plancher / surface du terrain.</p>
       <span class="note">Servitudes et contraintes du plan.</span>
       <div class="rep" id="tz-rep-servitudes"></div>
       <button class="btn" type="button" data-add="servitudes">Ajouter une servitude</button>
@@ -322,6 +349,14 @@ void (function () {
     if (el.dataset.k) {
       setK(el.dataset.k, el.type === 'checkbox' ? el.checked : ('num' in el.dataset ? num(el.value) : el.value))
       if (el.dataset.k === 'secteur' && S.type !== 'immeuble') autoLot()
+      if (['zone', 'secteur', 'superficie', 'famille'].includes(el.dataset.k) && autoVocation()) {
+        $$('input[name=tz-type]').forEach(r => { r.checked = r.value === S.type })
+        applyType()
+      }
+      if (el.dataset.k === 'lambertSaisi' && !(S.geo && S.geo.rings.length)) {
+        const g = lambertSaisi(el.value)
+        S.geo = g ? geoBuild(g) : null
+      }
       schedule()
     } else if (el.dataset.v) {
       S.viab = $$('[data-v]').filter(x => x.checked).map(x => x.dataset.v)
@@ -335,10 +370,13 @@ void (function () {
     const t = e.target
     if (t.name === 'tz-type') {
       S.type = t.value
-      if (S.type === 'activites') Object.assign(S.rdt, { lot:1000, voiesPct:30, pvBas:2500, pvHaut:3500 })
-      else if (S.type === 'lotissement' && S.rdt.lot === 1000) Object.assign(S.rdt, { lot:250, voiesPct:40, pvBas:7000, pvHaut:8500 })
-      else if (['promotion', 'villa'].includes(S.type) && S.rdt.pvBas < 6000) Object.assign(S.rdt, { pvBas:9000, pvHaut:11000 })
+      const v = vocation()
+      S.typeManuel = v ? v.type !== S.type : true
+      presetType(S.type, famille())
       fillForm()
+      schedule()
+    } else if (t.id === 'tz-fam') {
+      if (autoVocation()) fillForm()
       schedule()
     } else if (t.id === 'tz-crm') {
       fromCrm(t.value)
@@ -366,6 +404,13 @@ void (function () {
     })
   }
   function onClick (e) {
+    if (e.target.closest('#tz-atlas')) {
+      const id = S.crmId
+      if (typeof window.carteOuvrir !== 'function' ? true : typeof mGo !== 'function') return
+      mGo('carte')
+      window.carteOuvrir(isNaN(+id) ? id : +id)
+      return
+    }
     const add = e.target.closest('[data-add]')
     if (add) {
       const k = add.dataset.add
@@ -423,19 +468,22 @@ void (function () {
     else if (/immatricul/i.test(sj)) S.statut = 'En cours d’immatriculation'
     else if (/titr/i.test(sj)) S.statut = 'Titré'
     else if (/melk/i.test(sj)) S.statut = 'Melk'
-    const fam = typeof window.mvFam === 'function' ? window.mvFam(t.urba) : null
-    if (fam === 'Industriel') { S.type = 'activites'
-      Object.assign(S.rdt, { lot:1000, voiesPct:30, pvBas:2500, pvHaut:3500 }) }
-    else if (fam === 'Rural') S.type = 'reserve'
-    else if (fam === 'Tourisme') { S.type = 'promotion'
-      Object.assign(S.rdt, { pvBas:9000, pvHaut:11000 }) }
-    else if (S.superficie && S.superficie < 1500) { S.type = 'villa'
-      Object.assign(S.rdt, { pvBas:9000, pvHaut:11000 }) }
+    S.urba = String(t.urba ?? '').trim()
+    const v = vocation()
+    if (v) { S.type = v.type
+      presetType(v.type, famille()) }
     autoLot()
     fitCache.clear()
     fillForm()
-    status(`Formulaire prérempli depuis le terrain ${t.ref ? t.ref + ', ' : ''}${t.localisation ?? ''}. Ajoutez la note de renseignement, les plans et une capture satellite.`)
+    status(`Formulaire prérempli depuis le terrain ${t.ref ? t.ref + ', ' : ''}${t.localisation ?? ''}. Recherche du tracé sur la carte Atlas...`)
     render()
+    loadGeo(t).then(() => {
+      if (S.crmId !== String(t.id)) return
+      const L = S.geo ? S.geo.lam : null
+      status(S.geo
+        ? (L.bornes.length ? `Tracé Atlas repris (${S.geo.src}), ${L.bornes.length} bornes en ${LZ[L.zone].nom}. Ajoutez la note de renseignement et les plans.` : `Emplacement repris (${S.geo.src}), sans contour. Ajoutez la note de renseignement et les plans.`)
+        : 'Ce terrain n’est pas encore placé sur la carte Atlas. Saisissez un point Lambert ou un lien Google Maps, ou ajoutez une capture satellite.')
+    })
   }
 
   /* ---------- documents ---------- */
@@ -653,6 +701,11 @@ void (function () {
       else { const n = niveauxN()
         if (n != null && S.emprise && base) { constr = base * S.emprise / 100 * (n + 1)
           modeTxt = `${fmt(S.emprise)} % d’emprise sur ${n + 1} niveaux` } }
+      if (empty(constr) && rd.mode !== 'saisie') {
+        const C = constructibilite()
+        if (C && base) { constr = base * C.rows[1].cus
+          modeTxt = `CUS réaliste de ${cusTxt(C.rows[1].cus)} (${C.src === 'note' ? 'note de renseignement' : 'valeur usuelle de la zone'})` }
+      }
       if (empty(constr)) { R.why = 'Renseignez l’emprise et les niveaux, le CUS, ou une surface constructible.'
         return R }
       const vend = constr * (rd.vendablePct ?? 83) / 100
@@ -747,6 +800,402 @@ void (function () {
     return m
   }
 
+  /* ---------- Atlas : emplacement, tracé et coordonnées Lambert ---------- */
+  /* Merchich vers WGS 84 : translation 31, 146, 47 (EPSG 1166), ellipsoïde Clarke 1880 IGN, conique conforme 1SP */
+  const RAD = Math.PI / 180
+  const LZ = { 1:{ nom:'Lambert Nord Maroc', epsg:'26191', lat0:33.3, k0:0.999625769 }, 2:{ nom:'Lambert Sud Maroc', epsg:'26192', lat0:29.7, k0:0.999615596 } }
+  const CLK = { a:6378249.2, b:6356515 }
+  const W84 = { a:6378137, b:6356752.314245 }
+  const SHIFT = [31, 146, 47]
+  const ecc2 = el => 1 - (el.b * el.b) / (el.a * el.a)
+  function toCart (lat, lng, el) {
+    const p = lat * RAD
+    const l = lng * RAD
+    const N = el.a / Math.sqrt(1 - ecc2(el) * Math.sin(p) ** 2)
+    return [N * Math.cos(p) * Math.cos(l), N * Math.cos(p) * Math.sin(l), N * (1 - ecc2(el)) * Math.sin(p)]
+  }
+  function fromCart (x, y, z, el) {
+    const ee = ecc2(el)
+    const pp = Math.hypot(x, y)
+    let p = Math.atan2(z, pp * (1 - ee))
+    let i = 0
+    while (i < 8) {
+      const N = el.a / Math.sqrt(1 - ee * Math.sin(p) ** 2)
+      p = Math.atan2(z + ee * N * Math.sin(p), pp)
+      i += 1
+    }
+    return [p / RAD, Math.atan2(y, x) / RAD]
+  }
+  function lcc (zone) {
+    const Z = LZ[zone]
+    const e = Math.sqrt(ecc2(CLK))
+    const p0 = Z.lat0 * RAD
+    const tf = p => Math.tan(Math.PI / 4 - p / 2) / ((1 - e * Math.sin(p)) / (1 + e * Math.sin(p))) ** (e / 2)
+    const n = Math.sin(p0)
+    const m0 = Math.cos(p0) / Math.sqrt(1 - e * e * Math.sin(p0) ** 2)
+    const F = m0 / (n * tf(p0) ** n)
+    return { Z, e, tf, n, F, r0: CLK.a * F * tf(p0) ** n * Z.k0 }
+  }
+  const zoneDe = lat => lat >= 31.5 ? 1 : 2
+  function lambert (lat, lng, zone) {
+    const zn = zone ?? zoneDe(lat)
+    const c = toCart(lat, lng, W84)
+    const g = fromCart(c[0] - SHIFT[0], c[1] - SHIFT[1], c[2] - SHIFT[2], CLK)
+    const K = lcc(zn)
+    const r = CLK.a * K.F * K.tf(g[0] * RAD) ** K.n * K.Z.k0
+    const th = K.n * (g[1] + 5.4) * RAD
+    return { x: 500000 + r * Math.sin(th), y: 300000 + K.r0 - r * Math.cos(th), zone: zn }
+  }
+  function lambertInv (x, y, zone) {
+    const K = lcc(zone)
+    const dx = x - 500000
+    const dy = K.r0 - (y - 300000)
+    const r = Math.hypot(dx, dy)
+    const t = (r / (CLK.a * K.F * K.Z.k0)) ** (1 / K.n)
+    const lo = Math.atan2(dx, dy) / K.n / RAD - 5.4
+    let p = Math.PI / 2 - 2 * Math.atan(t)
+    let i = 0
+    while (i < 10) {
+      p = Math.PI / 2 - 2 * Math.atan(t * ((1 - K.e * Math.sin(p)) / (1 + K.e * Math.sin(p))) ** (K.e / 2))
+      i += 1
+    }
+    const c = toCart(p / RAD, lo, CLK)
+    return fromCart(c[0] + SHIFT[0], c[1] + SHIFT[1], c[2] + SHIFT[2], W84)
+  }
+  const lamTxt = v => fmt(v, 2)
+  /* Douglas-Peucker sur des points Lambert (mètres) */
+  function dp (pts, tol) {
+    if (pts.length < 3) return pts.slice()
+    const a = pts[0]
+    const b = pts[pts.length - 1]
+    const L = Math.hypot(b.x - a.x, b.y - a.y)
+    let idx = 0
+    let dm = -1
+    pts.forEach((p, i) => {
+      if (i === 0 ? true : i === pts.length - 1) return
+      const d = L ? Math.abs((b.x - a.x) * (a.y - p.y) - (a.x - p.x) * (b.y - a.y)) / L : Math.hypot(p.x - a.x, p.y - a.y)
+      if (d > dm) { dm = d
+        idx = i }
+    })
+    if (dm <= tol) return [a, b]
+    return dp(pts.slice(0, idx + 1), tol).slice(0, -1).concat(dp(pts.slice(idx), tol))
+  }
+  function simplifyRing (ring, maxPts) {
+    if (ring.length <= maxPts) return { pts: ring, tol: 0 }
+    let far = 1
+    ring.forEach((p, i) => { if (Math.hypot(p.x - ring[0].x, p.y - ring[0].y) > Math.hypot(ring[far].x - ring[0].x, ring[far].y - ring[0].y)) far = i })
+    let tol = 0.25
+    let out = ring
+    while (tol < 500) {
+      out = dp(ring.slice(0, far + 1), tol).slice(0, -1).concat(dp(ring.slice(far).concat([ring[0]]), tol).slice(0, -1))
+      if (out.length <= maxPts) break
+      tol *= 1.6
+    }
+    return { pts: out, tol }
+  }
+  const ringArea = r => Math.abs(r.reduce((s, p, i) => { const q = r[(i + 1) % r.length]
+    return s + p.x * q.y - q.x * p.y }, 0)) / 2
+  const ringPerim = r => r.reduce((s, p, i) => { const q = r[(i + 1) % r.length]
+    return s + Math.hypot(q.x - p.x, q.y - p.y) }, 0)
+  /* Calcule bornes, centre, surface et périmètre du tracé à partir des anneaux [lat, lng] */
+  function geoBuild (g) {
+    const rings = (g.rings ?? []).map(r => {
+      const pts = r.filter(p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1])).map(p => ({ lat: +p[0], lng: +p[1] }))
+      if (pts.length > 1 && pts[0].lat === pts[pts.length - 1].lat && pts[0].lng === pts[pts.length - 1].lng) pts.pop()
+      return pts
+    }).filter(r => r.length >= 3)
+    const all = rings.flat()
+    if (all.length) { g.lat = all.reduce((a, p) => a + p.lat, 0) / all.length
+      g.lng = all.reduce((a, p) => a + p.lng, 0) / all.length }
+    if (empty(g.lat) ? true : empty(g.lng)) return null
+    const zone = zoneDe(g.lat)
+    const lr = rings.map(r => r.map(p => Object.assign(p, lambert(p.lat, p.lng, zone))))
+    const areas = lr.map(ringArea)
+    const main = lr.length ? lr[areas.indexOf(Math.max(...areas))] : null
+    const simp = main ? simplifyRing(main, 12) : null
+    g.rings = rings.map(r => r.map(p => [p.lat, p.lng]))
+    g.lam = {
+      zone, centre: lambert(g.lat, g.lng, zone),
+      bornes: simp ? simp.pts.map(p => ({ x: p.x, y: p.y, lat: p.lat, lng: p.lng })) : [],
+      simplifie: simp ? simp.tol > 0 : false, sommets: main ? main.length : 0,
+      surface: areas.reduce((a, b) => a + b, 0), perimetre: main ? ringPerim(main) : null, parcelles: lr.length
+    }
+    g.v = (geoSeq += 1)
+    return g
+  }
+  let geoSeq = 0
+  function coordsDe (u) {
+    const s = String(u ?? '')
+    const m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ?? s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ?? s.match(/[?&]q(?:uery)?=(-?\d+\.\d+),\s*(-?\d+\.\d+)/) ?? s.match(/[?&]ll=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)
+    return m ? [+m[1], +m[2]] : null
+  }
+  /* Contour du terrain sur la carte Atlas : titre foncier d'abord, sinon contour rattaché à la référence, sinon lien Google Maps */
+  async function loadGeo (t) {
+    const id = S.crmId
+    const tfKeys = typeof tdTfCles === 'function' ? tdTfCles(t.tf) : []
+    const keys = t.ref ? tfKeys.concat([t.ref]) : tfKeys
+    let rows = []
+    if (keys.length && typeof supaGet === 'function') {
+      try {
+        const liste = keys.map(k => '"' + String(k).replace(/"/g, '') + '"').join(',')
+        rows = await supaGet('terrain_contours', 'select=cle,surface_plan,geom,lat,lng&cle=in.(' + encodeURIComponent(liste) + ')')
+      } catch (e) { rows = [] }
+    }
+    if (S.crmId !== id) return
+    const okG = r => Array.isArray(r.geom) && r.geom.length
+    const parTf = rows.filter(r => tfKeys.includes(r.cle) && okG(r))
+    const use = parTf.length ? parTf : rows.filter(r => r.cle === t.ref && okG(r))
+    let g = null
+    if (use.length) {
+      g = { rings: use.flatMap(r => r.geom), cles: use.map(r => r.cle), sp: use.reduce((a, r) => a + (num(r.surface_plan) ?? 0), 0),
+        src: parTf.length ? 'contour CADGIS du titre ' + use.map(r => r.cle.replace(/^T/, '')).join(', ') : 'contour Atlas rattaché au terrain' }
+    } else {
+      const gm = coordsDe(t.googleMap)
+      if (gm) g = { rings: [], lat: gm[0], lng: gm[1], src: 'point du lien Google Maps' }
+    }
+    S.geo = g ? geoBuild(g) : null
+    if (S.geo && empty(S.superficie) && S.geo.lam.surface) S.superficie = Math.round(S.geo.lam.surface)
+    fillForm()
+    render()
+  }
+  function lambertSaisi (txt) {
+    const n = String(txt ?? '').replace(RX_SP, ' ').replace(/(?<![.,\d])(\d{1,3}) (\d{3})(?!\d)/g, '$1$2').match(/\d+(?:[.,]\d+)?/g)
+    if (!n ? true : n.length < 2) return null
+    const x = +n[0].replace(',', '.')
+    const y = +n[1].replace(',', '.')
+    if (x < 20000 ? true : x > 900000) return null
+    const zone = RX_SUD.test(txt) ? 2 : 1
+    const ll = lambertInv(x, y, zone)
+    return { rings: [], lat: ll[0], lng: ll[1], src: 'point Lambert saisi' }
+  }
+  const RX_SUD = new RegExp(ALT(['sud\\b', 'zone\\s*2', '26192']), 'i')
+  const mapsHref = () => S.maps ? S.maps : (S.geo ? `https://www.google.com/maps?q=${S.geo.lat.toFixed(6)},${S.geo.lng.toFixed(6)}` : '')
+
+  /* Image satellite Esri autour du tracé, dessinée sur un canvas */
+  const TILE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'
+  const wpx = (lat, lng, z) => { const s = Math.sin(lat * RAD)
+    const W = 256 * 2 ** z
+    return [(lng + 180) / 360 * W, (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * W] }
+  const tileImg = src => new Promise(res => { const i = new Image()
+    i.crossOrigin = 'anonymous'
+    i.onload = () => res(i)
+    i.onerror = () => res(null)
+    i.src = src })
+  const mapCache = new Map()
+  function geoMap (w, h, mode) {
+    const g = S.geo
+    if (!g) return Promise.resolve('')
+    const key = [g.v, w, h, mode].join('~')
+    if (mapCache.has(key)) return mapCache.get(key)
+    const p = (async () => {
+      const pts = g.rings.flat()
+      let z = 17
+      if (pts.length >= 3) {
+        z = 19
+        while (z > 10) {
+          const xy = pts.map(q => wpx(q[0], q[1], z))
+          const bw = Math.max(...xy.map(q => q[0])) - Math.min(...xy.map(q => q[0]))
+          const bh = Math.max(...xy.map(q => q[1])) - Math.min(...xy.map(q => q[1]))
+          if (bw <= w * 0.62 && bh <= h * 0.62) break
+          z -= 1
+        }
+      }
+      if (mode === 'situation') z = Math.max(z - 3, 11)
+      if (mode === 'cover') z = Math.max(z - 2, 11)
+      const xs = pts.length >= 3 ? pts.map(q => wpx(q[0], q[1], z)) : [wpx(g.lat, g.lng, z)]
+      const cx = (Math.min(...xs.map(q => q[0])) + Math.max(...xs.map(q => q[0]))) / 2
+      const cy = (Math.min(...xs.map(q => q[1])) + Math.max(...xs.map(q => q[1]))) / 2
+      const x0 = cx - w / 2
+      const y0 = cy - h / 2
+      const cv = document.createElement('canvas')
+      cv.width = w
+      cv.height = h
+      const ctx = cv.getContext('2d')
+      ctx.fillStyle = '#10291A'
+      ctx.fillRect(0, 0, w, h)
+      const jobs = []
+      let tx = Math.floor(x0 / 256)
+      while (tx <= Math.floor((x0 + w) / 256)) {
+        let ty = Math.floor(y0 / 256)
+        while (ty <= Math.floor((y0 + h) / 256)) {
+          const X = tx
+          const Y = ty
+          jobs.push(tileImg(`${TILE}${z}/${Y}/${X}`).then(im => { if (im) ctx.drawImage(im, X * 256 - x0, Y * 256 - y0, 256, 256) }))
+          ty += 1
+        }
+        tx += 1
+      }
+      await Promise.all(jobs)
+      const P = (lat, lng) => { const q = wpx(lat, lng, z)
+        return [q[0] - x0, q[1] - y0] }
+      const lw = mode === 'trace' ? 5 : 4
+      if (pts.length >= 3) {
+        ctx.beginPath()
+        g.rings.forEach(r => r.forEach((q, i) => { const c = P(q[0], q[1])
+          if (i) ctx.lineTo(c[0], c[1])
+          else ctx.moveTo(c[0], c[1]) }))
+        ctx.closePath()
+        ctx.fillStyle = 'rgba(133,217,175,0.25)'
+        ctx.fill('evenodd')
+        ctx.lineWidth = lw
+        ctx.strokeStyle = '#85D9AF'
+        ctx.stroke()
+      } else {
+        const c = P(g.lat, g.lng)
+        ctx.beginPath()
+        ctx.arc(c[0], c[1], 16, 0, Math.PI * 2)
+        ctx.fillStyle = '#85D9AF'
+        ctx.fill()
+        ctx.lineWidth = 5
+        ctx.strokeStyle = '#0B1F13'
+        ctx.stroke()
+      }
+      if (mode === 'trace' && g.lam.bornes.length) {
+        ctx.font = 'bold 22px Inter, Arial, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        const ctr = P(g.lat, g.lng)
+        g.lam.bornes.forEach((b, i) => {
+          const c = P(b.lat, b.lng)
+          ctx.beginPath()
+          ctx.arc(c[0], c[1], 8, 0, Math.PI * 2)
+          ctx.fillStyle = '#EDF1EA'
+          ctx.fill()
+          const dx = c[0] - ctr[0]
+          const dy = c[1] - ctr[1]
+          const d = Math.hypot(dx, dy) ? Math.hypot(dx, dy) : 1
+          const lx = c[0] + dx / d * 30
+          const ly = c[1] + dy / d * 30
+          ctx.fillStyle = '#0B1F13'
+          ctx.beginPath()
+          ctx.arc(lx, ly, 19, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = '#85D9AF'
+          ctx.fillText('B' + (i + 1), lx, ly + 1)
+        })
+      }
+      try { return cv.toDataURL('image/jpeg', 0.88) } catch (e) { return '' }
+    })()
+    mapCache.set(key, p)
+    return p
+  }
+
+  /* ---------- vocation déduite du zonage ---------- */
+  const RX_ZA = new RegExp('^' + ALT(['ZA\\w*', 'ZAE', 'ZAI', 'IL\\d?', 'ACT\\w*']) + '$')
+  const RX_IND = new RegExp(ALT(['INDUSTRI', 'ACTIVIT', 'LOGISTI']))
+  function zoneToken () {
+    const raw = String(orv(orv(S.secteur, S.zone), S.urba) ?? '').trim().toUpperCase()
+    return { raw, tok: raw.split(/[\s/,]+/)[0].replace(/^FB(?=\d)/, '') }
+  }
+  function vocation () {
+    const { raw, tok } = zoneToken()
+    if (!raw && !S.famille) return null
+    const sup = num(S.superficie)
+    const fam = S.famille ? S.famille : (typeof window.mvFam === 'function' ? window.mvFam(tok) : null)
+    const ha = sup ? (sup >= 10000 ? fmt(sup / 10000, 1) + ' ha' : fmt(sup) + ' m²') : ''
+    const z = tok ? 'zone ' + tok : 'ce zonage'
+    const sur = ha ? ` sur ${ha}` : ''
+    if (fam === 'Industriel' ? true : (RX_ZA.test(tok) ? true : RX_IND.test(raw)))
+      return { type:'activites', why:`${z}, vocation industrielle ou logistique : lotissement en lots d’activité ou vente en bloc à un industriel` }
+    if (fam === 'Rural') return { type:'reserve', why:`${z}, rurale ou non ouverte à l’urbanisation : réserve foncière, constructibilité très faible tant que la zone n’est pas ouverte` }
+    if (fam === 'Tourisme') return { type:'promotion', alt:'lotissement', why:`${z}, vocation touristique : programme hôtelier ou résidentiel de loisirs` }
+    if (/^E\d/.test(tok) ? true : /ECONOM/.test(raw)) {
+      if (sup && sup < 300) return { type:'villa', why:`${z}, habitat économique${sur} : lot à bâtir en R+2 ou R+3` }
+      if (sup && sup >= 3000) return { type:'lotissement', alt:'promotion', why:`${z}, habitat économique${sur} : découpage en petits lots de 80 à 180 m², très liquides` }
+      return { type:'promotion', alt:'lotissement', why:`${z}, habitat économique${sur} : petit immeuble ou maisons en bande` }
+    }
+    if (/^D\d/.test(tok) ? true : (fam === 'Villa' ? true : /VILLA/.test(raw))) {
+      if (sup && sup < 1500) return { type:'villa', why:`${z}, villas${sur} : lot à bâtir pour une villa` }
+      return { type:'lotissement', alt:'promotion', why:`${z}, villas${sur} : lotissement de lots villas, ou villas en bande` }
+    }
+    if (fam === 'Immeuble' ? true : /^[ABC]\d/.test(tok)) {
+      if (sup && sup < 1000) return { type:'villa', alt:'promotion', why:`${z}, immeubles${sur} : lot à bâtir pour un petit immeuble` }
+      if (sup && sup >= 20000) return { type:'lotissement', alt:'promotion', why:`${z}, immeubles${sur} : lots d’immeubles à revendre aux promoteurs, ou promotion par tranches` }
+      return { type:'promotion', alt: sup && sup >= 8000 ? 'lotissement' : null, why:`${z}, immeubles${sur} : promotion de logements, bureaux ou commerces` }
+    }
+    return null
+  }
+  /* Valeurs de bilan par défaut selon le type d'opération */
+  function presetType (type, fam) {
+    if (type === 'activites') Object.assign(S.rdt, { lot:1000, voiesPct:30, pvBas:2500, pvHaut:3500 })
+    else if (type === 'lotissement' && S.rdt.lot === 1000) Object.assign(S.rdt, { lot:250, voiesPct:40, pvBas:7000, pvHaut:8500 })
+    else if (['promotion', 'villa'].includes(type) && S.rdt.pvBas < 6000) Object.assign(S.rdt, { pvBas:9000, pvHaut:11000 })
+    if (fam === 'Tourisme' && type === 'promotion') Object.assign(S.rdt, { pvBas:9000, pvHaut:11000 })
+  }
+  function autoVocation () {
+    if (S.typeManuel ? true : S.type === 'immeuble') return false
+    const v = vocation()
+    if (!v ? true : v.type === S.type) return false
+    S.type = v.type
+    presetType(v.type, famille())
+    autoLot()
+    return true
+  }
+
+  /* ---------- constructibilité : COS et CUS, trois hypothèses ---------- */
+  const SCN = ['Pessimiste', 'Réaliste', 'Optimiste']
+  const CONS = {
+    immeuble:{ lib:'immeubles', cos:[0.5, 0.6, 0.7], niv:4, bonus:[0, 0, 0.6], derog:0.2, opt:'attique en retrait ou dérogation' },
+    eco:{ lib:'habitat économique', cos:[0.7, 0.8, 0.9], niv:3, bonus:[0, 0, 0.5], derog:0.1, opt:'terrasse aménagée en attique' },
+    villa:{ lib:'villas', cos:[0.2, 0.3, 0.4], niv:1, bonus:[0, 0, 0], derog:0, opt:'emprise maximale' },
+    industriel:{ lib:'activités', cos:[0.5, 0.6, 0.7], niv:0, bonus:[0, 0.3, 0.6], derog:0, opt:'mezzanines et bureaux en R+1' },
+    tourisme:{ lib:'tourisme', cos:[0.1, 0.2, 0.3], niv:1, bonus:[0, 0, 1], derog:0, opt:'un niveau supplémentaire' },
+    rural:{ lib:'zone rurale', cos:[0.01, 0.015, 0.02], niv:1, bonus:[0, 0, 0], derog:0, opt:'construction maximale admise' }
+  }
+  function consFam () {
+    const { raw, tok } = zoneToken()
+    const fam = famille()
+    if (S.type === 'activites' ? true : fam === 'Industriel') return 'industriel'
+    if (fam === 'Rural') return 'rural'
+    if (fam === 'Tourisme') return 'tourisme'
+    if (/^E\d/.test(tok) ? true : /ECONOM/.test(raw)) return 'eco'
+    if (/^D\d/.test(tok) ? true : (fam === 'Villa' ? true : /VILLA/.test(raw))) return 'villa'
+    return 'immeuble'
+  }
+  const ratio = v => { const n = num(v)
+    return empty(n) ? null : (n > 1.5 ? n / 100 : n) }
+  function constructibilite () {
+    if (S.type === 'immeuble') return null
+    const sup = S.superficie
+    if (empty(sup)) return null
+    const k = consFam()
+    const F = CONS[k]
+    const tokN = (zoneToken().raw.match(/R\s*\+\s*(\d+)/) ?? [])[1]
+    const N = niveauxN() ?? (tokN ? +tokN : F.niv)
+    const cosNote = orv(ratio(S.cos), empty(S.emprise) ? null : S.emprise / 100)
+    const cusNote = num(S.cus)
+    const net = surfaceNette()
+    const vp = S.rdt.voiesPct ?? 30
+    const cession = ['lotissement', 'activites'].includes(S.type) ? [vp + 5, vp, Math.max(vp - 5, 0)] : S.type === 'reserve' ? [0, 0, 0] : [10, 5, 0]
+    const pg = prixGlobal()
+    const rd = S.rdt
+    const pv = [rd.pvBas, empty(rd.pvBas) ? null : (rd.pvBas + (rd.pvHaut ?? rd.pvBas)) / 2, rd.pvHaut]
+    const rows = SCN.map((nom, i) => {
+      const lv = N + 1 + F.bonus[i]
+      const autoCos = cosNote ? cosNote * [0.85, 1, 1][i] : F.cos[i]
+      const cos = orv(empty(S.cons.cos[i]) ? null : S.cons.cos[i] / 100, autoCos)
+      const autoCus = cusNote ? cusNote * [0.85, 1, 1 + F.derog][i] : cos * lv
+      const cus = orv(S.cons.cus[i], autoCus)
+      const base = net ? net : sup * (1 - cession[i] / 100)
+      const plancher = base * cus
+      const r = { nom, cos, cus, autoCos, autoCus, lv, base, plancher, chargeF: pg && plancher ? pg / plancher : null }
+      if (['promotion', 'villa'].includes(S.type) && pv[i]) { r.vend = plancher * (rd.vendablePct ?? 83) / 100
+        r.CA = r.vend * pv[i] }
+      return r
+    })
+    const hyp = [
+      cusNote ? '85 % du plafond de la note : reculs, pertes de forme, stationnement' : 'emprise réduite par les reculs et le stationnement, sans niveau supplémentaire',
+      cusNote ? 'plafond de la note de renseignement' : `valeurs usuelles des zones ${F.lib}`,
+      cusNote ? (F.derog ? `plafond + ${fmt(F.derog * 100)} % : ${F.opt}` : 'plafond de la note atteint') : F.opt
+    ]
+    return { k, F, N, rows, hyp, src: cusNote ? 'note' : 'usuel', min: Math.min(...rows.map(r => r.plancher)), max: Math.max(...rows.map(r => r.plancher)) }
+  }
+  const pct = v => empty(v) ? 'nc' : fmt(v * 100, v * 100 < 10 ? 1 : 0) + ' %'
+  const cusTxt = v => empty(v) ? 'nc' : fmt(v, 2)
+  const nivTxt = lv => { const n = Math.floor(lv - 1)
+    const extra = lv - 1 - n
+    return (n > 0 ? 'R+' + n : 'RDC') + (extra > 0.01 ? ` + ${fmt(extra * 100)} %` : '') }
+
   /* ---------- images des slides ---------- */
   const fitCache = new Map()
   const loadImg = src => new Promise((res, rej) => { const i = new Image()
@@ -834,12 +1283,15 @@ void (function () {
     const pick = role => S.images.filter(i => i.role === role)
     const coverIm = S.images.find(i => i.cover) ?? pick('sat')[0] ?? pick('photo')[0]
     const satIm = pick('sat')[0] ?? coverIm
+    const G = S.geo
+    const hasTrace = G ? G.lam.bornes.length >= 3 : false
+    const [geoCover, geoSit, geoTrace] = G ? await Promise.all([coverIm ? '' : geoMap(1920, 1080, 'cover'), satIm ? '' : geoMap(860, 514, 'situation'), hasTrace ? geoMap(800, 792, 'trace') : '']) : ['', '', '']
     const planIm = pick('plan')[0]
     const photos = pick('photo').slice(0, 3)
     const pw = photos.length === 1 ? 1664 : photos.length === 2 ? 820 : 538
     const [coverSrc, satSrc, planSrc, ...photoSrc] = await Promise.all([
-      coverIm ? fit(imgSrc(coverIm), 1920, 1080, 'cover', true) : '',
-      satIm ? fit(imgSrc(satIm), 860, 514, 'cover') : '',
+      coverIm ? fit(imgSrc(coverIm), 1920, 1080, 'cover', true) : (geoCover ? fit(geoCover, 1920, 1080, 'cover', true) : ''),
+      satIm ? fit(imgSrc(satIm), 860, 514, 'cover') : geoSit,
       planIm ? fit(imgSrc(planIm), 800, 498, 'contain') : '',
       ...photos.map(p => fit(imgSrc(p), pw, 560, 'cover'))
     ])
@@ -891,11 +1343,13 @@ ${big1 ? `<div style="display:flex;flex-direction:column;gap:8px"><p style="${F_
 §F</section>` })
 
     const reps = S.reperes.filter(r => r.nom).slice(0, 4)
-    const mapsLine = S.maps ? `<div style="display:flex;justify-content:space-between;border-top:1px solid #2C4A37;border-bottom:1px solid #2C4A37;padding:16px 0px"><p style="font-size:28px;color:#EDF1EA"><a href="${attr(S.maps)}">Voir sur Google Maps</a></p><p style="font-size:28px;color:#85D9AF">${esc(orv(S.quartier, S.ville) ?? '')}</p></div>` : ''
+    const href = mapsHref()
+    const lamLine = G ? `<div style="display:flex;justify-content:space-between;gap:24px;border-top:1px solid #2C4A37;padding:16px 0px"><p style="font-size:28px;color:#EDF1EA">Centre, ${esc(LZ[G.lam.zone].nom)}</p><p style="font-size:26px;color:#85D9AF;white-space:nowrap;${F_M}">X ${lamTxt(G.lam.centre.x)}  Y ${lamTxt(G.lam.centre.y)}</p></div>` : ''
+    const mapsLine = href ? `${lamLine}<div style="display:flex;justify-content:space-between;border-top:1px solid #2C4A37;border-bottom:1px solid #2C4A37;padding:16px 0px"><p style="font-size:28px;color:#EDF1EA"><a href="${attr(href)}">Voir sur la carte</a></p><p style="font-size:28px;color:#85D9AF">${esc(orv(S.quartier, S.ville) ?? '')}</p></div>` : ''
     out.push({ id:'situation', dark:true, html:`<section class="gf-slide" style="background:#0B1F13;color:#EDF1EA;font-family:Inter, Arial, sans-serif;${SEC};display:flex;flex-direction:row;align-items:center;gap:64px">
 <div style="position:relative;display:flex;width:860px;height:514px;flex:none;border-radius:16px;overflow:hidden;background:#10291A">
 ${satSrc ? `<img src="${satSrc}" alt="Vue de situation" style="width:860px;height:514px">` : `<p style="margin:auto;font-size:26px;color:#7E9A88">Vue satellite à ajouter</p>`}
-${satSrc ? `<p style="position:absolute;left:335px;top:233px;width:190px;font-size:24px;font-weight:700;text-align:center;white-space:nowrap;background:#85D9AF;color:#0B1F13;padding:8px 18px;border-radius:999px">${isImm ? 'L’immeuble' : 'Le terrain'}</p>` : ''}
+${satSrc ? `<p style="position:absolute;left:335px;top:${satIm ? 233 : 36}px;width:190px;font-size:24px;font-weight:700;text-align:center;white-space:nowrap;background:#85D9AF;color:#0B1F13;padding:8px 18px;border-radius:999px">${isImm ? 'L’immeuble' : 'Le terrain'}</p>` : ''}
 </div>
 <div style="flex:1;display:flex;flex-direction:column;gap:24px">${eyebrow('§ Situation', true)}
 <h2 style="${F_D};font-size:52px;font-weight:400;line-height:1.1;letter-spacing:-1px;color:#EDF1EA">${esc(tx('sit'))}</h2>
@@ -904,6 +1358,28 @@ ${tx('sitPhrase') ? `<p style="font-size:28px;line-height:1.45;color:#B7CCBE">${
 ${reps.map((r, i) => `<div style="display:flex;justify-content:space-between;gap:24px;border-top:1px solid #2C4A37;${!mapsLine && i === reps.length - 1 ? 'border-bottom:1px solid #2C4A37;' : ''}padding:16px 0px"><p style="font-size:28px;color:#EDF1EA">${esc(r.nom)}</p><p style="font-size:28px;color:#85D9AF;white-space:nowrap">${esc(r.pos)}</p></div>`).join('')}
 ${mapsLine}</div></div>
 §F</section>` })
+
+    if (hasTrace && geoTrace) {
+      const L = G.lam
+      const bs = L.bornes
+      const half = bs.length > 7 ? Math.ceil(bs.length / 2) : bs.length
+      const cols = half < bs.length ? [bs.slice(0, half), bs.slice(half)] : [bs]
+      const fs = cols.length > 1 ? 22 : 26
+      const tbl = (list, off) => `<table style="font-size:${fs}px;font-variant-numeric:tabular-nums;border:1px solid #C9D6CC">
+<tr style="background:#0B1F13"><th style="color:#85D9AF;padding:10px 14px">Borne</th><th style="color:#85D9AF;padding:10px 14px">X (m)</th><th style="color:#85D9AF;padding:10px 14px">Y (m)</th></tr>
+${list.map((b, i) => `<tr style="background:${i % 2 ? '#EDF1EA' : '#F8FAF6'}"><td style="padding:9px 14px;font-weight:700">B${off + i + 1}</td><td style="padding:9px 14px;white-space:nowrap">${lamTxt(b.x)}</td><td style="padding:9px 14px;white-space:nowrap">${lamTxt(b.y)}</td></tr>`).join('')}</table>`
+      const surfT = L.surface ? `${fmt(L.surface)} m²` : ''
+      const ecart = sup && L.surface ? (L.surface - sup) / sup * 100 : null
+      out.push({ id:'trace', dark:false, html:`<section class="gf-slide" style="background:#EDF1EA;color:#0B1F13;font-family:Inter, Arial, sans-serif;${SEC};display:flex;flex-direction:row;gap:64px">
+<img src="${geoTrace}" alt="Tracé du terrain" style="width:800px;height:792px;flex:none;border-radius:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:22px;min-width:0">${eyebrow('§ Tracé et coordonnées')}
+<h2 style="${F_D};font-size:48px;font-weight:400;line-height:1.1;letter-spacing:-1px">${esc(surfT ? `Tracé de ${surfT}, ${bs.length} bornes` : `${bs.length} bornes`)}</h2>
+<div style="display:flex;gap:16px;align-items:flex-start">${cols.map((c, j) => tbl(c, j ? half : 0)).join('')}</div>
+<p style="font-size:22px;line-height:1.45;color:#3E5A49">${esc(clean([`${LZ[L.zone].nom} (Merchich, EPSG ${LZ[L.zone].epsg})`, `centre X ${lamTxt(L.centre.x)}, Y ${lamTxt(L.centre.y)}`, L.perimetre ? `périmètre ${fmt(L.perimetre)} m` : '', ecart != null && Math.abs(ecart) >= 3 ? `écart de ${fmt(ecart, 0)} % avec la superficie annoncée` : ''].filter(Boolean).join(', ') + '.'))}</p>
+<p style="font-size:20px;line-height:1.4;color:#5E7A68">${esc(clean(`Source : ${G.src}${L.simplifie ? `, tracé simplifié à ${bs.length} sommets sur ${L.sommets}` : ''}. Coordonnées indicatives, à confirmer par un levé topographique.`))}</p>
+</div>
+§F</section>` })
+    }
 
     const dec = S.decomposition.filter(x => num(x.m2))
     const COLORS = ['#85D9AF', '#0B1F13', '#2F6B4B', '#9DB3A5', '#C9D6CC', '#5E8A6E']
@@ -947,6 +1423,28 @@ ${S.refs ? `<p style="font-size:24px;line-height:1.45;color:#3E5A49">${esc(clean
 <h2 style="${F_D};font-size:76px;font-weight:400;line-height:1.1;letter-spacing:-1px">${esc(orv(tx('urb'), 'Règles de la zone'))}</h2></div>
 ${S.usages ? `<p style="font-size:30px;line-height:1.45;width:1500px;color:#3E5A49">${esc(clean(S.usages))}</p>` : ''}
 ${all.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.max(1, cols)}, 1fr);gap:16px">${all.join('')}</div>` : ''}
+§F</section>` })
+    }
+
+    const C = constructibilite()
+    if (C) {
+      const styles = [['#F8FAF6', '#0B1F13', '#3E5A49', '1px solid #D7E0D8'], ['#85D9AF', '#0B1F13', '#0B1F13', 'none'], ['#0B1F13', '#85D9AF', '#D5E2D8', 'none']]
+      const col = (r, i) => {
+        const st = styles[i]
+        const lines = [['COS', pct(r.cos)], ['CUS', cusTxt(r.cus)], ['Niveaux', nivTxt(r.lv)], ['Surface d’assiette', `${fmt(r.base)} m²`],
+          r.chargeF ? ['Charge foncière', `${fmt(r.chargeF)} DH/m²`] : null, r.CA ? ['Ventes estimées', `${mdh(r.CA)} MDH`] : null].filter(Boolean)
+        return `<div style="display:flex;flex-direction:column;gap:14px;background:${st[0]};border:${st[3]};border-radius:16px;padding:32px 34px">
+<p style="${F_M};font-size:24px;letter-spacing:4px;text-transform:uppercase;color:${st[2]}">${r.nom}</p>
+<p style="${F_D};font-size:64px;line-height:1;color:${st[1]};white-space:nowrap">${fmt(r.plancher)} m²</p>
+<p style="font-size:22px;color:${st[2]}">de plancher</p>
+<div style="display:flex;flex-direction:column">${lines.map(l => `<div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid ${i === 2 ? '#2C4A37' : (i === 1 ? '#5FB98B' : '#D7E0D8')};padding:11px 0px"><p style="font-size:24px;color:${st[2]}">${esc(l[0])}</p><p style="font-size:24px;font-weight:700;color:${i === 2 ? '#EDF1EA' : '#0B1F13'};white-space:nowrap">${esc(l[1])}</p></div>`).join('')}</div>
+<p style="font-size:20px;line-height:1.35;color:${st[2]}">${esc(clean(C.hyp[i]))}</p></div>`
+      }
+      out.push({ id:'constructibilite', dark:false, html:`<section class="gf-slide" style="background:#EDF1EA;color:#0B1F13;font-family:Inter, Arial, sans-serif;${SEC};display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">${eyebrow('§ Constructibilité, ' + TYPE_LABEL[S.type].toLowerCase())}
+<h2 style="${F_D};font-size:68px;font-weight:400;line-height:1.1;letter-spacing:-1px">${esc(`De ${fmt(C.min)} à ${fmt(C.max)} m² de plancher`)}</h2></div>
+<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:24px">${C.rows.map(col).join('')}</div>
+<p style="font-size:22px;line-height:1.4;color:#3E5A49">${esc(clean(C.src === 'note' ? 'COS et CUS issus de la note de renseignement, hypothèses de réalisation appliquées. Sous réserve d’autorisation de construire.' : `Valeurs usuelles des zones ${C.F.lib}, à confirmer par la note de renseignement et le règlement du plan d’aménagement.`))}</p>
 §F</section>` })
     }
 
@@ -1078,22 +1576,67 @@ ${S.refs ? `<p style="font-size:24px;line-height:1.45;color:#7E9A88">${esc(clean
     } else if (S.type !== 'immeuble') {
       tiles.push(`<div class="tile"><span class="k">Repère marché</span><span class="v">nc</span><span class="s">${pool ? 'Quartier inconnu des données de marché' : 'Données de marché en chargement'}</span></div>`)
     }
+    const C = constructibilite()
+    if (C) tiles.push(`<div class="tile"><span class="k">Plancher constructible</span><span class="v">${fmt(C.min)} à ${fmt(C.max)} m²</span><span class="s">CUS ${cusTxt(C.rows[0].cus)} à ${cusTxt(C.rows[2].cus)}, ${C.src === 'note' ? 'base note de renseignement' : 'valeurs usuelles de la zone'}</span></div>`)
     $('#tz-summary').innerHTML = tiles.join('')
     renderMkt(M)
+    renderVoc()
+    renderGeo()
+    renderCons(C)
     const miss = []
     if (!S.nom) miss.push('Nom du terrain')
     if (S.type === 'immeuble' ? !S.prixGlobal : !S.prix) miss.push('Prix, le teaser affichera « Prix sur demande »')
     if (!S.superficie && S.type !== 'immeuble') miss.push('Superficie totale')
-    if (!S.images.some(i => i.role === 'sat')) miss.push('Capture satellite pour la couverture et la situation')
+    if (!S.images.some(i => i.role === 'sat') && !S.geo) miss.push('Emplacement : terrain absent de la carte Atlas, ajoutez un point Lambert, un lien Google Maps ou une capture satellite')
     if (!S.images.some(i => i.role === 'plan') && S.type !== 'immeuble') miss.push('Plan pour la composition foncière')
     if (!S.zone && S.type !== 'immeuble') miss.push('Zone et règlement de la note de renseignement')
     if (!S.reperes.length) miss.push('Repères de situation')
-    if (!S.maps) miss.push('Lien Google Maps')
+    if (S.geo && !S.geo.rings.length) miss.push('Tracé : seul un point est connu, placez le contour sur la carte Atlas pour obtenir les bornes Lambert')
+    if (S.geo && S.geo.lam.surface && S.superficie && Math.abs(S.geo.lam.surface - S.superficie) / S.superficie > 0.1) miss.push(`Surface du tracé Atlas (${fmt(S.geo.lam.surface)} m²) éloignée de la superficie saisie (${fmt(S.superficie)} m²)`)
     const sum = S.decomposition.reduce((a, x) => a + (num(x.m2) ?? 0), 0)
     if (S.decomposition.length >= 2 && S.superficie && Math.abs(sum - S.superficie) > 1) miss.push(`Décomposition : ${fmt(sum)} m² pour ${fmt(S.superficie)} m² de superficie, écart de ${fmt(Math.abs(sum - S.superficie))} m²`)
     const box = $('#tz-missing')
     box.hidden = !miss.length
     box.innerHTML = miss.length ? `<h4>À compléter ou vérifier</h4><ul>${miss.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''
+  }
+  function renderVoc () {
+    const el = $('#tz-voc')
+    if (!el) return
+    const v = S.type === 'immeuble' ? null : vocation()
+    el.hidden = !v
+    if (!v) return
+    const diff = v.type !== S.type
+    el.classList.toggle('diff', diff)
+    el.innerHTML = `Vocation déduite du zonage : <b>${esc(TYPE_LABEL[v.type])}</b>. ${esc(clean(v.why))}.`
+      + (v.alt && !diff ? ` Autre lecture possible : ${esc(TYPE_LABEL[v.alt])}.` : '')
+      + (diff ? ` Vous avez choisi <b>${esc(TYPE_LABEL[S.type])}</b>.` : '')
+  }
+  function renderGeo () {
+    const el = $('#tz-geo')
+    if (!el) return
+    const G = S.geo
+    el.classList.toggle('none', !G)
+    if (!G) { el.innerHTML = S.crmId ? 'Terrain absent de la carte Atlas (ni contour du titre, ni contour rattaché, ni lien Google Maps lisible).' : 'Choisissez un terrain du CRM : son contour Atlas et ses bornes en Lambert sont repris automatiquement.'
+      return }
+    const L = G.lam
+    el.innerHTML = `<span><b>${L.bornes.length >= 3 ? 'Tracé repris' : 'Point repris'}</b> : ${esc(G.src)}${L.parcelles > 1 ? `, ${L.parcelles} parcelles` : ''}.</span>`
+      + `<span class="mono">${esc(LZ[L.zone].nom)} : X ${lamTxt(L.centre.x)}, Y ${lamTxt(L.centre.y)}</span>`
+      + (L.bornes.length >= 3 ? `<span>${L.bornes.length} bornes${L.simplifie ? ` (simplifié, ${L.sommets} sommets)` : ''}, surface du tracé ${fmt(L.surface)} m², périmètre ${fmt(L.perimetre)} m.</span>` : '')
+      + `<span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="${attr(mapsHref())}" target="_blank" rel="noopener">Google Maps</a>${S.crmId ? '<button class="btn btn-sm" type="button" id="tz-atlas">Ouvrir sur Atlas</button>' : ''}</span>`
+  }
+  function renderCons (C) {
+    const note = $('#tz-cons-note')
+    if (!note) return
+    note.textContent = C ? `Zone ${C.F.lib}, ${C.src === 'note' ? 'plafonds de la note de renseignement' : 'aucun COS ni CUS saisi : valeurs usuelles de la zone'}, base ${nivTxt(C.N + 1)}.` : 'Renseignez la superficie pour estimer le COS et le CUS.'
+    SCN.forEach((nm, i) => {
+      const r = C ? C.rows[i] : null
+      const c1 = $('#tz-cos' + i)
+      const c2 = $('#tz-cus' + i)
+      if (c1) c1.placeholder = r ? fmt(r.autoCos * 100, r.autoCos < 0.1 ? 1 : 0) : ''
+      if (c2) c2.placeholder = r ? fmt(r.autoCus, 2) : ''
+      const pl = $('#tz-pl' + i)
+      if (pl) pl.textContent = r ? `${fmt(r.plancher)} m²` : ''
+    })
   }
   function renderMkt (M) {
     const box = $('#tz-mkt')

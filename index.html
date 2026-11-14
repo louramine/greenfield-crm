@@ -1788,6 +1788,8 @@ function renderPage(page) {
   else if (page === 'marketing') mkInit();
   else if (page === 'matching') { renderMatchingSelect(); mvInit(); }
   else if (page === 'rendement' && typeof rdInit === 'function') rdInit();
+  tsrchInit();
+  setTimeout(tsrchInit, 250);
 }
 
 function renderDashboard() {
@@ -2255,6 +2257,53 @@ function renderAcheteurs() {
   }).join('');
 }
 
+// ----- Recherche à côté des listes déroulantes de terrains -----
+const TSRCH_IDS = ['matching-terrain-select', 'mk-terrain', 'rd-terrain', 'd-terrain', 'mv-crm'];
+function tsrchN(v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function tsrchHay() {
+  const m = new Map();
+  (state.terrains || []).forEach(t => m.set(String(t.id), tsrchN([t.ref, t.localisation, t.quartier, t.tf, t.urba, t.superficie, t.sourceur, t.statut].filter(Boolean).join(' '))));
+  return m;
+}
+function tsrchApply(sel) {
+  const q = tsrchN(sel._tsIn.value).trim();
+  const hay = q ? tsrchHay() : null;
+  let n = 0, tot = 0;
+  [...sel.options].forEach(o => {
+    const fixe = !o.value || o.value.slice(0, 2) === '__';
+    if (!fixe) tot++;
+    const h = q ? (hay.get(o.value) || '') + ' ' + tsrchN(o.textContent) : '';
+    const ok = !q || fixe || h.includes(q);
+    o.hidden = !ok; o.disabled = !ok;
+    if (ok && !fixe) n++;
+  });
+  const cur = sel.selectedOptions[0];
+  if (cur) { cur.hidden = false; cur.disabled = false; }
+  sel._tsN.textContent = q ? (n ? n + ' / ' + tot : 'aucun') : '';
+}
+function tsrchInit() {
+  TSRCH_IDS.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    if (!sel._tsIn) {
+      const w = document.createElement('div');
+      w.className = 'tsrch';
+      const inp = document.createElement('input');
+      inp.type = 'search';
+      inp.className = 'form-input';
+      inp.placeholder = 'Rechercher : réf, quartier, TF...';
+      inp.setAttribute('aria-label', 'Rechercher un terrain dans la liste');
+      const nb = document.createElement('span');
+      nb.className = 'tsrch-n';
+      w.appendChild(inp); w.appendChild(nb);
+      sel.parentElement.insertBefore(w, sel);
+      sel._tsIn = inp; sel._tsN = nb;
+      inp.addEventListener('input', () => tsrchApply(sel));
+      new MutationObserver(() => tsrchApply(sel)).observe(sel, { childList: true });
+    }
+    tsrchApply(sel);
+  });
+}
 function terrainLabel(t) {
   const sup = Number(t.superficie) || 0;
   return [t.ref || 'Sans réf.', t.localisation || 'Non renseigné', sup ? sup.toLocaleString('fr-FR') + ' m²' : 'm² n.c.'].join(' / ');
@@ -2453,6 +2502,7 @@ function dealTerrainToggle() {
   const aw = document.getElementById('d-associe-wrap'); if (aw) aw.classList.toggle('dem-hide', v === '__dem__');
 }
 function openDealModal() {
+  tsrchInit();
   const tSel = document.getElementById('d-terrain');
   const aSel = document.getElementById('d-acheteur');
   tSel.innerHTML = '<option value="__new__">+ Nouveau terrain (hors CRM)</option><option value="__dem__">+ Nouvelle demande</option>' + state.terrains.filter(t => t.statut !== 'Vendu').map(t => `<option value="${t.id}">${escH(terrainLabel(t))}</option>`).join('');
@@ -4911,6 +4961,12 @@ async function favToggle(id, ev) {
 .pr-kpi b{display:block;font-family:'Archivo',sans-serif;font-size:24px;color:var(--white);line-height:1.1}
 .pr-kpi span{font-size:11.5px;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.06em}
 .pr-kpi .sm{display:none}
+.tsrch{position:relative;margin-bottom:6px}
+.tsrch input{width:100%;padding-right:62px}
+.tsrch input::-webkit-search-cancel-button{-webkit-appearance:none}
+.tsrch-n{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--gray-mid);pointer-events:none;font-variant-numeric:tabular-nums}
+#matching-pane .tsrch{max-width:400px}
+#matching-pane .tsrch input,.rd-pick .tsrch input{background:#0d3320;color:var(--white);border-color:rgba(126,224,164,0.3)}
 .pr-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 .pr-search{position:relative;flex:1;min-width:220px}
 .pr-search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-mid);font-size:14px}

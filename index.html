@@ -4921,6 +4921,7 @@ async function favToggle(id, ev) {
 .pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:12px;align-items:start}
 .pr-card{background:#fff;border-radius:14px;padding:14px 16px;cursor:pointer;color:#1d2b23;border:1px solid transparent;transition:border-color .15s,transform .15s;display:flex;flex-direction:column;gap:8px}
 .pr-card:hover{border-color:var(--green-bright);transform:translateY(-1px)}
+.pr-m{display:none}
 .pr-card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .pr-name{font-weight:700;font-size:14.5px;color:var(--green-deep);line-height:1.25}
 .pr-soc{font-size:12px;color:#6b7f73;margin-top:2px}
@@ -5218,7 +5219,19 @@ function prCard(a) {
   const dern = prDernier(a);
   const tel = a.telephone ? `<a href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${prE(prTelAff(a.telephone))}</a>` : '<span style="color:#b3261e">Pas de numéro</span>';
   const tk = (prNum(a.ticket_min) || prNum(a.ticket_max)) ? `${a.ticket_min || '?'} à ${a.ticket_max || '?'} M DH` : '';
-  return `<div class="pr-card" onclick="prOpen(${a.id})">
+  // Version téléphone : une ligne compacte, appel et WhatsApp en icônes
+  const ini = String(a.nom || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+  const st = a.statut || 'À qualifier';
+  const waOk = a.telephone && a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop;
+  const ico = k => typeof M_ICO !== 'undefined' ? M_ICO[k] : '';
+  const l2 = [a.societe ? prE(a.societe) : '', a.associe ? 'Suivi ' + prE(a.associe) : ''].filter(Boolean).join(' · ');
+  const l3 = [reps.length ? reps.length + ' proposé' + (reps.length > 1 ? 's' : '') + (pos ? ', ' + pos + ' positif' + (pos > 1 ? 's' : '') : '') : '', dern ? prDepuis(dern) : '',
+    prRelanceDue(a) ? '<b class="w">Relance due</b>' : '', !crit ? 'Critères à renseigner' : (comp < 75 ? 'Profil ' + comp + ' %' : ''), !a.telephone ? '<b class="r">Pas de numéro</b>' : ''].filter(Boolean).join(' · ');
+  const mob = `<div class="pr-m"><div class="pr-av">${prE(ini)}</div><div class="pr-mid">
+      <div class="pr-mn"><span>${prE(a.nom)}</span>${st !== 'À qualifier' ? prStatutB(st) : ''}</div>
+      ${l2 ? `<div class="pr-ms">${l2}</div>` : ''}${l3 ? `<div class="pr-ms pr-ms3">${l3}</div>` : ''}</div>
+      ${a.telephone ? `<div class="pr-mq"><a href="tel:+${prE(a.telephone)}" onclick="event.stopPropagation()" aria-label="Appeler ${prE(a.nom)}">${ico('phone')}</a>${waOk ? `<a class="wa" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="WhatsApp ${prE(a.nom)}">${ico('wa')}</a>` : ''}</div>` : ''}</div>`;
+  return `<div class="pr-card" onclick="prOpen(${a.id})">${mob}
     <div class="pr-card-top"><div><div class="pr-name">${prE(a.nom)}</div>${a.societe ? `<div class="pr-soc">${prE(a.societe)}</div>` : ''}</div>${prStatutB(a.statut)}</div>
     <div class="pr-meta"><span>${tel}</span>${a.associe ? `<span>Suivi : <b>${prE(a.associe)}</b></span>` : ''}${tk ? `<span>${tk}</span>` : ''}</div>
     ${a.telephone ? `<div class="pr-qa"><a href="tel:+${prE(a.telephone)}" onclick="event.stopPropagation()">${typeof M_ICO !== 'undefined' ? M_ICO.phone : ''}Appeler</a>${a.whatsapp_consentement !== 'Non' && !a.whatsapp_stop ? `<a class="wa" href="https://wa.me/${prE(a.telephone)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${typeof M_ICO !== 'undefined' ? M_ICO.wa : ''}WhatsApp</a>` : ''}</div>` : ''}
@@ -5264,7 +5277,7 @@ function prRenderList() {
   document.getElementById('pr-count').textContent = rows.length + ' sur ' + all.length;
   if (!all.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">Aucun promoteur. Cliquez sur « + Nouveau promoteur » ou exécutez le script d\'import.</div></div>'; return; }
   if (!rows.length) { list.innerHTML = '<div class="pr-empty" style="color:var(--gray-mid)">Aucun promoteur ne correspond à ces filtres.</div>'; return; }
-  const ord = (x, y) => (y.statut === 'Chaud') - (x.statut === 'Chaud') || prCompletude(y) - prCompletude(x) || String(x.nom).localeCompare(String(y.nom), 'fr');
+  const ord = (x, y) => (prRelanceDue(y) ? 1 : 0) - (prRelanceDue(x) ? 1 : 0) || (y.statut === 'Chaud') - (x.statut === 'Chaud') || prCompletude(y) - prCompletude(x) || String(x.nom).localeCompare(String(y.nom), 'fr');
   list.innerHTML = `<div class="pr-grid">${rows.sort(ord).map(prCard).join('')}</div>`;
 }
 renderAcheteurs = prRenderList;
@@ -5830,6 +5843,24 @@ tbody tr:hover{background:#eaf6ef}
   .pr-qa a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;border:1.5px solid #cfe3d7;color:var(--green-mid);background:#fff}
   .pr-qa a.wa{background:#25D366;border-color:#25D366;color:#fff}
   .pr-qa svg{width:15px;height:15px}
+  /* Promoteurs : fiche compacte sur téléphone */
+  #page-acheteurs .pr-card{padding:11px 10px 11px 12px;gap:0}
+  #page-acheteurs .pr-card>:not(.pr-m){display:none}
+  .pr-m{display:flex;align-items:center;gap:11px;min-width:0}
+  .pr-av{flex:none;width:40px;height:40px;border-radius:50%;background:#e3f2e9;color:#1f7a4d;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+  .pr-mid{flex:1;min-width:0}
+  .pr-mn{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15.5px;color:var(--green-deep);line-height:1.25}
+  .pr-mn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .pr-mn .pr-b{flex:none;font-size:10.5px;padding:2px 8px}
+  .pr-ms{font-size:12.5px;color:#5f7268;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr-ms3{font-size:12px;color:#7a8b81}
+  .pr-ms b{font-weight:600}
+  .pr-ms b.w{color:#a35a00}
+  .pr-ms b.r{color:#b3261e}
+  .pr-mq{flex:none;display:flex;gap:8px}
+  .pr-mq a{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #cfe3d7;color:var(--green-mid);background:#fff}
+  .pr-mq a.wa{background:#25D366;border-color:#25D366;color:#fff}
+  .pr-mq svg{width:19px;height:19px}
 
   /* Dashboard */
   #my-tasks-card{padding:14px 16px;margin-bottom:12px !important}

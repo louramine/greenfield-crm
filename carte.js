@@ -199,12 +199,24 @@ const CSS = `
 .gfc-box label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:#4f6a5c;margin:10px 0 4px}
 .gfc-box input,.gfc-box select,.gfc-box textarea{width:100%;font:inherit;font-size:14px;padding:9px 10px;border:1px solid #cfdcd2;border-radius:10px}
 .gfc-box .gfc-acts{padding:14px 0 0}
-.gfc-sh,.gfc-mtop,.gfc-see{display:none}
+.gfc-sh,.gfc-mtop,.gfc-see,.gfc-bbar{display:none}
 .gfc-zlo .gfc-poi{font-size:0;padding:4px;border-width:2px;line-height:0}
 @media (max-width:900px){
 .gfc{font-size:15px}
 .gfc-side{z-index:1100;position:absolute;left:0;right:0;bottom:0;width:auto;height:52%;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.35);transition:height .22s ease;padding-bottom:env(safe-area-inset-bottom)}
-.gfc-side.peek{height:calc(76px + env(safe-area-inset-bottom))}
+.gfc-side.peek{height:0;padding-bottom:0;box-shadow:none;overflow:hidden}
+.gfc-x{font-size:20px;line-height:1;padding:6px 12px}
+.gfc-bbar{display:flex;position:absolute;left:8px;right:8px;bottom:10px;z-index:1050;gap:6px;align-items:center;transition:bottom .22s ease}
+.gfc[data-st="half"] .gfc-bbar{bottom:calc(52% + 8px)}
+.gfc[data-st="full"] .gfc-bbar{display:none}
+.gfc.dopen .gfc-bbar{display:none}
+.gfc-bbar .gfc-srch{flex:1 1 auto;width:auto;min-width:44px;max-width:none;height:44px;padding:0 12px}
+.gfc-bbar.sopen .gfc-srch{flex:1 1 100%}
+.gfc-bbar.sopen > :not(.gfc-srch){display:none !important}
+.gfc-bbar .gfc-selbar{position:static;flex:none;max-width:none;height:44px;padding:0 4px 0 12px;gap:6px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.gfc-bbar .gfc-selbar > span{flex:none}
+.gfc-bbar .gfc-selbar .gfc-btn{padding:8px 11px}
+.gfc-lbtn{flex:none;display:flex;align-items:center;gap:7px;height:44px;padding:0 13px;font:inherit;font-size:14.5px;font-weight:700;border:none;border-radius:12px;background:#7ee0a4;color:#0a1410;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .gfc-side.full{height:calc(100% - 64px)}
 .gfc-side.drag{transition:none}
 .gfc.dopen .gfc-side{display:none}
@@ -262,13 +274,13 @@ const CSS = `
 .gfc-dh h2{font-size:20px}
 .gfc-dh .x{top:14px;right:8px;width:40px;height:40px;font-size:26px}
 .gfc-acts .gfc-btn{padding:13px 10px;font-size:14px}
-.gfc-warn{bottom:auto;top:112px;font-size:11.5px}
-.gfc.hasbrand .gfc-warn{top:calc(156px + env(safe-area-inset-top))}
+.gfc-warn{bottom:auto;top:60px;font-size:11.5px}
+.gfc.hasbrand .gfc-warn{top:calc(104px + env(safe-area-inset-top))}
 .gfc-modal{align-items:flex-end;padding:0;z-index:2000}
 .gfc-box{max-width:none;border-radius:18px 18px 0 0;max-height:92%;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
-.gfc .leaflet-control-layers{margin-top:112px}
+.gfc .leaflet-control-layers{margin-top:60px}
 .gfc .leaflet-control-attribution{font-size:9px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gfc.hasbrand .leaflet-control-layers{margin-top:100px}
+.gfc.hasbrand .leaflet-control-layers{margin-top:108px}
 .gfc-toggle{display:none}
 }
 .gfc .leaflet-control-layers-toggle,.gfc.leaflet-touch .leaflet-control-layers-toggle,.gfc .leaflet-touch .leaflet-control-layers-toggle{background-image:none !important;width:auto !important;height:auto !important;padding:7px 11px;font:600 12px 'Inter Tight','Inter',sans-serif;color:#0a1410;text-decoration:none;line-height:1.2;white-space:nowrap;display:block}
@@ -360,7 +372,7 @@ function mount (root, opt) {
     '<div class="gfc-mtop"></div>' +
     '<aside class="gfc-side">' +
     (o.brand ? '<div class="gfc-brand">' + (o.logo ? '<img class="gfc-logo" src="' + escUrl(o.logo) + '" alt="Greenfield"><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>' : '<div class="gfc-word">GREENFIELD<sup>+</sup></div><div class="gfc-slogan">ATLAS · EXIGEZ PLUS</div>') + '<div class="gfc-sub"></div><span class="gfc-badge"></span></div>' : '') +
-    '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="onlysel2">Sélection</button></div></div>' +
+    '<div class="gfc-sh"><div class="gfc-grip"></div><div class="gfc-shr"><span class="gfc-n2"></span><button class="gfc-pill" data-a="onlysel2">Sélection</button><button class="gfc-pill gfc-x" data-a="closelist" aria-label="Fermer la liste">×</button></div></div>' +
     '<div class="gfc-count"><span class="gfc-n"></span><button class="gfc-link" data-a="onlysel">Ma sélection</button><select data-f="o" aria-label="Trier par"><option value="rec">Tri : recommandé</option><option value="s-">Superficie décroissante</option><option value="s+">Superficie croissante</option><option value="p+">Prix global croissant</option><option value="pm+">Prix au m² croissant</option><option value="id">Référence</option></select></div>' +
     '<div class="gfc-list"></div></aside>' +
     '<div class="gfc-map"></div>' +
@@ -369,6 +381,7 @@ function mount (root, opt) {
     '<button class="gfc-fr" data-a="reset"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Réinitialiser</button></div>' +
     '<div class="gfc-vw" role="group" aria-label="Affichage"><button data-v="map">Carte</button><button data-v="split">Les deux</button><button data-v="list">Liste</button></div>' +
     '<div class="gfc-pop"></div>' +
+    '<div class="gfc-bbar"><button class="gfc-lbtn" data-a="list" aria-label="Ouvrir la liste des terrains"></button></div>' +
     '<div class="gfc-selbar"></div>' +
     '<div class="gfc-detail"></div>' +
     '<div class="gfc-warn">Le fond satellite ne se charge pas ici. Ouvrez la page dans Chrome, Safari ou Edge.</div>' +
@@ -519,6 +532,7 @@ function mount (root, opt) {
     $('.gfc-n').textContent = shown.length + ' terrain' + (shown.length > 1 ? 's' : '') + ' sur ' + D.length
     $('.gfc-n2').textContent = (onlySel ? 'Ma sélection : ' : '') + shown.length + ' terrain' + (shown.length > 1 ? 's' : '')
     pills()
+    $('[data-a="list"]').innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>' + shown.length + '</span>'
     const ps = $('[data-a="popsee"]')
     if (ps) ps.textContent = shown.length ? 'Voir ' + (shown.length > 1 ? 'les ' + shown.length + ' terrains' : 'le terrain') : 'Aucun terrain'
     $('[data-a="onlysel2"]').innerHTML = 'Sélection' + (selected().length ? '<b>' + selected().length + '</b>' : '')
@@ -561,7 +575,7 @@ function mount (root, opt) {
     const n = selected().length
     const acts = o.actions.filter(a => a.always ? true : n > 0)
     const m = mob()
-    $('.gfc-selbar').innerHTML = '<span><b>' + n + '</b> ' + (m ? 'sélectionné' + (n > 1 ? 's' : '') : 'terrain' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '')) + '</span>' +
+    $('.gfc-selbar').innerHTML = '<span' + (m ? ' title="Terrains sélectionnés"' : '') + '><b>' + n + '</b>' + (m ? ' sél.' : ' terrain' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '')) + '</span>' +
       (n ? '<button class="gfc-btn gfc-b2" data-a="pdf">' + (m ? 'PDF' : 'Fiche PDF') + '</button>' : '') +
       acts.map((a, i) => '<button class="gfc-btn ' + (a.cls ? a.cls : 'gfc-b1') + '" data-act="' + i + '">' + (m && a.short ? a.short : a.label) + '</button>').join('') +
       (n ? '<button class="gfc-btn gfc-b2" data-a="clear" aria-label="Vider la sélection">' + (m ? '×' : 'Vider') + '</button>' : '')
@@ -836,11 +850,32 @@ function mount (root, opt) {
   // Feuille du bas (mobile) : aperçu, moitié ou plein écran, à glisser ou toucher
   const side = $('.gfc-side')
   const STATES = ['peek', 'half', 'full']
+  // Sur téléphone, 'peek' = liste fermée : on l'ouvre avec le bouton Liste de la barre du bas
   function setSheet (st) {
     STATES.forEach(x => side.classList.toggle(x, x === st))
     side.dataset.st = st
+    $('.gfc').dataset.st = st
   }
   setSheet(o.sheet ? o.sheet : 'peek')
+  $('[data-a="list"]').addEventListener('click', () => setSheet(side.dataset.st === 'peek' ? 'half' : 'peek'))
+  $('[data-a="closelist"]').addEventListener('click', e => { e.stopPropagation(); setSheet('peek') })
+  // Téléphone : recherche et sélection passent dans la barre du bas, à côté du bouton Liste
+  const srch = $('.gfc-srch')
+  const selb = $('.gfc-selbar')
+  const bbar = $('.gfc-bbar')
+  function placeBars () {
+    if (mob()) {
+      if (srch.parentElement !== bbar) bbar.insertBefore(srch, bbar.firstChild)
+      if (selb.parentElement !== bbar) bbar.insertBefore(selb, $('[data-a="list"]'))
+    } else {
+      if (srch.parentElement !== $('.gfc-fbar')) $('.gfc-fbar').insertBefore(srch, $('.gfc-fbar').firstChild)
+      if (selb.parentElement !== $('.gfc')) $('.gfc').insertBefore(selb, $('.gfc-detail'))
+    }
+  }
+  placeBars()
+  const srchIn = $('[data-f="txt"]')
+  srchIn.addEventListener('focus', () => { if (mob()) bbar.classList.add('sopen') })
+  srchIn.addEventListener('blur', () => bbar.classList.remove('sopen'))
   const sh = $('.gfc-sh')
   let y0 = null
   let h0 = 0
@@ -857,7 +892,7 @@ function mount (root, opt) {
     const dy = e.touches[0].clientY - y0
     if (Math.abs(dy) > 6) moved = true
     const max = root.clientHeight - 64
-    side.style.height = Math.max(70, Math.min(max, h0 - dy)) + 'px'
+    side.style.height = Math.max(0, Math.min(max, h0 - dy)) + 'px'
   }, { passive: true })
   sh.addEventListener('touchend', e => {
     if (y0 === null) return
@@ -867,7 +902,7 @@ function mount (root, opt) {
     y0 = null
     if (!moved) return
     const H = root.clientHeight
-    const targets = [76, H * 0.52, H - 64]
+    const targets = [0, H * 0.52, H - 64]
     let best = 0
     targets.forEach((v, i) => { if (Math.abs(v - hNow) < Math.abs(targets[best] - hNow)) best = i })
     setSheet(STATES[best])
@@ -883,6 +918,7 @@ function mount (root, opt) {
     render()
   })
   window.addEventListener('resize', () => {
+    placeBars()
     map.invalidateSize()
     selbar()
   })
@@ -900,14 +936,12 @@ function mount (root, opt) {
   function padTop () {
     const m = $('.gfc-map').getBoundingClientRect()
     let b = $('.gfc-fbar').getBoundingClientRect().bottom
-    const sb = $('.gfc-selbar')
-    if (mob() && sb.style.display !== 'none' && sb.offsetHeight) b = Math.max(b, sb.getBoundingClientRect().bottom)
     return Math.max(24, Math.round(b - m.top + 14))
   }
   function padBottom () {
     const H = root.clientHeight
     const st = side.dataset.st
-    return Math.round(st === 'full' ? H - 64 : (st === 'half' ? H * 0.52 : 76)) + 16
+    return Math.round(st === 'full' ? H - 64 : (st === 'half' ? H * 0.52 : 0)) + (st === 'full' ? 16 : 74)
   }
   function setData (mode, terrains, fit) {
     MODE = mode

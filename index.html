@@ -5274,8 +5274,8 @@ function prRenderList() {
   const complets = all.filter(a => prCompletude(a) >= 75).length;
   document.getElementById('pr-kpis').innerHTML = [
     [all.length, 'Contacts', 'Contacts'], [soc.size, 'Sociétés', 'Sociétés'], [complets, 'Profils qualifiés', 'Qualifiés'],
-    [env30, 'Terrains proposés (30 j)', 'Proposés 30 j'], [pos, 'Réponses positives', 'Positives'],
-  ].map(([v, l, c]) => `<div class="pr-kpi"><b>${v}</b><span class="lg">${l}</span><span class="sm">${c}</span></div>`).join('');
+    [env30, 'Terrains proposés (30 j)', '', 1], [pos, 'Réponses positives', '', 1],
+  ].map(([v, l, c, d]) => `<div class="pr-kpi${d ? ' desk' : ''}"><b>${v}</b><span class="lg">${l}</span>${c ? `<span class="sm">${c}</span>` : ''}</div>`).join('');
   document.getElementById('pr-count').textContent = rows.length + ' sur ' + all.length;
   if (!all.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">Aucun promoteur. Cliquez sur « + Nouveau promoteur » ou exécutez le script d\'import.</div></div>'; return; }
   if (!rows.length) { list.innerHTML = '<div class="pr-empty" style="color:var(--gray-mid)">Aucun promoteur ne correspond à ces filtres.</div>'; return; }
@@ -5837,6 +5837,7 @@ tbody tr:hover{background:#eaf6ef}
   #page-acheteurs .pr-kpi b{display:inline;font-size:16px}
   #page-acheteurs .pr-kpi .lg{display:none}
   #page-acheteurs .pr-kpi .sm{display:inline;font-size:10.5px;letter-spacing:.04em;white-space:nowrap}
+  #page-acheteurs .pr-kpi.desk{display:none}
   .pr-grid{gap:8px}
   .pr-card{padding:12px 14px;gap:7px;border-radius:14px}
   .pr-card:hover{transform:none}

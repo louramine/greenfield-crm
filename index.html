@@ -4910,6 +4910,7 @@ async function favToggle(id, ev) {
 .pr-kpi{background:rgba(255,255,255,0.06);border:1px solid rgba(126,224,164,0.2);border-radius:14px;padding:14px 16px}
 .pr-kpi b{display:block;font-family:'Archivo',sans-serif;font-size:24px;color:var(--white);line-height:1.1}
 .pr-kpi span{font-size:11.5px;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.06em}
+.pr-kpi .sm{display:none}
 .pr-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 .pr-search{position:relative;flex:1;min-width:220px}
 .pr-search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-mid);font-size:14px}
@@ -5272,8 +5273,9 @@ function prRenderList() {
   const pos = PR.reponses.filter(r => PR_POS.includes(r.statut)).length;
   const complets = all.filter(a => prCompletude(a) >= 75).length;
   document.getElementById('pr-kpis').innerHTML = [
-    [all.length, 'Contacts'], [soc.size, 'Sociétés'], [complets, 'Profils qualifiés'], [env30, 'Terrains proposés (30 j)'], [pos, 'Réponses positives'],
-  ].map(([v, l]) => `<div class="pr-kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+    [all.length, 'Contacts', 'Contacts'], [soc.size, 'Sociétés', 'Sociétés'], [complets, 'Profils qualifiés', 'Qualifiés'],
+    [env30, 'Terrains proposés (30 j)', 'Proposés 30 j'], [pos, 'Réponses positives', 'Positives'],
+  ].map(([v, l, c]) => `<div class="pr-kpi"><b>${v}</b><span class="lg">${l}</span><span class="sm">${c}</span></div>`).join('');
   document.getElementById('pr-count').textContent = rows.length + ' sur ' + all.length;
   if (!all.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">◎</div><div class="empty-state-text">Aucun promoteur. Cliquez sur « + Nouveau promoteur » ou exécutez le script d\'import.</div></div>'; return; }
   if (!rows.length) { list.innerHTML = '<div class="pr-empty" style="color:var(--gray-mid)">Aucun promoteur ne correspond à ces filtres.</div>'; return; }
@@ -5830,11 +5832,11 @@ tbody tr:hover{background:#eaf6ef}
   #page-acheteurs .pr-toolbar>.m-fbtn{flex:0 0 auto !important}
   #page-acheteurs .pr-toolbar>.pr-count{flex:1 1 100% !important}
   .pr-search input{height:42px}
-  #page-acheteurs .pr-kpis{display:flex !important;overflow-x:auto;gap:8px;margin:0 -14px 10px;padding:0 14px;scrollbar-width:none}
-  #page-acheteurs .pr-kpis::-webkit-scrollbar{display:none}
-  #page-acheteurs .pr-kpi{flex:0 0 auto;padding:8px 12px;border-radius:12px;display:flex;align-items:baseline;gap:6px}
-  #page-acheteurs .pr-kpi b{display:inline;font-size:17px}
-  #page-acheteurs .pr-kpi span{font-size:11px;letter-spacing:.03em;white-space:nowrap}
+  #page-acheteurs .pr-kpis{display:flex !important;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+  #page-acheteurs .pr-kpi{flex:1 1 auto;padding:7px 11px;border-radius:12px;display:flex;align-items:baseline;gap:6px;justify-content:center}
+  #page-acheteurs .pr-kpi b{display:inline;font-size:16px}
+  #page-acheteurs .pr-kpi .lg{display:none}
+  #page-acheteurs .pr-kpi .sm{display:inline;font-size:10.5px;letter-spacing:.04em;white-space:nowrap}
   .pr-grid{gap:8px}
   .pr-card{padding:12px 14px;gap:7px;border-radius:14px}
   .pr-card:hover{transform:none}

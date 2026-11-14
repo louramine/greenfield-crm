@@ -397,7 +397,7 @@ function mount (root, opt) {
   ]).addTo(map)
   const plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© OpenStreetMap © CARTO' })
   L.control.layers({ 'Satellite': sat, 'Plan': plan }, null, { position: mob() ? 'topright' : 'bottomright' }).addTo(map)
-  if (mob()) map.attributionControl.setPosition('topright')
+  if (mob()) { map.attributionControl.setPosition('topright'); map.attributionControl.setPrefix(false) }
   const zcls = () => $('.gfc').classList.toggle('gfc-zlo', map.getZoom() < 12)
   map.on('zoomend', zcls)
   POIS.forEach(p => {
@@ -895,6 +895,20 @@ function mount (root, opt) {
     if (wire) wire($('.gfc-box'), close)
   }
 
+  // Marges du cadrage : sous les barres du haut (filtres, sélection) et au-dessus de la feuille du bas.
+  // La hauteur de la feuille est celle de son état final, pas celle lue pendant son animation.
+  function padTop () {
+    const m = $('.gfc-map').getBoundingClientRect()
+    let b = $('.gfc-fbar').getBoundingClientRect().bottom
+    const sb = $('.gfc-selbar')
+    if (mob() && sb.style.display !== 'none' && sb.offsetHeight) b = Math.max(b, sb.getBoundingClientRect().bottom)
+    return Math.max(24, Math.round(b - m.top + 14))
+  }
+  function padBottom () {
+    const H = root.clientHeight
+    const st = side.dataset.st
+    return Math.round(st === 'full' ? H - 64 : (st === 'half' ? H * 0.52 : 76)) + 16
+  }
   function setData (mode, terrains, fit) {
     MODE = mode
     D = terrains
@@ -912,7 +926,7 @@ function mount (root, opt) {
         const ln = pts.map(p => p[1]).sort((a, b) => a - b)
         pts = [[q(la, 0.1), q(ln, 0.1)], [q(la, 0.9), q(ln, 0.9)]]
       }
-      map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, o.brand ? 160 : 116], paddingBottomRight: [24, Math.round(side.offsetHeight) + 16], animate: false } : { padding: [40, 40], animate: false })
+      map.fitBounds(L.latLngBounds(pts), mob() ? { paddingTopLeft: [24, padTop()], paddingBottomRight: [24, padBottom()], animate: false } : { padding: [40, 40], paddingTopLeft: [40, padTop()], animate: false })
     }
   }
 

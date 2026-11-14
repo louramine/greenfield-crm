@@ -96,7 +96,7 @@ const CSS = `
 .gfc-count .gfc-n{flex:1;white-space:nowrap}
 .gfc-count .gfc-link{white-space:nowrap}
 .gfc-count select{font:inherit;font-size:12px;color:#1f7a4d;background:transparent;border:none;padding:2px 0;cursor:pointer;max-width:150px}
-.gfc-fbar{position:absolute;left:386px;right:244px;top:14px;z-index:950;display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;pointer-events:none}
+.gfc-fbar{position:absolute;left:386px;right:296px;top:14px;z-index:950;display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;pointer-events:none}
 .gfc-fbar::-webkit-scrollbar{display:none}
 .gfc-fbar>*{pointer-events:auto}
 .gfc-srch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;flex:1 1 200px;min-width:130px;max-width:300px;background:#0a1410;border:1px solid rgba(126,224,164,.35);border-radius:10px;color:#9cb3a3;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:text}
@@ -110,7 +110,12 @@ const CSS = `
 .gfc-fp.on{background:#7ee0a4;color:#0a1410;border-color:#7ee0a4}
 .gfc-fr{color:#9cb3a3}
 .gfc-fr.on{color:#e8f2ea}
-.gfc-vw{position:absolute;right:14px;top:14px;z-index:950;display:flex;height:40px;padding:3px;border-radius:10px;background:#0a1410;border:1px solid rgba(126,224,164,.35);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.gfc-tr{position:absolute;right:14px;top:14px;z-index:950;display:flex;gap:8px;align-items:center}
+.gfc-fs{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;border:1px solid rgba(126,224,164,.35);background:#0a1410;color:#e8f2ea;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.gfc-fs.on{background:#7ee0a4;color:#0a1410;border-color:#7ee0a4}
+.gfc:fullscreen{width:100vw;height:100vh}
+.gfc:-webkit-full-screen{width:100vw;height:100vh}
+.gfc-vw{display:flex;height:40px;padding:3px;border-radius:10px;background:#0a1410;border:1px solid rgba(126,224,164,.35);box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .gfc-vw button{font:inherit;font-size:13.5px;font-weight:600;border:none;background:none;color:#9cb3a3;padding:0 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .gfc-vw button.on{background:#7ee0a4;color:#0a1410}
 .gfc.v-map .gfc-side{display:none}
@@ -239,7 +244,7 @@ const CSS = `
 .gfc-srch input{font-size:16px}
 .gfc-fp,.gfc-fr{flex:none;height:42px;font-size:14.5px;max-width:200px}
 .gfc-pop{left:8px;right:8px;width:auto}
-.gfc-vw{display:none}
+.gfc-tr{display:none}
 .gfc.v-map .gfc-side,.gfc.v-list .gfc-side{display:flex;width:auto;padding-top:0;background:#f4f9f5}
 .gfc.v-list .gfc-map{display:block}
 .gfc.v-list .gfc-list{display:block;padding:8px 10px 18px}
@@ -379,7 +384,8 @@ function mount (root, opt) {
     '<div class="gfc-fbar"><label class="gfc-srch"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" data-f="txt" placeholder="Rechercher" aria-label="Rechercher une référence, une zone, un zonage"></label>' +
     '<button class="gfc-fp" data-p="p">Prix</button><button class="gfc-fp" data-p="s">Superficie</button><button class="gfc-fp" data-p="q">Zones</button><button class="gfc-fp" data-p="z">Zonage</button>' +
     '<button class="gfc-fr" data-a="reset"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Réinitialiser</button></div>' +
-    '<div class="gfc-vw" role="group" aria-label="Affichage"><button data-v="map">Carte</button><button data-v="split">Les deux</button><button data-v="list">Liste</button></div>' +
+    '<div class="gfc-tr"><button class="gfc-fs" data-a="fs" title="Plein écran" aria-label="Plein écran"></button>' +
+    '<div class="gfc-vw" role="group" aria-label="Affichage"><button data-v="map">Carte</button><button data-v="split">Les deux</button><button data-v="list">Liste</button></div></div>' +
     '<div class="gfc-pop"></div>' +
     '<div class="gfc-bbar"><button class="gfc-lbtn" data-a="list" aria-label="Ouvrir la liste des terrains"></button></div>' +
     '<div class="gfc-selbar"></div>' +
@@ -833,6 +839,28 @@ function mount (root, opt) {
   }
   $$('[data-v]').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)))
   setView(VIEW)
+  // Plein écran (ordinateur) : la carte occupe tout l'écran, sans le navigateur ni le CRM autour
+  const fsEl = $('.gfc')
+  const fsBtn = $('[data-a="fs"]')
+  const fsOn = () => !!(document.fullscreenElement ? document.fullscreenElement === fsEl : document.webkitFullscreenElement === fsEl)
+  function fsPaint () {
+    const on = fsOn()
+    fsBtn.innerHTML = on ? '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5"/></svg>' : '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>'
+    fsBtn.title = on ? 'Quitter le plein écran' : 'Plein écran'
+    fsBtn.setAttribute('aria-label', fsBtn.title)
+    fsBtn.classList.toggle('on', on)
+    setTimeout(() => map.invalidateSize(), 60)
+  }
+  fsPaint()
+  fsBtn.addEventListener('click', () => {
+    if (fsOn()) {
+      if (document.exitFullscreen) document.exitFullscreen()
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+    } else if (fsEl.requestFullscreen) fsEl.requestFullscreen()
+    else if (fsEl.webkitRequestFullscreen) fsEl.webkitRequestFullscreen()
+  })
+  document.addEventListener('fullscreenchange', fsPaint)
+  document.addEventListener('webkitfullscreenchange', fsPaint)
   $$('.gfc-fp').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation()
     openPop(b.dataset.p)

@@ -29,47 +29,52 @@ alter table public.terrain_contours
 create index if not exists terrain_contours_geo on public.terrain_contours using gist (geo);
 
 -- Terrains voisins d'un terrain : contours à moins de p_metres mètres, hors terrains déjà liés.
--- Les règles d'accès des terrains et des contours s'appliquent (security invoker).
+-- Security definer pour profiter de l'index spatial (les règles d'accès ligne par ligne l'empêchent) :
+-- l'accès est vérifié au début, comme pour les terrains et les contours (tout membre actif de l'équipe voit tout).
 create or replace function public.terrain_voisins(p_id integer, p_metres numeric default 8)
 returns table (terrain_id integer, distance_m numeric, meme_titre boolean)
 language sql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
-  with moi as (
-    select t.id, array_append(public.tf_cles(t.tf), t.ref) as cles
-      from public.terrains t
-     where t.id = p_id
-  ), mes_contours as (
+  with acces as (
+    select public.mon_role() is not null as ok
+  ), moi as (
+    select array_append(public.tf_cles(t.tf), t.ref) as cles
+      from public.terrains t, acces
+     where t.id = p_id and acces.ok
+  ), mes_contours as materialized (
     select c.cle, c.geo
       from public.terrain_contours c, moi
      where c.cle = any(moi.cles) and c.geo is not null
-  ), zone as (
-    select extensions.st_union(geo) as geo from mes_contours
-  ), proches as (
-    select c.cle, c.geo
+  ), zone as materialized (
+    select extensions.st_union(geo) as geo, extensions.st_union(geo)::extensions.geography as geog from mes_contours
+  ), proches as materialized (
+    select c.cle, extensions.st_distance(c.geo::extensions.geography, zone.geog) as d
       from public.terrain_contours c, zone
      where zone.geo is not null
        and c.geo operator(extensions.&&) extensions.st_expand(zone.geo, 0.0003)
-       and extensions.st_dwithin(c.geo::extensions.geography, zone.geo::extensions.geography, p_metres::float8)
-  ), autres as (
+       and extensions.st_dwithin(c.geo::extensions.geography, zone.geog, p_metres::float8)
+  ), candidats as (
     select t.id, array_append(public.tf_cles(t.tf), t.ref) as cles
       from public.terrains t
      where t.id <> p_id
+       and array_append(public.tf_cles(t.tf), t.ref) operator(pg_catalog.&&) (select array_agg(cle) from proches)
   )
   select a.id,
-         round(min(extensions.st_distance(p.geo::extensions.geography, z.geo::extensions.geography))::numeric, 1),
+         round(min(p.d)::numeric, 1),
          bool_or(p.cle in (select cle from mes_contours))
-    from autres a
+    from candidats a
     join proches p on p.cle = any(a.cles)
-    cross join zone z
    where not exists (
      select 1 from public.terrain_liens l
       where l.terrain_a = least(a.id, p_id) and l.terrain_b = greatest(a.id, p_id))
    group by a.id
    order by 2, 1
 $$;
+
+create index if not exists terrains_cles_gin on public.terrains using gin ((array_append(public.tf_cles(tf), ref)));
 
 grant execute on function public.terrain_voisins(integer, numeric) to authenticated;
 revoke execute on function public.terrain_voisins(integer, numeric) from anon, public;

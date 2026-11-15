@@ -428,8 +428,9 @@ void (function () {
 
   /* ---------- Claude, via la fonction Supabase ---------- */
   let claude = 'inconnu'
+  let absentDepuis = 0
   async function askClaude (question, prev) {
-    if (claude === 'absent') return null
+    if (claude === 'absent' && Date.now() - absentDepuis < 120000) return null
     let headers = null
     let url = ''
     try { headers = Object.assign({}, SUPA_HEADERS)
@@ -442,6 +443,7 @@ void (function () {
         question: String(question).slice(0, 400), precedent: prev ? Object.assign({}, prev, { reste: undefined }) : null,
         vocabulaire: { quartiers: V.quartiers.slice(0, 400), zonages: V.zonages.slice(0, 80), statuts: V.statuts, sourceurs: V.sourceurs.slice(0, 60) } }) })
       if (r.status === 503 ? true : r.status === 404) { claude = 'absent'
+        absentDepuis = Date.now()
         return null }
       if (!r.ok) return null
       const j = await r.json()

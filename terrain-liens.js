@@ -11,6 +11,7 @@ let tlLiens = []
 let tlPour = null
 let tlChoix = null
 let tlIndispo = false
+let tlVoisins = []
 
 function tlLabel (k) {
   const m = TL_MOTIFS.find(x => x.k === k)
@@ -43,6 +44,8 @@ async function tlLoad (id) {
   tlLiens = []
   tlChoix = null
   tlIndispo = false
+  tlVoisins = []
+  tlVoisinsRender()
   const f = document.getElementById('tl-form')
   if (f) f.open = false
   tlResetForm()
@@ -59,6 +62,81 @@ async function tlLoad (id) {
     tlIndispo = true
   }
   tlRender()
+  tlVoisinsLoad(id)
+}
+
+// Suggestions : terrains du CRM dont le contour touche celui-ci (fonction Supabase terrain_voisins)
+async function tlVoisinsLoad (id) {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/terrain_voisins`, { method: 'POST', headers: SUPA_HEADERS, body: JSON.stringify({ p_id: Number(id) }) })
+    if (!r.ok) throw new Error(String(r.status))
+    const j = await r.json()
+    if (String(tlPour) !== String(id)) return
+    tlVoisins = j.filter(v => tlTerrain(v.terrain_id))
+  } catch (e) {
+    if (String(tlPour) !== String(id)) return
+    tlVoisins = []
+  }
+  tlVoisinsRender()
+}
+
+function tlVoisinsRender () {
+  const box = document.getElementById('tl-voisins')
+  if (!box) return
+  if (!tlVoisins.length) {
+    box.innerHTML = ''
+    return
+  }
+  const n = tlVoisins.length
+  const items = tlVoisins.map(v => {
+    const t = tlTerrain(v.terrain_id)
+    const dist = Number(v.distance_m) > 0 ? 'à ' + Math.round(Number(v.distance_m)) + ' m' : 'se touchent'
+    const quoi = v.meme_titre ? '<span class="tl-chip tl-chip-alerte">Même titre foncier</span>' : `<span class="tl-chip">Contigus, ${dist}</span>`
+    return `<div class="tl-item">
+      <div class="tl-txt">
+        <div class="tl-titre"><b>${escH(t.ref)}</b> ${escH(t.localisation)}</div>
+        <div class="tl-info">${tlSup(t.superficie)}, ${escH(t.statut ? t.statut : 'À qualifier')}${t.tf && t.tf !== 'nan' ? ', TF ' + escH(t.tf) : ''}</div>
+        <div class="tl-chips">${quoi}</div>
+      </div>
+      <div class="tl-acts"><button type="button" class="btn btn-ghost btn-sm" onclick="tlOuvrir(${Number(t.id)})">Ouvrir</button><button type="button" class="btn btn-primary btn-sm" onclick="tlLierVoisin(${Number(t.id)})">Lier</button></div>
+    </div>`
+  }).join('')
+  box.innerHTML = `<details class="tl-sugg-det"><summary>${n} suggestion${n > 1 ? 's' : ''} d'après le cadastre</summary><div class="tl-sugg-aide">Terrains du CRM dont le contour touche celui-ci. Vérifiez avant de lier.</div><div class="tl-sugg-liste">${items}</div></details>`
+}
+
+async function tlLierVoisin (id) {
+  const v = tlVoisins.find(x => Number(x.terrain_id) === Number(id))
+  if (!v) return
+  const ok = v.meme_titre
+    ? await tlEnregistrer(id, ['autre'], 'Même titre foncier (doublon possible)')
+    : await tlEnregistrer(id, ['contigus'], null)
+  if (ok) {
+    tlVoisins = tlVoisins.filter(x => Number(x.terrain_id) !== Number(id))
+    tlVoisinsRender()
+  }
+}
+
+// Enregistre un lien entre le terrain de la fiche et un autre terrain
+async function tlEnregistrer (autreId, motifs, note) {
+  const a = Math.min(Number(tlPour), Number(autreId))
+  const b = Math.max(Number(tlPour), Number(autreId))
+  const row = { terrain_a: a, terrain_b: b, motifs, note: note ? note : null, cree_par: currentAssocie ? currentAssocie : null }
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/terrain_liens`, { method: 'POST', headers: { ...SUPA_HEADERS, Prefer: 'return=representation' }, body: JSON.stringify(row) })
+    if (r.status === 409) throw new Error('ces deux terrains sont déjà liés')
+    if (!r.ok) throw new Error('enregistrement refusé (' + r.status + ')')
+    const j = await r.json()
+    tlLiens.push(j[0] ? j[0] : row)
+    const t1 = tlTerrain(tlPour)
+    const t2 = tlTerrain(autreId)
+    if (typeof addActivity === 'function' && t1 && t2) addActivity(`Terrains liés : ${tlNom(t1)} et ${tlNom(t2)}`)
+    tlRender()
+    showNotif('Terrains liés.')
+    return true
+  } catch (e) {
+    showNotif('Échec : ' + e.message, true)
+    return false
+  }
 }
 
 function tlRender () {
@@ -162,26 +240,13 @@ async function tlLier () {
     showNotif('Précisez la raison dans la note.', true)
     return
   }
-  const a = Math.min(Number(tlPour), Number(tlChoix))
-  const b = Math.max(Number(tlPour), Number(tlChoix))
-  const row = { terrain_a: a, terrain_b: b, motifs, note: note ? note : null, cree_par: currentAssocie ? currentAssocie : null }
-  try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/terrain_liens`, { method: 'POST', headers: { ...SUPA_HEADERS, Prefer: 'return=representation' }, body: JSON.stringify(row) })
-    if (r.status === 409) throw new Error('ces deux terrains sont déjà liés')
-    if (!r.ok) throw new Error('enregistrement refusé (' + r.status + ')')
-    const j = await r.json()
-    tlLiens.push(j[0] ? j[0] : row)
-    const t1 = tlTerrain(tlPour)
-    const t2 = tlTerrain(tlChoix)
-    if (typeof addActivity === 'function' && t1 && t2) addActivity(`Terrains liés : ${tlNom(t1)} et ${tlNom(t2)}`)
-    tlChoix = null
-    tlResetForm()
-    document.getElementById('tl-form').open = false
-    tlRender()
-    showNotif('Terrains liés.')
-  } catch (e) {
-    showNotif('Échec : ' + e.message, true)
-  }
+  const ok = await tlEnregistrer(tlChoix, motifs, note)
+  if (!ok) return
+  tlVoisins = tlVoisins.filter(x => Number(x.terrain_id) !== Number(tlChoix))
+  tlVoisinsRender()
+  tlChoix = null
+  tlResetForm()
+  document.getElementById('tl-form').open = false
 }
 
 async function tlRetirer (lienId) {
@@ -195,6 +260,7 @@ async function tlRetirer (lienId) {
     if (!j.length) throw new Error('seul l\'auteur du lien ou un associé peut le retirer')
     tlLiens = tlLiens.filter(x => Number(x.id) !== Number(lienId))
     tlRender()
+    tlVoisinsLoad(tlPour)
     showNotif('Lien retiré.')
   } catch (e) {
     showNotif('Échec : ' + e.message, true)

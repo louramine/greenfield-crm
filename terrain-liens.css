@@ -70,6 +70,21 @@
 #tl-choix { color: #1f7a4d }
 #tl-choix { margin: 6px 0 }
 .tl-bloc { margin-bottom: 10px }
+.tl-chip-alerte { background: #fdf0e3 }
+.tl-chip-alerte { color: #a85a12 }
+#tl-voisins { margin-top: 10px }
+.tl-sugg-det { border: 1px dashed #b9d8c6 }
+.tl-sugg-det { border-radius: 10px }
+.tl-sugg-det { background: #f8fcf9 }
+.tl-sugg-det summary { cursor: pointer }
+.tl-sugg-det summary { padding: 10px 12px }
+.tl-sugg-det summary { font-size: 13px }
+.tl-sugg-det summary { font-weight: 600 }
+.tl-sugg-det summary { color: #1f7a4d }
+.tl-sugg-aide { padding: 0 12px 8px }
+.tl-sugg-aide { font-size: 12px }
+.tl-sugg-aide { color: #4f6a5c }
+.tl-sugg-liste { border-top: 1px solid #e3efe8 }
 @media (max-width: 600px) {
   .tl-item { flex-direction: column }
   .tl-acts { align-self: flex-end }

@@ -6030,7 +6030,7 @@ const M_ICO = {
 };
 M_ICO.rend = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 15l4-4 3 3 5-6"/><path d="M15 8h3v3"/></svg>';
 const M_SHORT = { dashboard: 'Accueil', pipeline: 'Deals', matching: 'Matching', carte: 'Atlas', equipe: 'Équipe', marketing: 'Marketing', terrains: 'Terrains', acheteurs: 'Promoteurs', rendement: 'Rendement' };
-const M_TABS = [['dashboard', 'Accueil', 'home'], ['terrains', 'Terrains', 'grid'], ['acheteurs', 'Promoteurs', 'users'], ['pipeline', 'Deals', 'pipe']];
+const M_TABS = [['dashboard', 'Accueil', 'home'], ['carte', 'Atlas', 'map'], ['terrains', 'Terrains', 'grid'], ['acheteurs', 'Promoteurs', 'users']];
 const M_NOFAB = ['carte', 'marketing', 'matching', 'equipe'];
 const mE = v => escH(v == null ? '' : v);
 const mFr = (n, d) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: d || 0 }).replace(/[  ]/g, ' ');
@@ -6081,7 +6081,7 @@ function mPlus() {
   const tile = (ic, l, fn, cls) => `<button type="button" class="m-tile ${cls || ''}" onclick="${fn}">${M_ICO[ic]}${l}</button>`;
   mSheet('Plus', `<div class="m-who">Connecté : <b style="color:#fff">${mE(currentAssocie || 'Équipe')}</b>${typeof myRole !== 'undefined' ? ' (' + mE(myRole) + ')' : ''}</div>
     <div class="m-grid3" style="flex:1 1 100%">
-      ${tile('map', 'Atlas', "mGo('carte')")}${tile('match', 'Matching', "mGo('matching')")}${tile('rend', 'Rendement', "mGo('rendement')")}${tile('mega', 'Marketing', "mGo('marketing')")}
+      ${tile('pipe', 'Deals', "mGo('pipeline')")}${tile('match', 'Matching', "mGo('matching')")}${tile('rend', 'Rendement', "mGo('rendement')")}${tile('mega', 'Marketing', "mGo('marketing')")}
       ${adm ? tile('team', 'Équipe', "mGo('equipe')") : ''}${tile('sync', 'Synchroniser', 'mRefresh()')}${adm ? tile('dl', 'Exporter', 'mClose();exportData()') : ''}
       ${tile('out', 'Déconnexion', 'gfLogout()', 'danger')}
     </div>`);

@@ -461,7 +461,7 @@ void (function () {
 #ga-in:focus-visible,#ga-btn:focus-visible,#ga-form button:focus-visible,.ga-row:focus-visible{outline:2px solid #7ee0a4;outline-offset:2px}
 #ga-form button{border:0;background:#7ee0a4;color:#0a1410;border-radius:12px;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}
 #ga-form button:disabled{opacity:.5;cursor:default}
-@media(max-width:768px){#ga-btn{right:23px;bottom:calc(146px + max(4px, env(safe-area-inset-bottom) - 18px));width:50px;height:50px}body:has(.m-fab.off) #ga-btn{right:16px;bottom:calc(78px + max(4px, env(safe-area-inset-bottom) - 18px))}body.m-locked #ga-btn{display:none}#ga-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;border:0}}
+@media(max-width:768px){#ga-btn{display:none !important}#ga-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;border:0}}
 @media print{#ga-btn,#ga-panel{display:none !important}}
 `
   let panel = null
@@ -608,6 +608,21 @@ void (function () {
     panel.innerHTML = '<div id="ga-head"><b>Assistant</b><small>lecture seule</small><button type="button" id="ga-reset">Effacer</button><button type="button" id="ga-close" aria-label="Fermer">Fermer</button></div><div id="ga-log" aria-live="polite"></div><form id="ga-form"><input id="ga-in" type="text" autocomplete="off" placeholder="Terrains de plus de 2 ha à Bouskoura..." aria-label="Votre question"><button type="submit">Envoyer</button></form>'
     document.body.appendChild(panel)
     btn.addEventListener('click', () => toggle(true))
+    const ICO = btn.innerHTML
+    const addTop = n => {
+      const top = document.querySelector('.m-top')
+      if (!top) { if (n < 40) setTimeout(() => addTop(n + 1), 250)
+        return }
+      if (top.querySelector('.ga-top')) return
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'ga-top'
+      b.setAttribute('aria-label', 'Ouvrir l’assistant')
+      b.innerHTML = ICO
+      b.addEventListener('click', () => toggle(true))
+      top.insertBefore(b, top.firstChild)
+    }
+    addTop(0)
     panel.querySelector('#ga-close').addEventListener('click', () => toggle(false))
     panel.querySelector('#ga-reset').addEventListener('click', () => { last = null
       panel.querySelector('#ga-log').innerHTML = ''

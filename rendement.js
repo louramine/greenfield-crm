@@ -1,5 +1,5 @@
-/* Greenfield CRM, page Rendement par catégorie (lotissement, industriel, promotion).
-   Module autonome : construit la page #page-rendement, calcule les bilans en direct.
+/* Greenfield CRM, moteur de calcul du Rendement par catégorie (lotissement, industriel, promotion).
+   Formules, fiscalité et règles d'urbanisme. L'affichage de la page est dans rendement-ui.js.
    Les derniers paramètres de chaque terrain sont gardés dans ce navigateur (localStorage). */
 (function () {
   'use strict';
@@ -440,70 +440,6 @@
 
   function promoFromRef() { return S.terrainId === REF_ID; }
 
-  /* ---------- rendu ---------- */
-  function root() { return document.getElementById('page-rendement'); }
-
-  function srcDot(s) {
-    return '<span class="rd-dot rd-dot-' + s + '" title="' + SRC_LABEL[s] + '" aria-label="' + SRC_LABEL[s] + '"></span>';
-  }
-
-  function renderAll() {
-    var el = root();
-    if (!el) return;
-    var mine = terrains();
-    var opts = (mine.length ? '<optgroup label="Mes terrains (' + mine.length + '), du plus récent au plus ancien">' +
-      mine.map(function (t) {
-        var lab = typeof terrainLabel === 'function' ? terrainLabel(t) : (t.ref || '') + ' / ' + (t.localisation || '');
-        return '<option value="' + esc(t.id) + '"' + (String(t.id) === String(S.terrainId) ? ' selected' : '') + '>' + esc(lab) + '</option>';
-      }).join('') + '</optgroup>' : '') +
-      '<optgroup label="Exemple"><option value="' + REF_ID + '"' + (S.terrainId === REF_ID ? ' selected' : '') + '>Étude de référence J-ONE Promo, TF 104996/63</option></optgroup>';
-
-    var t = S.terrain;
-    var facts = t
-      ? [['Réf.', t.ref || 'n.c.'], ['Localisation', t.localisation || 'n.c.'], ['Zonage', t.urba || 'n.c.'],
-         ['Surface', (Number(t.superficie) ? nf(Number(t.superficie)) + ' m²' : 'n.c.')],
-         ['Prix demandé', (Number(t.prix) ? nf(Number(t.prix)) + ' DH/m²' : 'n.c.')], ['TF', t.tf || 'n.c.']]
-      : [['Titre', 'TF 104996/63'], ['Surface', '20 258 m²'], ['Nette lotie', '15 173 m²'], ['Zonage', 'CS-DB3'],
-         ['Prix demandé', '1 600 DH/m²'], ['Source', 'Étude J-ONE Promo']];
-
-    el.innerHTML =
-      '<div class="rd-head">' +
-        '<div class="rd-pick"><label class="form-label" for="rd-terrain">Terrain</label>' +
-          '<select class="form-select" id="rd-terrain">' + opts + '</select></div>' +
-        '<div class="rd-facts">' + facts.map(function (f) {
-          return '<div><span>' + esc(f[0]) + '</span><b>' + esc(f[1]) + '</b></div>';
-        }).join('') + '</div>' +
-      '</div>' +
-      (t ? '<div class="card rd-pa" id="rd-pa"></div>' : '') +
-      '<div class="rd-cats" role="tablist" aria-label="Catégorie">' + CATS.map(function (c) {
-        return '<button type="button" role="tab" class="rd-cat' + (c === S.cat ? ' active' : '') + '" aria-selected="' + (c === S.cat) + '" data-cat="' + c + '">' +
-          '<span class="rd-cat-t">' + DEFS[c].label + (c === S.cat ? '<em>Actif</em>' : '') + '</span>' +
-          '<span class="rd-cat-d">' + DEFS[c].desc + '</span>' +
-          '<span class="rd-cat-r">Brute <b data-rent="' + c + '"></b><span class="rd-sep"></span>Après impôt <b data-rentnet="' + c + '"></b></span></button>';
-      }).join('') + '</div>' +
-      '<div class="rd-kpis" id="rd-kpis"></div>' +
-      '<div class="rd-verdict" id="rd-verdict"></div>' +
-      '<div class="rd-body">' +
-        '<div class="rd-params card" id="rd-params"></div>' +
-        '<div class="rd-results">' +
-          '<div class="card"><div class="card-title">Bilan ' + DEFS[S.cat].short + '<span class="rd-tot" id="rd-tot"></span></div><div id="rd-costs"></div>' +
-            '<div class="rd-gt rd-tax-t">Après impôt</div><div id="rd-tax"></div></div>' +
-          '<div class="rd-two">' +
-            '<div class="card"><div class="card-title">Spécifications ' + DEFS[S.cat].short + '</div><div id="rd-specs"></div></div>' +
-            '<div class="card"><div class="card-title" id="rd-watch-t"></div><div id="rd-watch"></div></div>' +
-          '</div>' +
-          '<div class="card"><div class="card-title">Sensibilité de la rentabilité après impôt</div>' +
-            '<div class="rd-note">Prix du foncier en lignes, prix de vente en colonnes. Vert : marge brute cible atteinte.</div>' +
-            '<div class="rd-sens-w"><div class="rd-sens" id="rd-sens"></div></div></div>' +
-        '</div>' +
-      '</div>';
-
-    renderPa();
-    renderParams();
-    renderResults();
-    bind();
-  }
-
   function fdate(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; }
   function regleFacts(rg) {
     var f = [];
@@ -529,111 +465,6 @@
     if (p && p.reglement_url) a.push('<a href="' + esc(p.reglement_url) + '" target="_blank" rel="noopener">Règlement général</a>');
     if (p && p.page_url) a.push('<a href="' + esc(p.page_url) + '" target="_blank" rel="noopener">Page AUC</a>');
     return a.length ? '<div class="rd-pa-links">' + a.join('') + '</div>' : '';
-  }
-
-  function renderPa() {
-    var el = document.getElementById('rd-pa');
-    var t = S.terrain;
-    if (!el || !t) return;
-    if (!PA.ok) {
-      el.innerHTML = '<div class="card-title">Plan d’aménagement</div><div class="rd-note">' +
-        (PA.p ? 'Référentiel des plans indisponible : exécutez supabase/regles-urbanisme.sql dans Supabase.' : 'Chargement du référentiel…') + '</div>';
-      return;
-    }
-    var g = regleOf(t, S.code), p = g.plan ? PA.plans[g.plan] : null;
-    var opts = '<option value="">' + (p ? 'Changer de plan' : 'Choisir le plan') + '</option>' +
-      Object.keys(PA.plans).map(function (k) { return PA.plans[k]; }).sort(function (a, b) { return a.nom.localeCompare(b.nom, 'fr'); })
-        .map(function (x) { return '<option value="' + esc(x.code) + '"' + (p && x.code === p.code ? ' selected' : '') + '>' + esc(x.nom) + '</option>'; }).join('');
-    var h = '<div class="card-title">Plan d’aménagement' + (p ? ' de ' + esc(p.nom) : '') +
-      '<span class="rd-acts"><select class="form-select rd-pa-sel" id="rd-pa-plan" aria-label="Plan d’aménagement">' + opts + '</select></span></div>';
-    if (!p) {
-      h += '<div class="rd-note">La localisation « ' + esc(t.localisation || 'non renseignée') + ' » n’est rattachée à aucun plan. Choisissez le plan dans la liste, ou saisissez les règles de la note de renseignements.</div>';
-      el.innerHTML = h; return;
-    }
-    h += '<div class="rd-pa-sub">Décret ' + esc(p.decret || '') + ', BO du ' + fdate(p.date_bo) + '</div>';
-    if (g.codes.length > 1) {
-      h += '<div class="rd-pa-codes" role="group" aria-label="Secteur">' + g.codes.map(function (c) {
-        return '<button type="button" data-code="' + esc(c) + '" class="' + (c === g.code ? 'active' : '') + '" aria-pressed="' + (c === g.code) + '">' + esc(c) + '</button>';
-      }).join('') + '</div>';
-    }
-    var al = paAlert(p);
-    if (!g.m) {
-      h += '<div class="rd-note">' + (g.code ? 'Secteur « ' + esc(g.code) + ' » absent du référentiel pour ce plan.' : 'Zonage non renseigné sur la fiche du terrain.') +
-        ' Saisissez les règles de la note de renseignements.</div>' + (al ? '<div class="rd-pa-al">' + esc(al) + '</div>' : '') + paLinks(p, null);
-      el.innerHTML = h; return;
-    }
-    var rg = g.m.r;
-    h += '<div class="rd-pa-sec">Secteur <b>' + esc(rg.secteur) + '</b>' + (g.m.exact ? '' : ' <span>(règle la plus proche du code ' + esc(g.code) + ')</span>') + '</div>' +
-      '<div class="rd-pa-facts">' + regleFacts(rg).map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + esc(f[1]) + '</b></div>'; }).join('') + '</div>';
-    if (rg.remarque) h += '<div class="rd-note">' + esc(rg.remarque) + '</div>';
-    if (!rg.verifie) h += '<div class="rd-pa-al rd-pa-chk">Chiffres lus automatiquement sur le scan du règlement : à confirmer sur la note de renseignements.</div>';
-    if (al) h += '<div class="rd-pa-al">' + esc(al) + '</div>';
-    h += '<div class="rd-pa-foot">' + paLinks(p, rg) +
-      '<button type="button" class="btn btn-ghost btn-sm" id="rd-pa-apply">Reprendre ces règles dans le calcul</button></div>';
-    el.innerHTML = h;
-  }
-  function bindPa() {
-    var el = document.getElementById('rd-pa');
-    if (!el) return;
-    var sel = el.querySelector('#rd-pa-plan');
-    if (sel) sel.addEventListener('change', function () {
-      if (!S.terrain) return;
-      setPlanPick(S.terrain.id, sel.value || null);
-      S.code = null; reapply();
-    });
-    el.querySelectorAll('[data-code]').forEach(function (b) {
-      b.addEventListener('click', function () { S.code = b.getAttribute('data-code'); reapply(); });
-    });
-    var ap = el.querySelector('#rd-pa-apply');
-    if (ap) ap.addEventListener('click', function () { reapply(); });
-  }
-  // Applique les règles du secteur choisi aux trois catégories, sans toucher aux autres paramètres.
-  function reapply() {
-    var t = S.terrain;
-    if (t && PA.ok) {
-      var g = regleOf(t, S.code);
-      S.code = g.code;
-      if (g.m) {
-        var src = applyRegle(S.vals, g.m.r, num(S.vals[S.cat], 'surf') || Number(t.superficie) || 0);
-        S.src = S.src || { promo: {}, lot: {}, indus: {} };
-        CATS.forEach(function (c) { Object.keys(src[c]).forEach(function (k) { S.src[c][k] = src[c][k]; }); });
-      }
-    }
-    renderPa(); bindPa(); renderParams(); renderResults(); bindParams();
-  }
-
-  function renderParams() {
-    var el = document.getElementById('rd-params');
-    var def = DEFS[S.cat], vals = S.vals[S.cat];
-    var h = '<div class="card-title">Paramètres ' + def.short +
-      '<span class="rd-acts"><button type="button" class="btn btn-ghost btn-sm" id="rd-reset">Réinitialiser</button>' +
-      '<button type="button" class="btn btn-primary btn-sm" id="rd-save">Enregistrer</button></span></div>';
-    if (S.cat === 'promo' && promoFromRef()) {
-      h += '<div class="rd-seg" role="group" aria-label="Version de l’étude">' +
-        '<button type="button" data-ver="gf" aria-pressed="' + (S.version === 'gf') + '" class="' + (S.version === 'gf' ? 'active' : '') + '">Recalée Greenfield</button>' +
-        '<button type="button" data-ver="jone" aria-pressed="' + (S.version === 'jone') + '" class="' + (S.version === 'jone' ? 'active' : '') + '">Étude J-ONE telle quelle</button></div>' +
-        '<div class="rd-note">' + (S.version === 'gf'
-          ? 'Ajoute le sous-sol, les frais annexes, l’hypothèque et les frais financiers absents du fichier.'
-          : 'Reprend exactement les chiffres du fichier, soit 41,3 % de rentabilité affichée.') + '</div>';
-    } else if (S.cat === 'promo') {
-      var pc = S.src && S.src.promo && S.src.promo.cos;
-      h += '<div class="rd-note">' + (pc === 'R' ? 'Programme estimé à partir du COS du règlement de zone et des ratios de l’étude de référence.'
-        : pc === 'H' ? 'Le règlement ne fixe pas de COS : COS équivalent estimé avec l’emprise et le nombre de niveaux autorisés. Programme à remplacer par la consistance réelle du projet.'
-        : 'Programme estimé à partir du COS et des ratios de l’étude de référence. Remplacez par la consistance réelle du projet.') + '</div>';
-    }
-    h += '<div class="rd-legend">' + ['E', 'R', 'H'].map(function (s) { return '<span>' + srcDot(s) + SRC_LABEL[s] + '</span>'; }).join('') + '</div>';
-    def.groups.forEach(function (g) {
-      h += '<div class="rd-group"><div class="rd-gt">' + g.title + '</div>';
-      g.params.forEach(function (p) {
-        var id = 'rd-f-' + S.cat + '-' + p[0];
-        var so = (S.src && S.src[S.cat] && S.src[S.cat][p[0]]) || p[4];
-        h += '<div class="rd-row">' + srcDot(so) + '<label for="' + id + '">' + p[1] + '</label>' +
-          '<div class="rd-in"><input class="form-input" id="' + id + '" data-k="' + p[0] + '" type="text" inputmode="decimal" autocomplete="off" value="' + esc(vals[p[0]]) + '"><span>' + p[2] + '</span></div></div>';
-      });
-      h += '</div>';
-    });
-    h += '<div class="rd-saved" id="rd-saved"></div>';
-    el.innerHTML = h;
   }
 
   function specsFor(cat, vals, x) {
@@ -702,140 +533,7 @@
     ]};
   }
 
-  function renderResults() {
-    var cat = S.cat, def = DEFS[cat], vals = S.vals[cat];
-    var res = COMPUTE[cat](vals);
-
-    CATS.forEach(function (c) {
-      var b = root().querySelector('[data-rent="' + c + '"]');
-      var rc = COMPUTE[c](S.vals[c]);
-      if (b) b.textContent = pct(rc.rent);
-      var bn = root().querySelector('[data-rentnet="' + c + '"]');
-      if (bn) bn.textContent = pct(rc.tax.rentNet);
-    });
-
-    var tx = res.tax;
-    var netK = [cat === 'indus' ? 'Rentabilité lots après impôt' : 'Rentabilité après impôt', pct(tx.rentNet),
-      isFinite(tx.tauxEff) ? 'Impôts : ' + pct(tx.tauxEff) + ' de la marge brute' : 'Cotisation minimale due, résultat déficitaire'];
-    var kp = res.kpis.slice(); kp.splice(1, 0, netK);
-    var mNet = ['Marge nette', mdh(tx.net), 'Après IS et contribution de solidarité, ' + pct(tx.net / (res.cost || 1)) + ' du coût'];
-    kp.splice(cat === 'indus' ? 2 : 3, 0, mNet);
-    document.getElementById('rd-kpis').innerHTML = kp.map(function (k, i) {
-      return '<div class="kpi-card' + (i === 1 ? ' rd-kpi-main' : '') + '"><div class="kpi-label">' + k[0] + '</div>' +
-        '<div class="kpi-value">' + k[1] + '</div><div class="kpi-sub">' + k[2] + '</div></div>';
-    }).join('');
-
-    var ok = res.prixMax >= res.prix;
-    var v = document.getElementById('rd-verdict');
-    v.className = 'rd-verdict ' + (ok ? 'ok' : 'ko');
-    v.textContent = ok
-      ? 'Prix demandé tenable : cet usage supporte jusqu’à ' + nf(res.prixMax) + ' DH/m², soit ' + nf(res.prixMax - res.prix) + ' DH/m² de marge de négociation.'
-      : 'Prix demandé trop élevé pour cet usage : il faudrait descendre à ' + nf(Math.max(0, res.prixMax)) + ' DH/m² pour tenir la marge cible.';
-
-    var total = res.cost || 1;
-    var max = Math.max.apply(null, res.costs.map(function (c) { return c[1]; })) || 1;
-    var pal = ['#0a1410', '#1f7a4d', '#2d9e5f', '#7ee0a4', '#e3a13b', '#9cb3a3'];
-    document.getElementById('rd-tot').textContent = 'Coût ' + mdh(res.cost) + ', CA ' + mdh(res.ca);
-    document.getElementById('rd-costs').innerHTML = res.costs.map(function (c, i) {
-      return '<div class="rd-cost"><div class="rd-cost-l"><span>' + c[0] + '</span><span><b>' + mdh(c[1]) + '</b> <i>' + pct(c[1] / total) + '</i></span></div>' +
-        '<div class="rd-bar"><div style="width:' + Math.max(0, c[1] / max * 100).toFixed(1) + '%;background:' + pal[i % pal.length] + '"></div></div></div>';
-    }).join('');
-
-    var marge = res.ca - res.cost;
-    var trows = [
-      ['Marge brute (résultat avant impôt)', mdh(marge), ''],
-      ['IS ' + (tx.cmApplies ? '(cotisation minimale 0,25 % du CA)' : pct(tx.isRate)), '- ' + mdh(tx.is), ''],
-      ['Contribution sociale de solidarité ' + (tx.cssRate ? pct(tx.cssRate) : '(non due)'), '- ' + mdh(tx.css), ''],
-      ['Résultat net après impôt', mdh(tx.net), 'net']
-    ];
-    document.getElementById('rd-tax').innerHTML = trows.map(function (r) {
-      return '<div class="rd-tx' + (r[2] ? ' rd-tx-net' : '') + '"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>';
-    }).join('') + '<div class="rd-note">Bénéfice réparti sur ' + tx.duree + ' exercice' + (tx.duree > 1 ? 's' : '') + ', soit ' + mdh(Math.max(0, tx.bY)) +
-      ' par an. Barèmes 2026 : IS 20 % sous 100 M DH de bénéfice annuel, 35 % au-delà. La contribution de solidarité n\u2019est pas déductible. Estimation à valider avec votre expert-comptable.</div>';
-
-    document.getElementById('rd-specs').innerHTML = specsFor(cat, vals, res.extra).map(function (s) {
-      return '<div class="rd-spec"><span>' + esc(s[0]) + '</span><b>' + esc(s[1]) + '</b></div>';
-    }).join('');
-
-    var w = watchFor(cat, vals, res.extra);
-    document.getElementById('rd-watch-t').textContent = w.t;
-    document.getElementById('rd-watch').innerHTML = w.items.map(function (it) {
-      return '<div class="rd-w"><span class="rd-wd rd-wd-' + it[0] + '"></span><span>' + esc(it[1]) + '</span></div>';
-    }).join('');
-
-    var steps = [-0.1, -0.05, 0, 0.05, 0.1];
-    var sg = function (x) { return (x > 0 ? '+' : '') + nf(x * 100) + ' %'; };
-    var h = '<span></span>' + steps.map(function (s) { return '<span class="rd-sh">Vente ' + sg(s) + '</span>'; }).join('');
-    [-0.1, 0, 0.1].forEach(function (l) {
-      h += '<span class="rd-sh rd-sl">Foncier ' + sg(l) + '</span>';
-      steps.forEach(function (s) {
-        var v2 = Object.assign({}, vals);
-        v2[def.land] = String(num(vals, def.land) * (1 + l));
-        def.sale.forEach(function (k) { v2[k] = String(num(vals, k) * (1 + s)); });
-        var rr = COMPUTE[cat](v2), r = rr.tax.rentNet;
-        var cls = rr.rent >= res.cible ? 'ok' : (r >= 0 ? 'mid' : 'ko');
-        h += '<span class="rd-sc ' + cls + (l === 0 && s === 0 ? ' cur' : '') + '">' + pct(r) + '</span>';
-      });
-    });
-    document.getElementById('rd-sens').innerHTML = h;
-  }
-
-  function bind() {
-    var el = root();
-    bindPa();
-    el.querySelector('#rd-terrain').addEventListener('change', function () { S.picked = true; selectTerrain(this.value); renderAll(); });
-    el.querySelectorAll('.rd-cat').forEach(function (b) {
-      b.addEventListener('click', function () { S.cat = b.getAttribute('data-cat'); renderAll(); });
-    });
-    bindParams();
-  }
-  function bindParams() {
-    var el = root();
-    el.querySelectorAll('#rd-params input[data-k]').forEach(function (inp) {
-      inp.addEventListener('input', function () { S.fresh = false; S.vals[S.cat][inp.getAttribute('data-k')] = inp.value; renderResults(); });
-    });
-    el.querySelectorAll('#rd-params [data-ver]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        S.version = b.getAttribute('data-ver');
-        S.vals.promo = defaults('promo');
-        if (S.version === 'jone') Object.keys(PRESET_JONE).forEach(function (k) { S.vals.promo[k] = fmtIn(PRESET_JONE[k]); });
-        renderParams(); renderResults(); bindParams();
-      });
-    });
-    var r = el.querySelector('#rd-reset');
-    if (r) r.addEventListener('click', function () {
-      var st = startVals(S.terrain);
-      S.vals[S.cat] = st.v[S.cat];
-      if (S.src) S.src[S.cat] = st.src[S.cat];
-      if (S.cat === 'promo') S.version = 'gf';
-      renderParams(); renderResults(); bindParams();
-    });
-    var sv = el.querySelector('#rd-save');
-    if (sv) sv.addEventListener('click', function () {
-      var m = document.getElementById('rd-saved');
-      m.textContent = save() ? 'Scénario enregistré sur cet appareil.' : 'Enregistrement impossible sur ce navigateur.';
-    });
-    var saved = loadSaved()[S.terrainId];
-    var m = document.getElementById('rd-saved');
-    if (m && saved && saved.at) m.textContent = 'Dernier enregistrement : ' + new Date(saved.at).toLocaleString('fr-FR');
-  }
-
   /* ---------- API publique ---------- */
-  function onPaReady() {
-    if (!root() || !root().classList.contains('active')) return;
-    if (S.terrain && S.fresh) { var st = startVals(S.terrain); S.vals = st.v; S.src = st.src; }
-    renderAll();
-  }
-  window.rdInit = function () {
-    if (!PA.p) paLoad().then(onPaReady);
-    var first = terrains()[0];
-    if (!S.vals || (!S.picked && S.terrainId === REF_ID && first)) {
-      selectTerrain(first ? String(first.id) : REF_ID);
-    } else if (S.terrainId !== REF_ID && !S.terrain) {
-      selectTerrain(S.terrainId); // données du CRM arrivées après la première ouverture
-    }
-    renderAll();
-  };
   // Fiche terrain : bloc « Plan d'aménagement » (secteur, règles, liens), rempli quand le référentiel est chargé.
   window.rdPlanFill = function (t, el) {
     if (!el) return;
@@ -855,14 +553,13 @@
       el.style.display = '';
     });
   };
-  window.rdFromTerrain = function (id) {
-    paLoad().then(onPaReady);
-    if (typeof closeModal === 'function') closeModal('modal-terrain-detail');
-    var nav = document.querySelector('.sidebar .nav-item[onclick*="\'rendement\'"]');
-    S.picked = true;
-    selectTerrain(String(id));
-    if (nav && typeof showPage === 'function') showPage('rendement', nav);
-    else renderAll();
-    window.scrollTo(0, 0);
-  };
+  // Moteur exposé à l'interface (rendement-ui.js). Les formules ci-dessus ne dépendent pas de l'affichage.
+  window.RD = {
+    DEFS: DEFS, CATS: CATS, SRC_LABEL: SRC_LABEL, REF_ID: REF_ID, PRESET_JONE: PRESET_JONE, S: S, PA: PA,
+    esc: esc, nf: nf, mdh: mdh, pct: pct, fmtIn: fmtIn, num: num, defaults: defaults, terrains: terrains,
+    catFromUrba: catFromUrba, COMPUTE: COMPUTE, paLoad: paLoad, regleOf: regleOf, applyRegle: applyRegle,
+    setPlanPick: setPlanPick, startVals: startVals, selectTerrain: selectTerrain, loadSaved: loadSaved, save: save,
+    promoFromRef: promoFromRef, specsFor: specsFor, watchFor: watchFor, fdate: fdate, regleFacts: regleFacts,
+    paAlert: paAlert, paLinks: paLinks
+  }
 })();

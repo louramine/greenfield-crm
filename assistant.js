@@ -489,7 +489,21 @@ void (function () {
 #ga-in:focus-visible,#ga-btn:focus-visible,#ga-form button:focus-visible,.ga-row:focus-visible{outline:2px solid #7ee0a4;outline-offset:2px}
 #ga-form button{border:0;background:#7ee0a4;color:#0a1410;border-radius:12px;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}
 #ga-form button:disabled{opacity:.5;cursor:default}
-@media(max-width:768px){#ga-btn{display:none !important}#ga-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;border:0}}
+#ga-side{margin:auto 12px 0;padding:12px 0 14px}
+#ga-side label{display:flex;align-items:center;gap:6px;margin:0 4px 7px;font-family:'JetBrains Mono', monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7ee0a4}
+#ga-side label i{font-style:normal;padding:1px 6px;border-radius:999px;background:rgba(126,224,164,.16);border:1px solid rgba(126,224,164,.35);font-size:9px}
+#ga-side form{position:relative;display:flex;align-items:center;border-radius:999px;padding:1.5px;background:linear-gradient(120deg,#7ee0a4,#3fae78 45%,#a6f0c6);box-shadow:0 0 18px rgba(126,224,164,.18)}
+#ga-side .in{display:flex;align-items:center;gap:8px;width:100%;background:#0d1d15;border-radius:999px;padding:0 6px 0 12px;height:40px}
+#ga-side svg{width:17px;height:17px;flex-shrink:0;color:#7ee0a4}
+#ga-side input{flex:1;min-width:0;border:0;background:transparent;color:#e8f2ea;font-family:'Inter Tight', Inter, Arial, sans-serif;font-size:13px;outline:none}
+#ga-side input::placeholder{color:#86a092}
+#ga-side button{width:28px;height:28px;border-radius:999px;border:0;background:#7ee0a4;color:#0a1410;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#ga-side button svg{width:15px;height:15px;color:#0a1410}
+#ga-side form:focus-within{box-shadow:0 0 0 3px rgba(126,224,164,.25),0 0 22px rgba(126,224,164,.3)}
+.sidebar #ga-side + .sidebar-footer{margin-top:0}
+body:has(#ga-side) #ga-btn{display:none}
+@media(min-width:901px){body:has(#ga-side) #ga-panel{left:246px;right:auto;bottom:16px}}
+@media(max-width:900px){#ga-btn{display:none !important}#ga-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;border:0}}
 @media print{#ga-btn,#ga-panel{display:none !important}}
 `
   let panel = null
@@ -601,7 +615,7 @@ void (function () {
       const done = () => { b.textContent = 'Liste copiée' }
       if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done).catch(() => { b.textContent = 'Copie impossible' })
       return }
-    const small = window.matchMedia('(max-width:768px)').matches
+    const small = window.matchMedia('(max-width:900px)').matches
     const idOf = v => isNaN(+v) ? v : +v
     if (b.dataset.t) { if (small) toggle(false)
       call('openTerrainDetail', idOf(b.dataset.t)) }
@@ -615,7 +629,7 @@ void (function () {
     panel.classList.toggle('open', on)
     document.getElementById('ga-btn').style.display = on ? 'none' : ''
     if (on) { if (!panel.querySelector('#ga-log').children.length) push(welcome())
-      if (!window.matchMedia('(max-width:768px)').matches) panel.querySelector('#ga-in').focus() }
+      if (!window.matchMedia('(max-width:900px)').matches) panel.querySelector('#ga-in').focus() }
   }
   function mount () {
     if (document.getElementById('ga-btn')) return
@@ -651,6 +665,22 @@ void (function () {
       top.insertBefore(b, top.firstChild)
     }
     addTop(0)
+    const side = document.querySelector('.sidebar')
+    if (side && !document.getElementById('ga-side')) {
+      const d = document.createElement('div')
+      d.id = 'ga-side'
+      d.innerHTML = '<label for="ga-side-in">Assistant <i>IA</i></label><form><div class="in">' + ICO + '<input id="ga-side-in" type="text" autocomplete="off" placeholder="Demander à l’assistant..."><button type="submit" aria-label="Envoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div></form>'
+      const foot = side.querySelector('.sidebar-footer')
+      side.insertBefore(d, foot)
+      const inp = d.querySelector('input')
+      d.querySelector('form').addEventListener('submit', e => { e.preventDefault()
+        const v = inp.value.trim()
+        inp.value = ''
+        toggle(true)
+        if (v) ask(v) })
+      inp.addEventListener('focus', () => { if (!inp.value) inp.placeholder = 'Terrains de plus de 2 ha...' })
+      inp.addEventListener('blur', () => { inp.placeholder = 'Demander à l’assistant...' })
+    }
     panel.querySelector('#ga-close').addEventListener('click', () => toggle(false))
     panel.querySelector('#ga-reset').addEventListener('click', () => { last = null
       panel.querySelector('#ga-log').innerHTML = ''

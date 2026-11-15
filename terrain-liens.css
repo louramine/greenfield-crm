@@ -1,0 +1,76 @@
+/* Section Terrains liés de la fiche terrain (terrain-liens.js). Une déclaration par règle. */
+#tl-list { border: 1px solid #dfe9e3 }
+#tl-list { border-radius: 10px }
+#tl-list { overflow: hidden }
+.tl-item { display: flex }
+.tl-item { align-items: flex-start }
+.tl-item { gap: 10px }
+.tl-item { padding: 10px 12px }
+.tl-item { font-size: 13px }
+.tl-item + .tl-item { border-top: 1px solid #eef3f0 }
+.tl-txt { flex: 1 }
+.tl-txt { min-width: 0 }
+.tl-titre { color: var(--green-deep) }
+.tl-titre { overflow-wrap: anywhere }
+.tl-info { color: #4f6a5c }
+.tl-info { font-size: 12px }
+.tl-info { margin-top: 2px }
+.tl-chips { display: flex }
+.tl-chips { flex-wrap: wrap }
+.tl-chips { align-items: center }
+.tl-chips { gap: 6px }
+.tl-chips { margin-top: 6px }
+.tl-chip { background: #e7f5ec }
+.tl-chip { color: #1f7a4d }
+.tl-chip { border-radius: 999px }
+.tl-chip { padding: 2px 9px }
+.tl-chip { font-size: 11.5px }
+.tl-chip { font-weight: 600 }
+.tl-qui { color: #4f6a5c }
+.tl-qui { font-size: 11px }
+.tl-note { margin-top: 6px }
+.tl-note { color: #22382d }
+.tl-note { white-space: pre-wrap }
+.tl-note { overflow-wrap: anywhere }
+.tl-acts { display: flex }
+.tl-acts { gap: 6px }
+.tl-acts { flex: 0 0 auto }
+.tl-del { color: #c0392b }
+.tl-vide { padding: 12px }
+.tl-vide { color: #4f6a5c }
+.tl-vide { font-size: 13px }
+.tl-box { background: #f8faf9 }
+.tl-box { border-radius: 12px }
+.tl-box { padding: 14px }
+.tl-motifs { display: flex }
+.tl-motifs { flex-wrap: wrap }
+.tl-motifs { gap: 14px }
+.tl-motifs { margin: 6px 0 10px }
+.tl-motifs label { display: flex }
+.tl-motifs label { align-items: center }
+.tl-motifs label { gap: 6px }
+.tl-motifs label { font-size: 13px }
+.tl-motifs label { cursor: pointer }
+#tl-sugg { margin-top: 6px }
+.tl-s { display: block }
+.tl-s { width: 100% }
+.tl-s { text-align: left }
+.tl-s { background: #fff }
+.tl-s { border: 1px solid #dfe9e3 }
+.tl-s { border-radius: 8px }
+.tl-s { padding: 8px 10px }
+.tl-s { margin-bottom: 4px }
+.tl-s { font-size: 13px }
+.tl-s { cursor: pointer }
+.tl-s { color: #22382d }
+.tl-s:hover { border-color: #1f7a4d }
+.tl-s span { color: #4f6a5c }
+.tl-s span { font-size: 12px }
+#tl-choix { font-size: 13px }
+#tl-choix { color: #1f7a4d }
+#tl-choix { margin: 6px 0 }
+.tl-bloc { margin-bottom: 10px }
+@media (max-width: 600px) {
+  .tl-item { flex-direction: column }
+  .tl-acts { align-self: flex-end }
+}

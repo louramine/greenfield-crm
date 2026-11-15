@@ -32,8 +32,8 @@ void (function () {
   const NUM = ALT(['\\d{1,3}(?: \\d{3})+(?:[.,]\\d+)?', '\\d+(?:[.,]\\d+)?'])
   const toNum = s => parseFloat(String(s).replace(/ /g, '').replace(',', '.'))
   const UNIT = ALT(['mdhs?', 'm dhs?', 'millions? de dhs?', 'millions? dhs?', 'millions?', 'dhs? ?/ ?m2', 'dhs? ' + ALT(['le', 'par', 'du', 'au']) + ' m2', 'dhs? le metre(?: carre)?', 'mad ?/ ?m2', 'dhs?', 'mad', 'hectares?', 'ha', 'm2', 'metres? carres?'])
-  const CMP_MIN = ALT(['plus de', 'au moins', 'superieure?s? a', 'minimum', 'mini', 'min', 'a partir de', 'au dessus de', 'au-dessus de', 'depassant', '>=', '>'])
-  const CMP_MAX = ALT(['moins de', 'au plus', 'au maximum', 'maximum', 'maxi', 'max', 'inferieure?s? a', 'sous les', 'sous', 'jusqu a', 'en dessous de', 'en-dessous de', 'pas plus de', 'ne depassant pas', '<=', '<'])
+  const CMP_MIN = ALT(['plus de', 'plus d', '\\+ ?de', '\\+ ?d', 'au dela de', 'superieur a', 'superieurs a', 'au moins', 'superieure?s? a', 'minimum', 'mini', 'min', 'a partir de', 'au dessus de', 'au-dessus de', 'depassant', '>=', '>'])
+  const CMP_MAX = ALT(['moins de', 'au plus', 'au maximum', 'maximum', 'maxi', 'max', 'inferieure?s? a', 'sous les', 'sous', 'jusqu a', 'en dessous de', 'en-dessous de', 'pas plus de', 'ne depassant pas', '- ?de', '<=', '<'])
   const B0 = '(?<![a-z0-9])'
   const B1 = '(?![a-z0-9])'
   const unitOf = (u, v) => {
@@ -60,6 +60,12 @@ void (function () {
     'crm greenfield base disponibles disponible dispo dispos vente vendre achat acheter interesses interesse interessant interessants compatibles compatible correspondant correspondent ' +
     'quels meilleurs meilleur meilleures top premiers premier dernier derniers recents recent nouveaux nouveau dessus dessous environ autour niveau taille titre rentres rentre ajoutes ajoute sources recus ci eux ceux').split(' '))
 
+  const SRC_IGNORE = new Set(['moi', 'ras', 'a qualifier', 'inconnu', 'autre', 'nc', 'non renseigne'])
+  /* clé phonétique : Ouled Salah = Oulad Saleh, Bouskora = Bouskoura */
+  const phon = w => { const x = w.replace(/y/g, 'i').replace(/(.)\1+/g, '$1')
+    return x[0] + x.slice(1).replace(/[aeiou]/g, '') }
+  const phonKey = v => v.split(' ').map(phon).join(' ')
+  const AIDE = 'Je lis uniquement les données du CRM. Posez une question de recherche, par exemple : terrains de plus de 2 ha à Oulad Saleh, terrains industriels sous 1 500 DH/m², terrains de Hachim sans prix, promoteurs compatibles avec GF-25-0123. Un sourceur n est filtré que si vous écrivez son nom.'
   function vocab () {
     const S = st()
     const q = new Set()
@@ -87,6 +93,10 @@ void (function () {
     const sp = blankSpec()
     const eat = (rx, f) => { q = q.replace(rx, (...a) => { const r = f ? f(...a) : true
       return r === false ? a[0] : ' ' }) }
+    if (RX('^ ' + ALT(['pourquoi', 'comment ca marche', 'comment tu', 'comment fonctionne', 'explique', 'c est quoi', 'qui es tu', 'aide', 'help']) + B1).test(q)) {
+      sp.cible = 'aide'
+      sp.message = AIDE
+      return sp }
     const suite = prev && RX('^ ' + ALT(['et', 'parmi', 'seulement', 'uniquement', 'dont', 'puis', 'pareil', 'meme chose', 'idem']) + B1).test(q) ? true : (prev ? RX(ALT(['parmi eux', 'parmi ceux', 'ceux ci', 'ceux-ci', 'ces terrains', 'ces promoteurs'])).test(q) : false)
 
     /* fourchettes : entre 1 et 3 ha, de 2 000 à 5 000 m2 */
@@ -175,14 +185,30 @@ void (function () {
     eat(RX(B0 + 'dispos?' + B1, 'gi'), () => { const d = V.statuts.find(s => norm(s) === 'disponible')
       if (d && !sp.statuts.includes(d)) sp.statuts.push(d) })
     V.sourceurs.forEach(s => { const n = norm(s)
-      if (n.length < 3 ? true : whole(n) < 0) return
+      if (n.length < 3 ? true : (STOP.has(n) ? true : (SRC_IGNORE.has(n) ? true : whole(n) < 0))) return
       sp.sourceurs.push(s)
       q = q.replace(' ' + n + ' ', '  ') })
 
     /* quartiers et villes, avec exclusion : hors Bouskoura, sauf Dar Bouazza */
     const HORS = RX(B0 + ALT(['hors', 'sauf', 'excepte', 'pas a', 'pas au', 'pas en', 'en dehors de', 'autre que']) + ' (?:' + ALT(['de', 'du', 'd', 'a', 'au', 'le', 'la', 'les']) + ' )*$', 'i')
+    const proche = v => {
+      if (v.replace(/ /g, '').length < 6) return -1
+      const k = phonKey(v)
+      const n = v.split(' ').length
+      const W = q.trim().split(' ')
+      for (let j = 0; j + n <= W.length; j++) {
+        const seg = W.slice(j, j + n).join(' ')
+        if (seg.replace(/ /g, '').length >= 5 && phonKey(seg) === k) {
+          const i = whole(seg)
+          if (i >= 0) { q = q.slice(0, i + 1) + v + q.slice(i + 1 + seg.length)
+            return i }
+        }
+      }
+      return -1
+    }
     V.quartiers.forEach(v => {
-      const i = whole(v)
+      let i = whole(v)
+      if (i < 0) i = proche(v)
       if (i < 0) return
       const before = q.slice(0, i + 1)
       const m = before.match(HORS)

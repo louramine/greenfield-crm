@@ -169,19 +169,26 @@ export function statutsProposables() {
   return brut.split(',').map((s) => s.trim()).filter(Boolean)
 }
 
+// Taille du portefeuille proposé : les N derniers terrains ajoutés au CRM (100 par défaut).
+// La fenêtre avance quand de nouveaux terrains sont ajoutés.
+export function nombreDerniers() {
+  const n = Number(process.env.PROPOSITION_DERNIERS ?? '100')
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 100
+}
+
 // Renvoie les meilleurs terrains jamais proposés à ce promoteur : [{ terrain, score, ok }]
+// Seuls comptent les derniers terrains ajoutés, et parmi eux ceux au statut proposable.
 export async function terrainsPour(acheteur, { max = 3, scoreMin = 55 } = {}) {
   if (!acheteur) return []
   const statuts = statutsProposables()
-  const filtre = `statut=in.(${statuts.map((s) => encodeURIComponent(s)).join(',')})`
-  const [terrains, reponses] = await Promise.all([
-    sbSelect('terrains', `${filtre}&select=id,ref,localisation,quartier,superficie,prix,forfait,urba,usage,statut&limit=2000`),
+  const [derniers, reponses] = await Promise.all([
+    sbSelect('terrains', `select=id,ref,localisation,quartier,superficie,prix,forfait,urba,usage,statut&order=id.desc&limit=${nombreDerniers()}`),
     sbSelect('acheteur_terrain_reponses', `acheteur_id=eq.${acheteur.id}&limit=1000`).catch(() => []),
   ])
   const deja = new Set(reponses.map((r) => String(r.terrain_id)))
   const connus = reponses.length ? await sbSelect('terrains', `id=in.(${[...deja].join(',')})&select=id,quartier,localisation,urba,prix`).catch(() => []) : []
   const P = preferences(reponses, connus)
-  return terrains
+  return derniers
     .filter((t) => statuts.includes(t.statut))
     .filter((t) => !deja.has(String(t.id)))
     .filter((t) => num(t.superficie))

@@ -385,4 +385,21 @@ await scenario('boutons en anglais, en arabe et en darija', async () => {
   }
 })
 
+// 17. Seuls les derniers terrains ajoutés au CRM sont proposés
+await scenario('propositions limitées aux derniers terrains ajoutés', async () => {
+  base()
+  const tel = '212661430206'
+  process.env.PROPOSITION_DERNIERS = '2'
+  db.tables.acheteurs[0].villes = ['Bouskoura']
+  db.tables.terrains.push(
+    { id: 600, ref: 'GF-26-0600', quartier: 'Bouskoura', superficie: 9000, prix: 2000, urba: 'D4', statut: 'À qualifier' },
+    { id: 601, ref: 'GF-26-0601', quartier: 'Bouskoura', superficie: 9000, prix: 2000, urba: 'D4', statut: 'Disponible' },
+  )
+  extraction = { profil: 'acheteur', langue: 'français', resume_pour_appel: 'x', statut_qualification: 'en_cours' }
+  await envoyer(webhook([texte(tel, 'Bonjour')]))
+  const ids = envois(tel).filter((m) => m.type === 'interactive').map((m) => m.interactive.action.buttons[0].reply.id)
+  assert.deepEqual(ids, ['INTERESSE:601'], 'le terrain 501 est trop ancien, le 600 n\'est pas encore Disponible')
+  delete process.env.PROPOSITION_DERNIERS
+})
+
 console.log(`\n${ok} scénarios réussis`)

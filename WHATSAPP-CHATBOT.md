@@ -14,7 +14,7 @@ Langues : français, anglais, arabe, et darija en lettres latines (« salam, bgh
 * Le statut passe de « À qualifier » ou « Froid » à « Tiède » dès que le promoteur a donné au moins deux critères.
 
 **Le bot propose des terrains au promoteur**
-* Dès que la fiche du promoteur contient une zone (ville ou quartier) et au moins un autre critère (zonage, produit, superficie ou budget), le bot choisit dans le portefeuille les terrains « Disponible » qui lui correspondent.
+* Dès que la fiche du promoteur contient une zone (ville ou quartier) et au moins un autre critère (zonage, produit, superficie ou budget), le bot choisit les terrains qui lui correspondent parmi les 100 derniers terrains ajoutés au CRM, et seulement ceux au statut « Disponible ». Cette liste avance d'elle-même à chaque nouveau terrain ajouté.
 * Le choix utilise le même score que la page Matching du CRM, avec les préférences apprises de ses réponses passées. Le bot ne propose jamais un terrain hors des zones ciblées, hors budget, au-dessus du prix au m² annoncé, hors de la fourchette de superficie, dans un secteur déjà refusé, vendu ou déjà proposé.
 * Il envoie 3 terrains au plus, un message par terrain, avec la référence, le lieu, la superficie, le zonage et le prix, et trois boutons : Intéressé, Plus d'infos, Pas intéressé. Le titre foncier, le lien Maps et le vendeur ne sont jamais envoyés.
 * Chaque terrain envoyé apparaît dans l'onglet « Terrains proposés » du promoteur, avec le canal « WhatsApp (chatbot) » et le score obtenu.
@@ -56,7 +56,7 @@ Langues : français, anglais, arabe, et darija en lettres latines (« salam, bgh
 * `api/_lib/crm.js`, `api/_lib/supabase.js`, `api/_lib/whatsapp.js`, `api/_lib/claude.js`, `api/_lib/terrains.js` : accès aux données et aux services
 * `wa-crm.js` : page WhatsApp du CRM
 * `supabase/chatbot-whatsapp.sql` : script de la base (déjà exécuté)
-* `api/_lib/test-simulation.js` : 16 scénarios de test sans réseau (`npm run test:whatsapp`)
+* `api/_lib/test-simulation.js` : 17 scénarios de test sans réseau (`npm run test:whatsapp`)
 
 ## Mise en service
 
@@ -96,7 +96,8 @@ Réglages facultatifs :
 * `TEAM_NUMBERS` : numéros de l'équipe à alerter, séparés par des virgules, avec un modèle `greenfield_alerte` validé par Meta. Ces numéros ne sont jamais traités comme des contacts.
 * `PROPOSITION_AUTO` : mettre `0` pour que le bot ne propose plus de terrains de lui-même
 * `PROPOSITION_MAX` : nombre de terrains par série (3 par défaut)
-* `PROPOSITION_STATUTS` : statuts de terrain proposables, séparés par des virgules (`Disponible` par défaut)
+* `PROPOSITION_DERNIERS` : nombre de derniers terrains ajoutés parmi lesquels le bot choisit (100 par défaut)
+* `PROPOSITION_STATUTS` : statuts de terrain proposables, séparés par des virgules (`Disponible` par défaut). Par exemple `Disponible,Contact établi`.
 
 ### 5. Mise en ligne
 

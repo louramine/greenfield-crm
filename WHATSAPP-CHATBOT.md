@@ -55,16 +55,14 @@ Langues : français, anglais, arabe, et darija en lettres latines (« salam, bgh
 * `api/_lib/textes.js` : boutons et messages fixes en français, anglais, arabe et darija
 * `api/_lib/crm.js`, `api/_lib/supabase.js`, `api/_lib/whatsapp.js`, `api/_lib/claude.js`, `api/_lib/terrains.js` : accès aux données et aux services
 * `wa-crm.js` : page WhatsApp du CRM
-* `supabase/chatbot-whatsapp.sql` : script à exécuter une fois dans Supabase
+* `supabase/chatbot-whatsapp.sql` : script de la base (déjà exécuté)
 * `api/_lib/test-simulation.js` : 16 scénarios de test sans réseau (`npm run test:whatsapp`)
 
 ## Mise en service
 
-### 1. Base de données (5 minutes)
+### 1. Base de données
 
-1. Vérifiez que `supabase/crm-promoteurs.sql` a déjà été exécuté. C'est le cas si la page Promoteurs affiche les promoteurs importés.
-2. Dans Supabase, ouvrez SQL Editor puis New query, collez le contenu de `supabase/chatbot-whatsapp.sql` et cliquez sur Run.
-3. La dernière ligne affiche le nombre de conversations (0), de messages et de promoteurs avec numéro.
+Déjà fait : le script `supabase/chatbot-whatsapp.sql` a été exécuté dans Supabase (tables des conversations et des messages, espace de stockage des médias). Rien à refaire.
 
 ### 2. Numéro WhatsApp en mode coexistence (30 minutes)
 
@@ -102,7 +100,7 @@ Réglages facultatifs :
 
 ### 5. Mise en ligne
 
-Fusionnez la branche `chatbot-whatsapp` dans `main` : Vercel met le CRM à jour automatiquement. Vérifiez que `https://crm.greenfield.plus/api/whatsapp/webhook` affiche `{"ok":true}`.
+Fusionnez la branche `chatbot-whatsapp-v2` dans `main` : Vercel met le CRM à jour automatiquement. Vérifiez que `https://crm.greenfield.plus/api/whatsapp/webhook` affiche `{"ok":true}`.
 
 ### 6. Brancher WhatsApp sur le CRM (5 minutes)
 

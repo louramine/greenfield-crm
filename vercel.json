@@ -8,7 +8,7 @@
       "destination": "/carte.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],
@@ -38,5 +38,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/whatsapp/*.js": {
+      "maxDuration": 60
+    }
+  }
 }

@@ -439,72 +439,198 @@ function showLink (row, box, ach) {
   })
 }
 
+// Gestion des liens envoyés : onglets Liens et Sélections reçues, filtres par état, recherche,
+// annulation (le lien cesse de fonctionner, réactivable), suppression définitive, ménage groupé.
+const LK = { tab: null, filtre: null, q: '', links: [], rets: [] }
+function lkEtat (l) {
+  if (l.revoque) return 'annule'
+  return new Date(l.expire_le).getTime() < Date.now() ? 'expire' : 'actif'
+}
+function lkReste (l) {
+  const j = Math.ceil((new Date(l.expire_le).getTime() - Date.now()) / 864e5)
+  return j <= 1 ? 'expire dans moins de 24 h' : 'expire dans ' + j + ' jours'
+}
+function lkDate (d, heure) {
+  return new Date(d).toLocaleString('fr-FR', heure ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short', year: 'numeric' })
+}
 async function linksPanel () {
   const [lr, rr] = await Promise.all([
-    fetch(SUPA_URL + '/rest/v1/carte_liens?select=*&order=cree_le.desc&limit=60', { headers: H() }),
-    fetch(SUPA_URL + '/rest/v1/carte_retours?select=*&order=cree_le.desc&limit=60', { headers: H() })
+    fetch(SUPA_URL + '/rest/v1/carte_liens?select=*&order=cree_le.desc&limit=300', { headers: H() }),
+    fetch(SUPA_URL + '/rest/v1/carte_retours?select=*&order=cree_le.desc&limit=100', { headers: H() })
   ])
   if (!lr.ok) {
-    api.modal('<h3>Liens envoyés</h3><p>Les tables ne sont pas encore créées : exécutez le script supabase/carte-terrains.sql dans Supabase.</p><div class="gfc-acts"><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>')
+    api.modal('<h3>Liens envoyés</h3><p class="lk-m">La liste des liens est indisponible pour le moment. Rechargez la page, puis réessayez.</p><div class="gfc-acts"><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>')
     return
   }
-  const links = await lr.json()
-  const rets = rr.ok ? await rr.json() : []
-  const now = Date.now()
-  const refById = {}
-  const tl = state.terrains ? state.terrains : []
-  tl.forEach(t => { refById[t.id] = t.ref })
-  const lrow = l => {
-    const exp = new Date(l.expire_le).getTime()
-    const st = l.revoque ? 'Révoqué' : (exp < now ? 'Expiré' : 'Actif jusqu\'au ' + new Date(l.expire_le).toLocaleDateString('fr-FR'))
-    const nb = l.terrain_ids ? l.terrain_ids.length + ' terrain' + (l.terrain_ids.length > 1 ? 's' : '') : 'Tous les terrains'
-    const vues = l.vues ? l.vues + ' ouverture' + (l.vues > 1 ? 's' : '') + ', dernière le ' + new Date(l.derniere_vue).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'Pas encore ouvert'
-    const actif = !l.revoque && exp > now
-    return '<div class="lk-row"><div><b>' + esc(l.prospect ? l.prospect : 'Sans nom') + '</b> · ' + (l.version === 'qualifie' ? 'Qualifié' : 'Découverte') + ' · ' + nb +
-      '<div class="lk-m">' + st + ' · ' + vues + ' · par ' + esc(l.cree_par) + '</div></div><div class="lk-a">' +
-      (l.acheteur_id ? '<button data-fiche="' + l.acheteur_id + '">Fiche promoteur</button>' : '') +
-      (actif ? '<button data-copy="' + l.token + '">Copier</button><button data-rev="' + l.id + '">Révoquer</button>' : '') +
-      '<button data-ext="' + l.id + '">+7 j</button></div></div>'
+  LK.links = await lr.json()
+  LK.rets = rr.ok ? await rr.json() : []
+  if (!LK.tab) LK.tab = LK.rets.some(x => !x.traite) ? 'rets' : 'liens'
+  if (!LK.filtre) LK.filtre = LK.links.some(l => lkEtat(l) === 'actif') ? 'actif' : 'tous'
+  lkDraw()
+}
+function lkRowLien (l) {
+  const et = lkEtat(l)
+  const nb = l.terrain_ids ? l.terrain_ids.length + ' terrain' + (l.terrain_ids.length > 1 ? 's' : '') : 'Tous les terrains disponibles'
+  const chip = et === 'actif' ? 'Actif, ' + lkReste(l) : et === 'expire' ? 'Expiré le ' + lkDate(l.expire_le) : 'Annulé'
+  const vues = l.vues ? l.vues + ' ouverture' + (l.vues > 1 ? 's' : '') + ', la dernière le ' + lkDate(l.derniere_vue, true) : 'Jamais ouvert'
+  const nret = LK.rets.filter(x => x.lien_id === l.id).length
+  const btn = (k, t, cls) => '<button type="button" class="' + (cls ? cls : '') + '" data-' + k + '="' + l.id + '">' + t + '</button>'
+  let acts = ''
+  if (et === 'actif') acts += btn('copy', 'Copier') + btn('wa', 'WhatsApp') + btn('ext', 'Prolonger de 7 j') + btn('rev', 'Annuler')
+  if (et === 'expire') acts += btn('ext', 'Réactiver 7 j')
+  if (et === 'annule') acts += btn('react', 'Réactiver')
+  if (l.acheteur_id) acts += btn('fiche', 'Fiche promoteur')
+  acts += btn('del', 'Supprimer', 'lk-del')
+  return '<div class="lk-card lk-' + et + '">' +
+    '<div class="lk-top"><b>' + esc(l.prospect ? l.prospect : 'Sans nom') + '</b><span class="lk-chip">' + chip + '</span></div>' +
+    '<div class="lk-m">' + (l.version === 'qualifie' ? 'Acheteur qualifié' : 'Découverte') + ', ' + nb + (nret ? ', ' + nret + ' sélection' + (nret > 1 ? 's' : '') + ' reçue' + (nret > 1 ? 's' : '') : '') + '</div>' +
+    '<div class="lk-m">' + vues + '. Créé le ' + lkDate(l.cree_le) + (l.cree_par ? ' par ' + esc(l.cree_par) : '') + '.</div>' +
+    (l.note ? '<div class="lk-m lk-note">' + esc(l.note) + '</div>' : '') +
+    '<div class="lk-acts">' + acts + '</div></div>'
+}
+function lkRowRet (x) {
+  const l = LK.links.find(k => k.id === x.lien_id)
+  return '<div class="lk-card' + (x.traite ? ' lk-done' : ' lk-actif') + '">' +
+    '<div class="lk-top"><b>' + esc(x.nom ? x.nom : (l && l.prospect ? l.prospect : 'Prospect')) + '</b><span class="lk-chip">' + (x.traite ? 'Traitée' : 'À traiter') + '</span></div>' +
+    '<div class="lk-m">' + lkDate(x.cree_le, true) + (x.telephone ? ', ' + esc(x.telephone) : '') + (l && l.prospect ? ', lien envoyé à ' + esc(l.prospect) : '') + '</div>' +
+    '<div class="lk-m">' + x.refs.length + ' terrain' + (x.refs.length > 1 ? 's' : '') + ' : ' + esc(x.refs.join(', ')) + '</div>' +
+    (x.message ? '<div class="lk-m lk-note">« ' + esc(x.message) + ' »</div>' : '') +
+    '<div class="lk-acts">' + (l && l.acheteur_id ? '<button type="button" data-fiche="' + l.id + '">Fiche promoteur</button>' : '') +
+    (x.traite ? '' : '<button type="button" data-done="' + x.id + '">Marquer comme traitée</button>') + '</div></div>'
+}
+function lkDraw () {
+  const nb = { actif: 0, expire: 0, annule: 0 }
+  LK.links.forEach(l => { nb[lkEtat(l)]++ })
+  const aTraiter = LK.rets.filter(x => !x.traite).length
+  const q = LK.q.trim().toLowerCase()
+  const vis = LK.links.filter(l => LK.filtre === 'tous' ? true : lkEtat(l) === LK.filtre)
+    .filter(l => q ? [l.prospect, l.note, l.cree_par].join(' ').toLowerCase().includes(q) : true)
+  const morts = nb.expire + nb.annule
+  const fl = [['actif', 'Actifs', nb.actif], ['expire', 'Expirés', nb.expire], ['annule', 'Annulés', nb.annule], ['tous', 'Tous', LK.links.length]]
+  let h = '<div class="lk-pan"><h3>Liens envoyés</h3>' +
+    '<div class="lk-tabs" role="tablist">' +
+      '<button type="button" role="tab" data-tab="liens" class="' + (LK.tab === 'liens' ? 'on' : '') + '">Liens (' + LK.links.length + ')</button>' +
+      '<button type="button" role="tab" data-tab="rets" class="' + (LK.tab === 'rets' ? 'on' : '') + '">Sélections reçues (' + LK.rets.length + ')' + (aTraiter ? '<i>' + aTraiter + '</i>' : '') + '</button></div>'
+  if (LK.tab === 'liens') {
+    h += '<div class="lk-filtres">' + fl.map(f => '<button type="button" data-f="' + f[0] + '" class="' + (LK.filtre === f[0] ? 'on' : '') + '">' + f[1] + ' ' + f[2] + '</button>').join('') + '</div>' +
+      (LK.links.length > 6 ? '<input id="lk-find" type="search" placeholder="Chercher un promoteur" value="' + esc(LK.q) + '" autocomplete="off">' : '') +
+      (vis.length ? vis.map(lkRowLien).join('') : '<p class="lk-m lk-vide">' + (LK.links.length ? 'Aucun lien dans cette liste.' : 'Aucun lien envoyé pour le moment. Sélectionnez des terrains sur la carte, puis créez un lien pour un promoteur.') + '</p>') +
+      (morts && LK.filtre !== 'actif' ? '<button type="button" class="lk-menage" id="lk-menage">Supprimer les ' + morts + ' lien' + (morts > 1 ? 's' : '') + ' expiré' + (morts > 1 ? 's' : '') + ' ou annulé' + (morts > 1 ? 's' : '') + '</button>' : '')
+  } else {
+    h += LK.rets.length ? LK.rets.map(lkRowRet).join('') : '<p class="lk-m lk-vide">Aucune sélection reçue pour le moment. Quand un promoteur renvoie sa sélection depuis un lien, elle arrive ici.</p>'
   }
-  const rrow = x => {
-    const l = links.find(k => k.id === x.lien_id)
-    return '<div class="lk-row' + (x.traite ? ' done' : '') + '"><div><b>' + esc(x.nom ? x.nom : 'Prospect') + '</b>' + (x.telephone ? ' · ' + esc(x.telephone) : '') + (l && l.prospect ? ' · lien ' + esc(l.prospect) : '') +
-      '<div class="lk-m">' + new Date(x.cree_le).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + x.refs.length + ' terrain' + (x.refs.length > 1 ? 's' : '') + ' : ' + esc(x.refs.join(', ')) + '</div>' +
-      (x.message ? '<div class="lk-m">« ' + esc(x.message) + ' »</div>' : '') + '<div class="lk-m">Ajouté' + (x.refs.length > 1 ? 's' : '') + ' en « Intéressé » sur la fiche du promoteur.</div></div><div class="lk-a">' + (l && l.acheteur_id ? '<button data-fiche="' + l.acheteur_id + '">Fiche promoteur</button>' : '') + (x.traite ? '' : '<button data-done="' + x.id + '">Traité</button>') + '</div></div>'
+  h += '<div class="gfc-acts"><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div></div>'
+  api.modal(h, lkWire)
+}
+function lkWire (box) {
+  const on = (k, fn) => box.querySelectorAll('[data-' + k + ']').forEach(b => b.addEventListener('click', () => fn(b.getAttribute('data-' + k), b)))
+  const lien = id => LK.links.find(k => String(k.id) === String(id))
+  const nom = l => l.prospect ? l.prospect : 'ce promoteur'
+  const send = async (method, table, filtre, body) => {
+    const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?' + filtre, { method: method, headers: H({ Prefer: 'return=representation' }), body: body ? JSON.stringify(body) : undefined })
+    const rows = r.ok ? await r.json() : []
+    return rows.length
   }
-  api.modal('<h3>Sélections reçues</h3>' + (rets.length ? rets.map(rrow).join('') : '<p class="lk-m">Aucune sélection reçue pour le moment.</p>') +
-    '<h3 style="margin-top:16px">Liens envoyés</h3>' + (links.length ? links.map(lrow).join('') : '<p class="lk-m">Aucun lien créé.</p>') +
-    '<div class="gfc-acts"><button class="gfc-btn gfc-b4" data-m="close">Fermer</button></div>', box => {
-    box.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(linkUrl(b.dataset.copy))
-        showNotif('Lien copié')
-      } catch (e) { showNotif(linkUrl(b.dataset.copy)) }
-    }))
-    const patch = async (table, id, body) => {
-      const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?id=eq.' + id, { method: 'PATCH', headers: H(), body: JSON.stringify(body) })
-      if (!r.ok) showNotif('Modification impossible', true)
-      linksPanel()
-      refreshBadge()
-    }
-    box.querySelectorAll('[data-rev]').forEach(b => b.addEventListener('click', () => patch('carte_liens', b.dataset.rev, { revoque: true })))
-    box.querySelectorAll('[data-ext]').forEach(b => b.addEventListener('click', () => {
-      const l = links.find(k => String(k.id) === b.dataset.ext)
-      const from = Math.max(Date.now(), new Date(l.expire_le).getTime())
-      patch('carte_liens', b.dataset.ext, { expire_le: new Date(from + 7 * 864e5).toISOString(), revoque: false })
-    }))
-    box.querySelectorAll('[data-done]').forEach(b => b.addEventListener('click', () => patch('carte_retours', b.dataset.done, { traite: true })))
-    box.querySelectorAll('[data-fiche]').forEach(b => b.addEventListener('click', async () => {
-      box.parentElement.classList.remove('on')
-      if (typeof prLoadExtras === 'function') { try { await prLoadExtras() } catch (e) { /* ignore */ } }
-      if (typeof prOpen === 'function') {
-        prOpen(Number(b.dataset.fiche))
-        if (typeof PR !== 'undefined' && typeof prRenderFiche === 'function') {
-          PR.tab = 'prop'
-          prRenderFiche()
-        }
+  const refresh = () => {
+    linksPanel()
+    refreshBadge()
+  }
+  on('tab', v => {
+    LK.tab = v
+    lkDraw()
+  })
+  on('f', v => {
+    LK.filtre = v
+    lkDraw()
+  })
+  const find = box.querySelector('#lk-find')
+  if (find) {
+    find.addEventListener('input', () => {
+      LK.q = find.value
+      lkDraw()
+      const f2 = document.getElementById('lk-find')
+      if (f2) {
+        f2.focus()
+        f2.setSelectionRange(f2.value.length, f2.value.length)
       }
-    }))
+    })
+  }
+  on('copy', async id => {
+    const url = linkUrl(lien(id).token)
+    try {
+      await navigator.clipboard.writeText(url)
+      showNotif('Lien copié')
+    } catch (e) { showNotif(url) }
+  })
+  on('wa', id => {
+    const l = lien(id)
+    const a = (state.acheteurs ? state.acheteurs : []).find(x => String(x.id) === String(l.acheteur_id))
+    const tel = a && normTel(a.telephone) ? normTel(a.telephone) : ''
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(waText(l)), '_blank', 'noopener')
+  })
+  on('ext', async id => {
+    const l = lien(id)
+    const from = Math.max(Date.now(), new Date(l.expire_le).getTime())
+    const n = await send('PATCH', 'carte_liens', 'id=eq.' + l.id, { expire_le: new Date(from + 7 * 864e5).toISOString(), revoque: false })
+    showNotif(n ? 'Lien valable jusqu\'au ' + lkDate(from + 7 * 864e5) : 'Modification refusée : ce lien a été créé par quelqu\'un d\'autre.', !n)
+    refresh()
+  })
+  on('react', async id => {
+    const l = lien(id)
+    const expire = new Date(l.expire_le).getTime() < Date.now()
+    const body = expire ? { revoque: false, expire_le: new Date(Date.now() + 7 * 864e5).toISOString() } : { revoque: false }
+    const n = await send('PATCH', 'carte_liens', 'id=eq.' + l.id, body)
+    showNotif(n ? 'Lien réactivé' + (expire ? ' pour 7 jours' : '') : 'Modification refusée : ce lien a été créé par quelqu\'un d\'autre.', !n)
+    refresh()
+  })
+  on('rev', async id => {
+    const l = lien(id)
+    if (!confirm('Annuler le lien envoyé à ' + nom(l) + ' ?\n\nIl cessera de fonctionner tout de suite. Vous pourrez le réactiver plus tard.')) return
+    const n = await send('PATCH', 'carte_liens', 'id=eq.' + l.id, { revoque: true })
+    showNotif(n ? 'Lien annulé' : 'Annulation refusée : ce lien a été créé par quelqu\'un d\'autre.', !n)
+    refresh()
+  })
+  on('del', async id => {
+    const l = lien(id)
+    const nret = LK.rets.filter(x => x.lien_id === l.id).length
+    const actif = lkEtat(l) === 'actif'
+    if (!confirm('Supprimer définitivement le lien envoyé à ' + nom(l) + ' ?\n\n' +
+      (actif ? 'Il est encore actif : il cessera de fonctionner tout de suite. ' : '') +
+      (nret ? 'La sélection reçue par ce lien sera retirée de la liste. Les terrains restent en Intéressé sur la fiche du promoteur. ' : '') +
+      'Cette suppression ne peut pas être annulée.')) return
+    const n = await send('DELETE', 'carte_liens', 'id=eq.' + l.id)
+    showNotif(n ? 'Lien supprimé' : 'Suppression refusée : ce lien a été créé par quelqu\'un d\'autre.', !n)
+    refresh()
+  })
+  const men = box.querySelector('#lk-menage')
+  if (men) {
+    men.addEventListener('click', async () => {
+      const ids = LK.links.filter(l => lkEtat(l) !== 'actif').map(l => l.id)
+      const nret = LK.rets.filter(x => ids.includes(x.lien_id)).length
+      if (!confirm('Supprimer définitivement ' + ids.length + ' lien' + (ids.length > 1 ? 's' : '') + ' expiré' + (ids.length > 1 ? 's' : '') + ' ou annulé' + (ids.length > 1 ? 's' : '') + ' ?\n\n' +
+        (nret ? nret + ' sélection' + (nret > 1 ? 's' : '') + ' reçue' + (nret > 1 ? 's' : '') + ' par ces liens ' + (nret > 1 ? 'seront retirées' : 'sera retirée') + ' de la liste. Les terrains restent en Intéressé sur les fiches des promoteurs. ' : '') +
+        'Les liens actifs ne sont pas touchés. Cette suppression ne peut pas être annulée.')) return
+      const n = await send('DELETE', 'carte_liens', 'id=in.(' + ids.join(',') + ')')
+      showNotif(n ? n + ' lien' + (n > 1 ? 's' : '') + ' supprimé' + (n > 1 ? 's' : '') : 'Suppression refusée.', !n)
+      LK.filtre = null
+      refresh()
+    })
+  }
+  on('done', async id => {
+    await send('PATCH', 'carte_retours', 'id=eq.' + id, { traite: true })
+    refresh()
+  })
+  on('fiche', async id => {
+    const l = lien(id)
+    box.parentElement.classList.remove('on')
+    if (typeof prLoadExtras === 'function') { try { await prLoadExtras() } catch (e) { /* ignore */ } }
+    if (typeof prOpen === 'function') {
+      prOpen(Number(l.acheteur_id))
+      if (typeof PR !== 'undefined' && typeof prRenderFiche === 'function') {
+        PR.tab = 'prop'
+        prRenderFiche()
+      }
+    }
   })
 }
 

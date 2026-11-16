@@ -1,0 +1,120 @@
+/* Atlas : gestion des liens envoyés (linksPanel dans carte-crm.js). Une déclaration par règle. */
+.gfc-box:has(.lk-pan) { max-width: 680px }
+.lk-pan h3 { margin-bottom: 12px }
+.lk-tabs { display: grid }
+.lk-tabs { grid-template-columns: 1fr 1fr }
+.lk-tabs { gap: 4px }
+.lk-tabs { background: #e3efe7 }
+.lk-tabs { padding: 4px }
+.lk-tabs { border-radius: 999px }
+.lk-tabs { margin-bottom: 12px }
+.lk-tabs button { min-height: 40px }
+.lk-tabs button { border: none }
+.lk-tabs button { border-radius: 999px }
+.lk-tabs button { background: transparent }
+.lk-tabs button { color: #1f7a4d }
+.lk-tabs button { font: 600 13px 'Inter Tight',sans-serif }
+.lk-tabs button { cursor: pointer }
+.lk-tabs button { display: flex }
+.lk-tabs button { align-items: center }
+.lk-tabs button { justify-content: center }
+.lk-tabs button { gap: 7px }
+.lk-tabs button.on { background: #0a1410 }
+.lk-tabs button.on { color: #7ee0a4 }
+.lk-tabs i { font-style: normal }
+.lk-tabs i { font-size: 11.5px }
+.lk-tabs i { font-weight: 700 }
+.lk-tabs i { background: #d9483b }
+.lk-tabs i { color: #fff }
+.lk-tabs i { border-radius: 999px }
+.lk-tabs i { min-width: 20px }
+.lk-tabs i { padding: 2px 6px }
+.lk-filtres { display: flex }
+.lk-filtres { gap: 6px }
+.lk-filtres { flex-wrap: wrap }
+.lk-filtres { margin-bottom: 10px }
+.lk-filtres button { min-height: 34px }
+.lk-filtres button { padding: 4px 12px }
+.lk-filtres button { border-radius: 999px }
+.lk-filtres button { border: 1px solid #cfdfd5 }
+.lk-filtres button { background: #fff }
+.lk-filtres button { color: #1f7a4d }
+.lk-filtres button { font: 600 12.5px 'Inter Tight',sans-serif }
+.lk-filtres button { cursor: pointer }
+.lk-filtres button { font-variant-numeric: tabular-nums }
+.lk-filtres button.on { background: #0a1410 }
+.lk-filtres button.on { border-color: #0a1410 }
+.lk-filtres button.on { color: #7ee0a4 }
+.lk-pan #lk-find { margin-bottom: 10px }
+.lk-card { border: 1px solid #dfe9e3 }
+.lk-card { border-radius: 12px }
+.lk-card { padding: 12px 14px }
+.lk-card { margin-bottom: 8px }
+.lk-card { font-size: 13.5px }
+.lk-card { color: #0a1410 }
+.lk-card.lk-expire,.lk-card.lk-annule,.lk-card.lk-done { background: #f6f9f7 }
+.lk-top { display: flex }
+.lk-top { justify-content: space-between }
+.lk-top { align-items: center }
+.lk-top { gap: 10px }
+.lk-top { flex-wrap: wrap }
+.lk-top b { font-family: 'Archivo',sans-serif }
+.lk-top b { font-weight: 800 }
+.lk-top b { font-size: 15px }
+.lk-top b { min-width: 0 }
+.lk-top b { overflow-wrap: anywhere }
+.lk-chip { font-size: 12px }
+.lk-chip { font-weight: 600 }
+.lk-chip { border-radius: 999px }
+.lk-chip { padding: 3px 10px }
+.lk-chip { background: #e3ede7 }
+.lk-chip { color: #4f6a5c }
+.lk-chip { white-space: nowrap }
+.lk-actif .lk-chip { background: #dff3e6 }
+.lk-actif .lk-chip { color: #1f7a4d }
+.lk-expire .lk-chip { background: #fdf0d9 }
+.lk-expire .lk-chip { color: #7a5410 }
+.lk-annule .lk-chip { background: #fbe3e0 }
+.lk-annule .lk-chip { color: #a8322a }
+.lk-pan .lk-m { font-size: 12.5px }
+.lk-pan .lk-m { color: #4f6a5c }
+.lk-pan .lk-m { margin-top: 4px }
+.lk-pan .lk-m { line-height: 1.4 }
+.lk-note { color: #22382d }
+.lk-note { overflow-wrap: anywhere }
+.lk-vide { padding: 14px 0 }
+.lk-acts { display: flex }
+.lk-acts { gap: 6px }
+.lk-acts { flex-wrap: wrap }
+.lk-acts { margin-top: 10px }
+.lk-acts button { min-height: 36px }
+.lk-acts button { padding: 5px 12px }
+.lk-acts button { border-radius: 999px }
+.lk-acts button { border: 1px solid #b9d8c6 }
+.lk-acts button { background: #fff }
+.lk-acts button { color: #1f7a4d }
+.lk-acts button { font: 600 12.5px 'Inter Tight',sans-serif }
+.lk-acts button { cursor: pointer }
+.lk-acts button:hover { border-color: #1f7a4d }
+.lk-acts button:focus-visible,.lk-filtres button:focus-visible,.lk-tabs button:focus-visible { outline: 2px solid #1f7a4d }
+.lk-acts button:focus-visible,.lk-filtres button:focus-visible,.lk-tabs button:focus-visible { outline-offset: 2px }
+.lk-acts .lk-del { margin-left: auto }
+.lk-acts .lk-del { border-color: #f0c4be }
+.lk-acts .lk-del { color: #a8322a }
+.lk-acts .lk-del:hover { border-color: #a8322a }
+.lk-menage { display: block }
+.lk-menage { width: 100% }
+.lk-menage { min-height: 42px }
+.lk-menage { margin-top: 6px }
+.lk-menage { border-radius: 999px }
+.lk-menage { border: 1px dashed #e0a8a0 }
+.lk-menage { background: transparent }
+.lk-menage { color: #a8322a }
+.lk-menage { font: 600 13px 'Inter Tight',sans-serif }
+.lk-menage { cursor: pointer }
+@media(max-width:600px) {
+  .lk-acts button { min-height: 42px }
+  .lk-acts button { flex: 1 1 auto }
+  .lk-acts .lk-del { margin-left: 0 }
+  .lk-tabs button { font-size: 12.5px }
+}

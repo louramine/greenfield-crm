@@ -68,6 +68,29 @@ async function fetchContours () {
   return all
 }
 
+// Zone des terrains sans zone CADGIS sur leur contour : la zone majoritaire des contours voisins (moins de 2 km),
+// sinon la ville déduite du quartier
+const VILLES = [['marrakech', 'Marrakech'], ['tanger', 'Tanger'], ['rabat', 'Rabat et Salé'], ['sale', 'Rabat et Salé'], ['salé', 'Rabat et Salé'], ['bouknadel', 'Rabat et Salé'], ['harhoura', 'Rabat et Salé'], ['tamesna', 'Rabat et Salé'], ['temara', 'Rabat et Salé']]
+function villeDe (t) {
+  const q = String(t.quartier ? t.quartier : (t.localisation ? t.localisation : '')).toLowerCase()
+  const v = VILLES.find(x => q.includes(x[0]))
+  return v ? v[1] : 'Autres villes'
+}
+function zoneVoisine (lat, lng, refs, t) {
+  const kx = Math.cos(lat * Math.PI / 180)
+  const near = refs.map(c => ({ z: c.zone, d: Math.hypot(c.lat - lat, (c.lng - lng) * kx) * 111 })).filter(c => c.d < 2).sort((a, b) => a.d - b.d).slice(0, 15)
+  if (!near.length) return villeDe(t)
+  const n = {}
+  near.forEach(c => { n[c.z] = (n[c.z] ? n[c.z] : 0) + 1 })
+  return Object.keys(n).sort((a, b) => n[b] - n[a])[0]
+}
+function zoneMajoritaire (cs) {
+  const n = {}
+  cs.forEach(c => { if (c.zone) n[c.zone] = (n[c.zone] ? n[c.zone] : 0) + 1 })
+  const ks = Object.keys(n)
+  return ks.length ? ks.sort((a, b) => n[b] - n[a])[0] : null
+}
+
 function buildTerrains () {
   const byT = {}
   const cl = CONTOURS ? CONTOURS : []
@@ -77,6 +100,7 @@ function buildTerrains () {
     byT[k].push(c)
   })
   const out = []
+  const refs = cl.filter(c => c.zone)
   const tl = state.terrains ? state.terrains : []
   tl.forEach(t => {
     const cs = byT[String(t.id)]
@@ -106,6 +130,8 @@ function buildTerrains () {
       o.lat = gm[0]
       o.lng = gm[1]
     }
+    o.zf = cs ? zoneMajoritaire(cs) : null
+    if (!o.zf) o.zf = zoneVoisine(o.lat, o.lng, refs, t)
     out.push(o)
   })
   return out
@@ -116,7 +142,7 @@ function dataFor (m) {
   if (m === 'interne') return all.filter(t => withSold ? true : t.statut !== 'Vendu')
   // Versions prospect : uniquement les terrains au statut Disponible
   const base = all.filter(t => t.statut === 'Disponible')
-  if (m === 'qualifie') return base.map(t => ({ key: t.key, id: t.id, q: t.q, z: t.z, s: t.s, pm: t.pm, pf: t.pf, g: t.g, lat: t.lat, lng: t.lng, pt: t.pt }))
+  if (m === 'qualifie') return base.map(t => ({ key: t.key, id: t.id, q: t.q, zf: t.zf, z: t.z, s: t.s, pm: t.pm, pf: t.pf, g: t.g, lat: t.lat, lng: t.lng, pt: t.pt }))
   return base.map(t => GFCarte.versDecouverte(t))
 }
 

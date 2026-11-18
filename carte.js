@@ -58,8 +58,12 @@ function fourchette (v, steps) {
     break } }
   return [Math.floor(v * 0.9 / st) * st, Math.ceil(v * 1.1 / st) * st]
 }
+// Zone du filtre Zones : la zone CADGIS quand le CRM la fournit (zf), sinon le quartier
+const zoneDe = t => (t.zf ? t.zf : t.q)
+// Groupes hors zones CADGIS, listés après les zones dans le filtre
+const HORS_ZONES = ['Marrakech', 'Tanger', 'Rabat et Salé', 'Autres villes']
 function versDecouverte (t) {
-  const o = { key: t.key, id: t.id, q: t.q, z: t.z, s: arrondiSurface(t.s), pt: !t.ga }
+  const o = { key: t.key, id: t.id, q: t.q, zf: t.zf, z: t.z, s: arrondiSurface(t.s), pt: !t.ga }
   if (t.pm > 0) { const [a, b] = fourchette(t.pm, [[2000, 100], [5000, 250], [1e12, 1000]])
     o.pmlo = a
     o.pmhi = b }
@@ -478,7 +482,7 @@ function mount (root, opt) {
       })
       layers[t.key] = L.featureGroup(shapes)
     })
-    const qset = new Set(D.map(t => t.q))
+    const qset = new Set(D.map(t => zoneDe(t)))
     F.q.forEach(q => { if (!qset.has(q)) F.q.delete(q) })
     if (o.brand) {
       $('.gfc-sub').textContent = o.sub
@@ -517,9 +521,9 @@ function mount (root, opt) {
     const f = k => $('[data-f="' + k + '"]').value
     const txt = f('txt').trim().toLowerCase()
     shown = D.filter(t => (F.z.size ? F.z.has(fam(t.z)) : true) &&
-      (F.q.size ? F.q.has(t.q) : true) &&
+      (F.q.size ? F.q.has(zoneDe(t)) : true) &&
       (onlySel ? sel.has(t.key) : true) &&
-      (txt ? [t.id, t.q, t.z, INT() ? t.tf : ''].join(' ').toLowerCase().includes(txt) : true) &&
+      (txt ? [t.id, t.q, t.zf, t.z, INT() ? t.tf : ''].join(' ').toLowerCase().includes(txt) : true) &&
       okSurf(t) && okPrix(t))
     const ord = f('o')
     const big = 1e15
@@ -742,8 +746,12 @@ function mount (root, opt) {
     }
     if (k === 'q') {
       const n = {}
-      D.forEach(t => { if (t.q) n[t.q] = (n[t.q] ? n[t.q] : 0) + 1 })
-      const qs = Object.keys(n).sort((a, b) => a.localeCompare(b, 'fr'))
+      D.forEach(t => {
+        const zq = zoneDe(t)
+        if (zq) n[zq] = (n[zq] ? n[zq] : 0) + 1
+      })
+      const rang = q => (HORS_ZONES.includes(q) ? 1 : 0)
+      const qs = Object.keys(n).sort((a, b) => rang(a) - rang(b) || a.localeCompare(b, 'fr'))
       return '<input type="search" class="gfc-pq" placeholder="Chercher une zone">' +
         '<div class="gfc-opts">' + qs.map(q => '<label class="gfc-opt" data-t="' + esc(q.toLowerCase()) + '"><input type="checkbox" value="' + esc(q) + '"' + (F.q.has(q) ? ' checked' : '') + '><span>' + esc(q) + '</span><small>' + n[q] + '</small></label>').join('') + '</div>'
     }

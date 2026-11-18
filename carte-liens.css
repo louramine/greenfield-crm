@@ -118,3 +118,55 @@
   .lk-acts .lk-del { margin-left: 0 }
   .lk-tabs button { font-size: 12.5px }
 }
+
+/* Fenêtre du lien : choix des terrains de la sélection. Une déclaration par règle. */
+.lk-tp { margin-top: 8px }
+.lk-tp { padding: 10px }
+.lk-tp { border: 1px solid #e2ebe4 }
+.lk-tp { border-radius: 12px }
+.lk-tp { background: #fbfdfb }
+.lk-tp-h { display: flex }
+.lk-tp-h { align-items: center }
+.lk-tp-h { justify-content: space-between }
+.lk-tp-h { font-size: 13px }
+.lk-tp-h { font-weight: 600 }
+.lk-tp-h { color: #0a1410 }
+.lk-tsel { display: flex }
+.lk-tsel { flex-wrap: wrap }
+.lk-tsel { gap: 6px }
+.lk-tsel { margin: 8px 0 }
+.lk-tsel { max-height: 120px }
+.lk-tsel { overflow-y: auto }
+.lk-tsel:empty { display: none }
+.lk-tc { display: inline-flex }
+.lk-tc { align-items: center }
+.lk-tc { gap: 4px }
+.lk-tc { font-size: 12.5px }
+.lk-tc { font-weight: 600 }
+.lk-tc { background: #dff3e6 }
+.lk-tc { color: #1f7a4d }
+.lk-tc { border-radius: 999px }
+.lk-tc { padding: 3px 4px 3px 10px }
+.lk-tc button { border: none }
+.lk-tc button { background: transparent }
+.lk-tc button { color: #1f7a4d }
+.lk-tc button { cursor: pointer }
+.lk-tc button { font-size: 11px }
+.lk-tc button { min-width: 24px }
+.lk-tc button { min-height: 24px }
+.lk-tc button { border-radius: 999px }
+.lk-tc button:hover { background: #c4e8d1 }
+.lk-tp #lk-tq { margin-top: 4px }
+.lk-tres { max-height: 220px }
+.lk-tres button i { font-style: normal }
+.lk-tres button i { font-weight: 700 }
+.lk-tres button i { color: #1f7a4d }
+.lk-tres button .lk-m { display: inline }
+.lk-st { font-size: 11px }
+.lk-st { font-weight: 600 }
+.lk-st { background: #fdf0d9 }
+.lk-st { color: #7a5410 }
+.lk-st { border-radius: 999px }
+.lk-st { padding: 1px 7px }
+.lk-st { white-space: nowrap }
+.lk-warn { color: #b25a00 }

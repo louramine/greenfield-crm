@@ -336,12 +336,25 @@ function normTel (t) {
   return d
 }
 
+// Terrains que le sourceur peut mettre dans un lien : localisables sur la carte et non vendus
+function lienCandidats () {
+  return buildTerrains().filter(t => t.statut !== 'Vendu')
+}
+function lienTxt (t) {
+  return [t.id, t.q, t.z, t.tf, t.s ? Math.round(t.s) + ' m²' : '', t.statut].filter(Boolean).join(' ').toLowerCase()
+}
+function lienLigne (t) {
+  const bits = [t.q, t.s ? Math.round(t.s).toLocaleString('fr-FR') + ' m²' : '', t.z, t.pm ? Math.round(t.pm).toLocaleString('fr-FR') + ' DH/m²' : ''].filter(Boolean)
+  return '<b>' + esc(t.id) + '</b>' + (bits.length ? ' <span class="lk-m">' + esc(bits.join(', ')) + '</span>' : '') +
+    (t.statut !== 'Disponible' ? ' <span class="lk-st">' + esc(t.statut ? t.statut : 'Sans statut') + '</span>' : '')
+}
+
 function createLink (selected, presetId) {
-  const n = selected.length
-  const stById = {}
-  const tl0 = state.terrains ? state.terrains : []
-  tl0.forEach(t => { stById[String(t.id)] = t.statut })
-  const nonDispo = selected.filter(t => stById[t.key] !== 'Disponible').length
+  const cands = lienCandidats()
+  const byKey = {}
+  cands.forEach(t => { byKey[t.key] = t })
+  // La sélection du lien est propre à cette fenêtre : elle part de la sélection de la carte, sans modifier les favoris
+  const pick = new Set((selected ? selected : []).map(t => String(t.key)).filter(k => byKey[k]))
   const defV = mode === 'decouverte' ? 'decouverte' : 'qualifie'
   const achs = (state.acheteurs ? state.acheteurs : []).filter(a => a.nom).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
   let chosen = presetId ? achs.find(a => String(a.id) === String(presetId)) : null
@@ -349,13 +362,62 @@ function createLink (selected, presetId) {
     '<label>Promoteur (obligatoire)</label><input id="lk-q" placeholder="Rechercher un promoteur ou un contact" autocomplete="off">' +
     '<div id="lk-list" class="lk-list"></div><div id="lk-ch" class="lk-ch"></div>' +
     '<label>Version</label><select id="lk-v"><option value="decouverte"' + (defV === 'decouverte' ? ' selected' : '') + '>Découverte (formes et prix approximatifs)</option><option value="qualifie"' + (defV === 'qualifie' ? ' selected' : '') + '>Acheteur qualifié (contours exacts, sans TF)</option></select>' +
-    '<label>Terrains</label><select id="lk-t">' + (n ? '<option value="sel">Les ' + n + ' terrain' + (n > 1 ? 's' : '') + ' de ma sélection</option>' : '') + '<option value="all">Tous les terrains disponibles</option></select>' +
-    (nonDispo ? '<p id="lk-w" class="lk-m" style="color:#b25a00">' + nonDispo + ' terrain' + (nonDispo > 1 ? 's' : '') + ' de la sélection ne ' + (nonDispo > 1 ? 'sont' : 'est') + ' pas au statut Disponible : ' + (nonDispo > 1 ? 'ils seront' : 'il sera') + ' quand même visible' + (nonDispo > 1 ? 's' : '') + ' par le promoteur.</p>' : '') +
+    '<label>Terrains</label><select id="lk-t"><option value="sel">Une sélection de terrains</option><option value="all">Tous les terrains disponibles</option></select>' +
+    '<div id="lk-tp" class="lk-tp">' +
+      '<div class="lk-tp-h"><span id="lk-tn"></span><button type="button" class="gfc-link" id="lk-tclr">Tout retirer</button></div>' +
+      '<div id="lk-tsel" class="lk-tsel"></div>' +
+      '<input id="lk-tq" placeholder="Ajouter un terrain : référence, quartier, TF, zonage" autocomplete="off">' +
+      '<div id="lk-tres" class="lk-list lk-tres"></div>' +
+      '<p class="lk-m">Seuls les terrains localisables sur la carte et non vendus peuvent être ajoutés.</p>' +
+      '<p id="lk-w" class="lk-m lk-warn"></p>' +
+    '</div>' +
     '<label>Durée de validité</label><select id="lk-d">' + DUREES.map(([v, l]) => '<option value="' + v + '"' + (v === '168' ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
     '<label>Note interne (facultatif)</label><input id="lk-n">' +
     '<div class="gfc-acts"><button class="gfc-btn gfc-b3" data-m="close">Annuler</button><button class="gfc-btn gfc-b4" id="lk-go">Créer le lien</button></div>', (box, close) => {
-    const lkw = box.querySelector('#lk-w')
-    if (lkw) box.querySelector('#lk-t').addEventListener('change', e => { lkw.style.display = e.target.value === 'sel' ? '' : 'none' })
+    const tSel = box.querySelector('#lk-t')
+    const tp = box.querySelector('#lk-tp')
+    const tq = box.querySelector('#lk-tq')
+    const tres = box.querySelector('#lk-tres')
+    const tsel = box.querySelector('#lk-tsel')
+    const drawPick = () => {
+      const keys = [...pick]
+      const n = keys.length
+      box.querySelector('#lk-tn').textContent = n ? n + ' terrain' + (n > 1 ? 's' : '') + ' dans le lien' : 'Aucun terrain choisi'
+      box.querySelector('#lk-tclr').style.display = n ? '' : 'none'
+      tsel.innerHTML = keys.map(k => '<span class="lk-tc">' + esc(byKey[k].id) + '<button type="button" data-rm="' + k + '" aria-label="Retirer ' + esc(byKey[k].id) + '">✕</button></span>').join('')
+      tsel.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+        pick.delete(b.dataset.rm)
+        drawPick()
+        drawRes()
+      }))
+      const nd = keys.filter(k => byKey[k].statut !== 'Disponible').length
+      const w = box.querySelector('#lk-w')
+      w.textContent = nd ? nd + ' terrain' + (nd > 1 ? 's' : '') + ' de la sélection ne ' + (nd > 1 ? 'sont' : 'est') + ' pas au statut Disponible : ' + (nd > 1 ? 'ils seront' : 'il sera') + ' quand même visible' + (nd > 1 ? 's' : '') + ' par le promoteur.' : ''
+      w.style.display = nd ? '' : 'none'
+    }
+    const drawRes = () => {
+      const v = tq.value.trim().toLowerCase()
+      const words = v.split(/\s+/).filter(Boolean)
+      const pool = cands.filter(t => !pick.has(t.key)).filter(t => words.length ? words.every(w => lienTxt(t).includes(w)) : t.statut === 'Disponible')
+      pool.sort((a, b) => String(a.id).localeCompare(String(b.id), 'fr', { numeric: true }))
+      const m = pool.slice(0, 30)
+      tres.innerHTML = m.length ? m.map(t => '<button type="button" data-k="' + t.key + '"><i>+</i> ' + lienLigne(t) + '</button>').join('') +
+        (pool.length > m.length ? '<div class="lk-m">' + (pool.length - m.length) + ' autres résultats : précisez la recherche.</div>' : '') : '<div class="lk-m">Aucun terrain trouvé.</div>'
+      tres.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => {
+        pick.add(b.dataset.k)
+        drawPick()
+        drawRes()
+      }))
+    }
+    tq.addEventListener('input', drawRes)
+    box.querySelector('#lk-tclr').addEventListener('click', () => {
+      pick.clear()
+      drawPick()
+      drawRes()
+    })
+    tSel.addEventListener('change', () => { tp.style.display = tSel.value === 'sel' ? '' : 'none' })
+    drawPick()
+    drawRes()
     const q = box.querySelector('#lk-q')
     const list = box.querySelector('#lk-list')
     const ch = box.querySelector('#lk-ch')
@@ -388,7 +450,12 @@ function createLink (selected, presetId) {
         q.focus()
         return
       }
-      const ids = box.querySelector('#lk-t').value === 'sel' ? selected.map(t => Number(t.key)) : null
+      const ids = tSel.value === 'sel' ? [...pick].map(Number) : null
+      if (ids && !ids.length) {
+        showNotif('Ajoutez au moins un terrain à la sélection, ou choisissez Tous les terrains disponibles.', true)
+        tq.focus()
+        return
+      }
       const body = {
         version: box.querySelector('#lk-v').value,
         terrain_ids: ids,
